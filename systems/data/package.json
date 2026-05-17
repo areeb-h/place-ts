@@ -1,0 +1,19 @@
+{
+  "name": "@place/data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Data primitives over @place/reactivity. v0.1 ships a single primitive: collection<T>(state, options?) — keyed CRUD over a State<T[]> with reactive lookups + optional sorting. Replaces the hand-rolled CRUD shape that repeats per-entity in real apps.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
