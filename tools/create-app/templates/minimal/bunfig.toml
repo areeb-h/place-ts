@@ -1,0 +1,13 @@
+# Bun configuration.
+#
+# jsx / jsxImportSource — Bun does not read tsconfig's JSX settings at
+# runtime, so it needs its own. This routes JSX to the framework's
+# automatic runtime (`@place/component/jsx-runtime`).
+#
+# preload — registers the framework's auto-import plugin. It prepends
+# imports for framework primitives (`island`, `state`, `Show`,
+# `Activity`, …) at load time, so they are importless, and rewrites the
+# `island(fn)` sugar so the island bundler can locate each island.
+jsx = "react-jsx"
+jsxImportSource = "@place/component"
+preload = ["@place/component/preload"]
