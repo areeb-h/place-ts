@@ -153,54 +153,97 @@ export default page('/why', {
           },
           {
             feature: 'Refactor by rename',
-            hint: 'TS catches stale refs',
+            hint: 'TS catches stale route refs',
             cells: [true, false, false, 'partial'],
           },
           {
             feature: 'Typed mutations',
-            hint: 'caller knows input type',
-            cells: [true, 'FormData only', true, true],
+            hint: 'caller knows the input type',
+            cells: [true, 'FormData only', 'FormData only', true],
+          },
+          {
+            feature: 'Schema-validated actions',
+            hint: 'Zod / Valibot / ArkType, typed field errors',
+            cells: [true, 'manual', 'manual', true],
+          },
+          {
+            feature: 'No use client / use server markers',
+            hint: 'no magic string directives',
+            cells: [true, false, true, true],
           },
           {
             feature: 'No codegen step',
-            hint: 'no .d.ts to regenerate',
+            hint: 'no generated files to regenerate',
             cells: [true, true, true, false],
           },
           {
-            feature: 'SSR-safe context',
-            hint: 'no typeof window checks',
+            feature: 'SSR-safe typed context',
+            hint: 'capabilities — no typeof window checks',
+            cells: [true, false, false, false],
+          },
+          {
+            feature: 'Islands hydration',
+            hint: 'content pages ship zero framework JS',
             cells: [true, false, false, false],
           },
           {
             feature: 'Streaming SSR',
-            hint: 'suspense boundaries',
+            hint: 'per-suspense boundaries',
             cells: [true, true, true, true],
           },
           {
             feature: 'Built-in CSRF',
-            hint: 'auto on every action',
-            cells: [true, false, true, false],
+            hint: 'automatic on every action',
+            cells: [true, 'origin-check', false, false],
           },
           {
-            feature: 'Built-in image opt',
-            hint: 'sharp + content hash',
-            cells: [true, true, false, false],
-          },
-          {
-            feature: 'View Transitions',
-            hint: 'opt-in, zero JS',
+            feature: 'Built-in CSP + SRI',
+            hint: 'strict headers, hashed scripts',
             cells: [true, false, false, false],
           },
           {
-            feature: 'Bundle size (hello world)',
-            hint: 'compressed client',
-            cells: ['18 KB', '74 KB', '38 KB', '52 KB'],
+            feature: 'Image component',
+            hint: 'srcset + lazy variants + caching',
+            cells: ['pluggable', true, false, false],
+          },
+          {
+            feature: 'Component library included',
+            hint: '@place/design — 14 primitives',
+            cells: [true, false, false, false],
+          },
+          {
+            feature: 'Animation primitives',
+            hint: 'spring / tween / sequence as derived state',
+            cells: [true, false, false, false],
+          },
+          {
+            feature: 'RBAC gate component',
+            hint: '<Can do="…"> reads the session',
+            cells: [true, false, false, false],
+          },
+          {
+            feature: 'View Transitions',
+            hint: 'opt-in, zero extra JS',
+            cells: [true, false, false, false],
+          },
+          {
+            feature: 'Islands-aware static export',
+            hint: 'pre-render + ship only island bundles',
+            cells: [true, 'partial', false, 'partial'],
+          },
+          {
+            feature: 'Bundle — hello world',
+            hint: 'gzipped client JS, content page',
+            cells: ['0 KB', '74 KB', '38 KB', '52 KB'],
           },
         ]}
       />
       <Callout kind="note">
-        Bundle numbers from a minimal "hello world" with the framework's default router only. Real
-        apps add more; the relative gap stays.
+        place ships an islands hydration model: a page with no interactive island ships{' '}
+        <strong>zero</strong> framework JavaScript — a "hello world" content page is literally 0 KB
+        on the client. Pages that need interactivity ship only their islands' bundles (typically
+        3–8 KB each), never a whole-app runtime. Competitor numbers are a minimal "hello world" with
+        the default router; the relative gap widens, not narrows, as apps grow.
       </Callout>
 
       <h2 id="when-not-to">When not to pick place</h2>

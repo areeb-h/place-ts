@@ -9,7 +9,7 @@
 // Sections come from the module-level `NAV` constant in
 // `../nav-index.ts` — the island imports it directly rather than
 // taking it as a prop. Two reasons: (1) the SSR'd marker would
-// duplicate the entire nav data as JSON in `data-place-island-props`,
+// duplicate the entire nav data as JSON in `data-view-props`,
 // (2) NAV is genuinely module-singleton; passing it through props
 // implies it could vary per render.
 
