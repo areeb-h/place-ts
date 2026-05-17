@@ -8348,6 +8348,13 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
         ...(options.transformBody ? { transformBody: options.transformBody } : {}),
+        // App `earlyHead` statements (e.g. theme persistence) MUST
+        // reach the static render — on a static host there is no
+        // server to read a cookie at SSR, so the early-paint script
+        // is the only thing that applies a persisted choice.
+        ...(options.earlyHead && options.earlyHead.length > 0
+          ? { extraEarlyHead: options.earlyHead }
+          : {}),
       })
       const html = await res.text()
       const styleHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)

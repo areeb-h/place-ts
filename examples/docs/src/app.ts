@@ -26,6 +26,32 @@ import { docsLayout } from './layouts/docs.layout.tsx'
 import { styles as appStyles } from './styles.ts'
 import { tokens } from './theme.ts'
 
+// Theme-persistence early-paint script. Runs in `<head>` BEFORE
+// `<body>` parses, so the saved theme is applied with no flash.
+//
+// **Why an early script and not SSR.** On the live server SSR reads
+// the cookie and ships the right `theme-*` class. But the docs site
+// is also deployed as a STATIC export (Cloudflare Pages) — there is
+// no server to read a cookie per request, so every page ships the
+// default theme baked in. This script re-reads the `place-theme-choice`
+// cookie on the client before first paint and corrects the class.
+//
+// The theme-toggle island writes `place-theme-choice` (light | dark |
+// system). `system` resolves against `prefers-color-scheme` here so
+// the OS preference is honored on first paint. In `theme()`'s
+// `light-dark()` mode the `theme-*` class drives `color-scheme`, so
+// setting the class is sufficient — no inline `color-scheme` write.
+const themePersistEarly =
+  "(function(){try{" +
+  "var m=document.cookie.match(/(?:^|; )place-theme-choice=([^;]+)/);" +
+  "var c=m?decodeURIComponent(m[1]):'system';" +
+  "var eff=(c==='light'||c==='dark')?c:" +
+  "((window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark');" +
+  "var r=document.documentElement;" +
+  "r.classList.remove('theme-light','theme-dark');" +
+  "r.classList.add('theme-'+eff);" +
+  "}catch(e){}})()"
+
 const docsApp = app({
   name: '@place/docs',
   pages: await discoverPages('./src/pages'),
@@ -34,6 +60,7 @@ const docsApp = app({
   styles: [designStyles, appStyles],
   router: pathRouter,
   islandsDir: './src/islands',
+  earlyHead: [themePersistEarly],
 })
 
 // One entry, two modes. `PLACE_BUILD=<outDir>` pre-renders the whole
