@@ -1,0 +1,20 @@
+{
+  "name": "@place/sync-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A tiny key-value sync server for the @place/persistence serverAdapter. Single Bun.serve + bun:sqlite + WebSocket + SSR via @place/component, demonstrating the platform's full persistence + render stack end-to-end.",
+  "scripts": {
+    "start": "bun src/server.tsx",
+    "build:static": "bun scripts/build-static.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@place/component": "workspace:*",
+    "@place/reactivity": "workspace:*",
+    "@place/security": "workspace:*"
+  },
+  "devDependencies": {
+    "happy-dom": "latest"
+  }
+}

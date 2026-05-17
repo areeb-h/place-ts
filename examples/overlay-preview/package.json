@@ -1,0 +1,14 @@
+{
+  "name": "@place/overlay-preview",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Preview server for the dev error overlay — four routes that intentionally throw so the framework's renderRouteError pipeline produces the overlay HTML.",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts"
+  },
+  "dependencies": {
+    "@place/component": "workspace:*"
+  }
+}
