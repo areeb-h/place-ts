@@ -1,0 +1,44 @@
+{
+  "name": "@place/component",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Component system — rendering layer on top of @place/reactivity. JSX-shape via TS automatic runtime (per ADR 0002).",
+  "sideEffects": [
+    "./src/preload.ts"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./jsx-runtime": "./src/jsx-runtime.ts",
+    "./jsx-dev-runtime": "./src/jsx-runtime.ts",
+    "./tailwind": "./src/tailwind.ts",
+    "./preload": "./src/preload.ts",
+    "./auto-imports": "./src/auto-imports.d.ts",
+    "./auto-import-plugin": "./src/auto-import-plugin.ts",
+    "./adapters/node": "./src/adapters/node.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "devalue": "^5.8.0"
+  },
+  "peerDependencies": {
+    "@tailwindcss/node": "^4.2.4",
+    "tailwindcss": "^4.2.4"
+  },
+  "peerDependenciesMeta": {
+    "@tailwindcss/node": {
+      "optional": true
+    },
+    "tailwindcss": {
+      "optional": true
+    }
+  }
+}
