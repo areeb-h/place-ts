@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["bun"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "@place/component",
+    "paths": {
+      "@place/reactivity": ["../../systems/reactivity/src/index.ts"],
+      "@place/component": ["../../systems/component/src/index.ts"],
+      "@place/component/jsx-runtime": ["../../systems/component/src/jsx-runtime.ts"],
+      "@place/capability": ["../../systems/capability/src/index.ts"],
+      "@place/persistence": ["../../systems/persistence/src/index.ts"],
+      "@place/routing": ["../../systems/routing/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}
