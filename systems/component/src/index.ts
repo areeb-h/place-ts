@@ -8430,6 +8430,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       routes: staticRoutes,
       render: renderStatic,
       bundles: allBundles,
+      // A static host has no server to default-serve `/robots.txt`;
+      // emit it at build time (matches the live server's behaviour).
+      ...(options.robots !== undefined ? { robots: options.robots } : {}),
     })
     process.stdout.write(
       `place: static export → ${staticResult.outDir} ` +

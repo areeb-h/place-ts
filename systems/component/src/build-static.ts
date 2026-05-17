@@ -224,6 +224,13 @@ export interface WriteStaticSiteOptions {
    * `<script src="/islands/…">` references resolve.
    */
   readonly bundles: ReadonlyMap<string, Uint8Array>
+  /**
+   * `robots.txt` body. A static host has no server to default-serve
+   * `/robots.txt`, and Lighthouse flags a missing/invalid one as an
+   * SEO Crawling-and-Indexing failure. Written to `<outDir>/robots.txt`
+   * unless `false`. Default: `'User-agent: *\nAllow: /\n'`.
+   */
+  readonly robots?: string | false
   /** Per-page progress hook. */
   readonly onPage?: (info: { path: string; bytes: number }) => void
   /** Per-bundle progress hook. */
@@ -398,6 +405,14 @@ export async function writeStaticSite(
   const scriptHashes = [...scriptHashSet].sort()
   const styleHashes = [...styleHashSet].sort()
   await writeFile(join(outDir, '_headers'), renderHeadersFile(scriptHashes), 'utf-8')
+
+  // 4. `robots.txt` — a static host has no server to default-serve it.
+  //    Without a valid one Lighthouse SEO flags Crawling-and-Indexing.
+  if (options.robots !== false) {
+    const robotsBody =
+      typeof options.robots === 'string' ? options.robots : 'User-agent: *\nAllow: /\n'
+    await writeFile(join(outDir, 'robots.txt'), robotsBody, 'utf-8')
+  }
 
   return {
     outDir,
