@@ -1,0 +1,13 @@
+{
+  "name": "__APP_NAME__",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.tsx",
+    "start": "NODE_ENV=production bun src/server.tsx"
+  },
+  "dependencies": {
+    "@place/component": "*"
+  }
+}

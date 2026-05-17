@@ -1,0 +1,19 @@
+{
+  "name": "@place/create-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scaffolder — `bunx @place/create-app <name>` creates a new place-ts project from a starter template.",
+  "bin": {
+    "create-place-app": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "src",
+    "templates",
+    "README.md"
+  ]
+}
