@@ -261,6 +261,22 @@ function navigate(url,push){
       // costs a frame and adds a ~250 ms cross-fade, which defeated
       // the framework's actual sub-5 ms swap perf.
       if(ENABLE_VT&&document.startViewTransition){document.startViewTransition(swap);}else{swap();}
+      // **Focus management.** Move focus to the freshly-swapped <main>.
+      // This is the correct SPA a11y behaviour — keyboard + screen-
+      // reader users land IN the new page rather than stranded on the
+      // nav link — and it also clears the :focus-visible ring that
+      // would otherwise linger on the link the user just clicked
+      // (the "glitter" left behind on the previous nav item).
+      // tabindex=-1 makes <main> programmatically focusable without
+      // entering the tab order; preventScroll defers to scrollTo below.
+      try{
+        newMain.setAttribute('tabindex','-1');
+        // No focus outline on the <main> landmark itself — an outline
+        // there would just be a new glitter. (CSSOM write, not an
+        // inline style attribute — unaffected by strict style-src CSP.)
+        newMain.style.outline='none';
+        newMain.focus({preventScroll:true});
+      }catch(_){}
       // **Island-script reconciliation.** Per-route bundle splitting +
       // per-page \`<script src="/islands/*.js">\` emission means the
       // destination page may need scripts the originating page didn't
