@@ -74,7 +74,7 @@ const ROADMAP: readonly Milestone[] = [
   {
     version: 'v0.8',
     title: 'Docs site + commonplace polish',
-    status: 'now',
+    status: 'done',
     highlights: [
       'this docs site — comprehensive concepts + API + recipes',
       'Cmd+K search, interactive reactivity demo',
@@ -84,6 +84,19 @@ const ROADMAP: readonly Milestone[] = [
   },
   {
     version: 'v0.9',
+    title: 'Static export + first public deploy',
+    status: 'now',
+    highlights: [
+      'app().build() — islands-aware static export (ADR 0051)',
+      'strict static CSP via a generated Cloudflare _headers file',
+      'live on Cloudflare Pages — 100/100/100/100 Lighthouse',
+      'hover/focus prefetch — instant SPA navigation, auth-safe',
+      'framework-owned theme persistence (themeEarlyScript, no flash)',
+      'first public git repo with a layered commit history',
+    ],
+  },
+  {
+    version: 'v0.10',
     title: 'Migrations + adapters',
     status: 'next',
     highlights: [
