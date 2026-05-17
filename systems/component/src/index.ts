@@ -4493,6 +4493,13 @@ export interface RenderPageOptions {
    */
   spaNavViewTransitions?: boolean
   /**
+   * Theme choice-name → `<html>` class map, forwarded into the
+   * SPA-nav runtime so it preserves the user's live theme across an
+   * `<html class>` swap (the destination page carries the build-time
+   * default theme). `serve()` derives this from `options.theme`.
+   */
+  spaNavThemeClassMap?: Readonly<Record<string, string>>
+  /**
    * SRI hashes for the emitted scripts (T5-D phase 2 / ADR 0025). The
    * framework computes SHA-384 of each bundle at build time; renderPage
    * emits `integrity="sha384-…" crossorigin="anonymous"` on each
@@ -5024,7 +5031,12 @@ export async function renderPage(
   // transition-wrapped (~250 ms cross-fade) — baked into the bytes,
   // no runtime globals to coordinate.
   const spaNavScript = options?.enableSpaNav
-    ? `<script${nonceAttr}>${placeSpaNav({ viewTransitions: options?.spaNavViewTransitions === true })}</script>`
+    ? `<script${nonceAttr}>${placeSpaNav({
+        viewTransitions: options?.spaNavViewTransitions === true,
+        ...(options?.spaNavThemeClassMap
+          ? { themeClassMap: options.spaNavThemeClassMap }
+          : {}),
+      })}</script>`
     : ''
   // Inline tabs runtime — single delegated click handler shared by
   // every `<Tabs>` on the page.
@@ -7007,6 +7019,22 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     ...(options.earlyHead ?? []),
   ]
 
+  // Theme choice-name → `<html>` class map, forwarded into the SPA-nav
+  // runtime so navigating between pages preserves the user's theme
+  // (the destination page's HTML carries the build-time default).
+  const spaNavThemeClassMap: Readonly<Record<string, string>> = options.theme
+    ? Object.fromEntries(
+        options.theme.names.map((n) => [
+          n,
+          // `htmlClass` is typed `(theme: never) => string` on the
+          // generic ThemeTokens; at runtime it takes any name string.
+          (options.theme as NonNullable<typeof options.theme>).htmlClass(
+            n as never,
+          ),
+        ]),
+      )
+    : {}
+
   // Compile Tailwind once at startup if requested. Lazy import keeps
   // apps without tailwind from pulling the heavy deps. The resulting
   // CSS is injected as a regular inline style on each compiled page
@@ -8084,6 +8112,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           ...(bootstrap !== null ? { bootstrap } : {}),
           ...(enableSpaNav ? { enableSpaNav: true } : {}),
           ...(spaNavVT ? { spaNavViewTransitions: true } : {}),
+          ...(Object.keys(spaNavThemeClassMap).length > 0
+            ? { spaNavThemeClassMap }
+            : {}),
           ...(isProduction ? {} : { enableHmr: true }),
           ...(integrityForRender ? { scriptIntegrity: integrityForRender } : {}),
           scriptNonce: nonce,
@@ -8366,6 +8397,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(bootstrap !== null ? { bootstrap } : {}),
         ...(staticSpaNav ? { enableSpaNav: true } : {}),
         ...(options.viewTransitions === true ? { spaNavViewTransitions: true } : {}),
+        ...(Object.keys(spaNavThemeClassMap).length > 0
+          ? { spaNavThemeClassMap }
+          : {}),
         ...(Object.keys(scriptIntegrity).length > 0 ? { scriptIntegrity } : {}),
         ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),

@@ -39,6 +39,20 @@ export interface PlaceSpaNavOptions {
    * sub-frame-budget on the measured docs site.
    */
   readonly viewTransitions?: boolean
+  /**
+   * Theme choice-name → `<html>` class map (e.g.
+   * `{ dark: 'theme-dark', light: 'theme-light' }`). Used to PRESERVE
+   * the user's live theme across a SPA `<html class>` swap.
+   *
+   * Without this, navigating to another page applies that page's
+   * build-time-baked `<html>` class — which carries the DEFAULT
+   * theme — and silently reverts the user's choice. The runtime
+   * strips every mapped theme class from the destination's class and
+   * re-adds the one matching the live `data-place-theme` choice.
+   *
+   * Empty (the default) when the app has no `theme` configured.
+   */
+  readonly themeClassMap?: Readonly<Record<string, string>>
 }
 
 /**
@@ -54,9 +68,11 @@ export interface PlaceSpaNavOptions {
  */
 export function placeSpaNav(options: PlaceSpaNavOptions = {}): string {
   const ENABLE_VT = options.viewTransitions === true
+  const themeClassMap = options.themeClassMap ?? {}
   return `(function(){
 if(window.__place_spa)return;window.__place_spa=1;
 var ENABLE_VT=${ENABLE_VT ? 'true' : 'false'};
+var THEME_CLASS_MAP=${JSON.stringify(themeClassMap)};
 function shouldIntercept(e,a){
   if(e.defaultPrevented)return false;
   if(e.button!==0)return false;
@@ -135,6 +151,24 @@ function navigate(url,push){
       // <html> for HTML pages but can be <svg> for standalone SVG docs.
       // Use setAttribute('class', …) which works on both.
       var newCls=doc.documentElement.getAttribute('class')||'';
+      // **Preserve the live theme across the class swap.** The fetched
+      // page's <html> class carries the build-time DEFAULT theme; the
+      // user's choice lives in the (untouched) data-place-theme attr.
+      // Strip every mapped theme class the destination baked, then
+      // re-add the class for the live choice. data-place-theme itself
+      // survives — we only ever rewrite 'class'.
+      var themeKeys=Object.keys(THEME_CLASS_MAP);
+      if(themeKeys.length){
+        var liveChoice=document.documentElement.getAttribute('data-place-theme')||'';
+        var keep=newCls.split(/\\s+/).filter(function(tok){
+          if(!tok)return false;
+          for(var z=0;z<themeKeys.length;z++){if(THEME_CLASS_MAP[themeKeys[z]]===tok)return false;}
+          return true;
+        });
+        var liveThemeCls=THEME_CLASS_MAP[liveChoice];
+        if(liveThemeCls)keep.push(liveThemeCls);
+        newCls=keep.join(' ');
+      }
       if(newCls!==(document.documentElement.getAttribute('class')||''))document.documentElement.setAttribute('class',newCls);
       var swap=function(){oldMain.replaceWith(newMain);};
       // Default is INSTANT (just swap). Opt into View Transitions via
