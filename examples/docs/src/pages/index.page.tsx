@@ -123,32 +123,7 @@ export default page('/', {
   meta: { title: 'place — a TS-first web platform', titleAbsolute: true },
   view: () => (
     <div class="max-w-4xl">
-      <section class="mb-20 relative isolate min-h-[440px]">
-        {/* Hero glow. The gradient is a CSS `background-image` on a
-            child that exactly covers the section (`inset-0`) and sits
-            at `-z-10` BEHIND the content. Why this approach: a
-            floating blurred `<div>` near `<main>`'s clip edges leaves
-            blur-halo pixels (and even soft gradient tails) at risk of
-            being hard-clipped where the element box ends.
-            ZERO-EDGE-COLOR GEOMETRY: we use an ellipse small enough
-            that its fully-transparent stop completes BEFORE reaching
-            any section edge. With `ellipse 60% 50% at 70% 30%` and
-            `transparent 70%`, the colored region is bounded by an
-            inner ellipse 42%w × 35%h centered at (70%, 30%) — that
-            inner ellipse extends from x=49%..91% and y=12.5%..47.5%
-            of the section, comfortably inside on every side. So the
-            gradient hits exactly zero color at the section edges:
-            no faint orange tail anywhere near where the section
-            ends. `min-h-[440px]` on the section gives the gradient
-            enough vertical room that the inner ellipse's 12.5% top
-            margin is at least 55px in pixel terms.
-            `isolate` on the section creates a local stacking context
-            so `-z-10` stays inside (won't escape and stack below the
-            layout's background). */}
-        <div
-          class="absolute inset-0 -z-10 pointer-events-none bg-[radial-gradient(ellipse_60%_50%_at_70%_30%,_color-mix(in_oklab,var(--color-accent)_22%,transparent)_0%,_transparent_70%)]"
-          aria-hidden="true"
-        />
+      <section class="mb-20">
         <Badge intent="accent" class="mb-6 font-mono">
           <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           v0.5 · motion + design library shipped
