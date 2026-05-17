@@ -17,6 +17,22 @@ import ToC from '../islands/toc.tsx'
 import { Sidebar } from '../components/sidebar.tsx'
 import { NAV } from '../nav-index.ts'
 
+// Favicon — a "place" location-pin mark, inlined as a data-URI SVG.
+//
+// Inlining (vs. a /favicon.svg file) means there is NO favicon
+// request at all: the icon ships inside every page's HTML, so it can
+// never re-fetch, re-decode, or blip on reload — and the browser
+// issues no /favicon.ico probe (which would 404 on the static host).
+// `encodeURIComponent` at build time produces a valid data URI; SVG
+// favicons are universal across evergreen browsers (Chrome, Firefox,
+// Safari 16.4+, Edge). The amber matches the brand accent.
+const FAVICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">' +
+  '<path d="M16 2.5c-5.6 0-10.2 4.4-10.2 9.9 0 7 8.5 15 9.6 16a.9.9 0 0 0 1.2 0' +
+  'c1.1-1 9.6-9 9.6-16C26.2 6.9 21.6 2.5 16 2.5Z" fill="#e8a23c"/>' +
+  '<circle cx="16" cy="12.4" r="3.8" fill="#15140f"/></svg>'
+const FAVICON = `data:image/svg+xml,${encodeURIComponent(FAVICON_SVG)}`
+
 /**
  * Docs layout with typed named slots. Pages can fill:
  *   - `headerActions` — extra buttons in the header nav row (after
@@ -40,6 +56,7 @@ export const docsLayout = layout<{}, 'headerActions' | 'tocOverride'>({
       'place is a nine-system platform for shipping the web. ' +
       'Smaller surface than Next, fewer footguns than Remix, more honest than TanStack.',
     themeColor: '#0a0a0c',
+    icon: { href: FAVICON, type: 'image/svg+xml' },
     htmlClass: 'h-full',
     bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
   },
