@@ -4,19 +4,15 @@
 // highlight ships in the first paint — no post-hydration DOM walk, no
 // flicker on hard refresh.
 //
-// Active treatment uses `aria-[current=page]:` to drive both the
-// pill background and the inset left bar (box-shadow). The bar is
-// drawn INSIDE the link's box (inset shadow) so it can never leak
-// outside the aside boundary — a regression we hit when an earlier
-// design used `border-left + margin-left: -2px`.
+// Active treatment is just the pill: `aria-[current=page]:` drives a
+// tinted background + accent text. No left-edge bar — a colored
+// border on the active item read as visual noise. The pill alone is
+// a calmer, sufficient indicator.
 //
-// The transition covers `color` + `background-color` ONLY — NOT
-// `box-shadow`. A nav active-indicator must SNAP: when SPA nav moves
-// `aria-current`, animating the inset bar makes the just-left link's
-// bar linger for the transition duration, so clicking through links
-// faster than that leaves a trail of half-faded bars ("glitter").
-// The hover background still eases; the active bar + focus ring are
-// instant.
+// The transition covers `color` + `background-color` only — the
+// keyboard `:focus-visible` ring is instant (animating a focus ring
+// is wrong). SPA nav moves focus to `<main>`, so the ring never
+// lingers on the clicked link.
 
 import { Link } from '@place/component'
 
@@ -35,7 +31,6 @@ const LINK =
   'hover:text-fg hover:bg-card/55 ' +
   'aria-[current=page]:text-accent ' +
   'aria-[current=page]:bg-accent/10 ' +
-  'aria-[current=page]:shadow-[inset_2px_0_0_0_var(--color-accent)] ' +
   'focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_color-mix(in_oklab,var(--color-accent)_60%,transparent)]'
 
 export const Sidebar = (props: SidebarProps) => (
