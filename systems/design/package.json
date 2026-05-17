@@ -1,0 +1,23 @@
+{
+  "name": "@place/design",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Component library — opinionated primitives built on @place/component + @place/reactivity. NOT a 10th platform system; see ADR 0016.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@place/component": "workspace:*",
+    "@place/reactivity": "workspace:*"
+  }
+}
