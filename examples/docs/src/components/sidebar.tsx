@@ -9,6 +9,14 @@
 // drawn INSIDE the link's box (inset shadow) so it can never leak
 // outside the aside boundary — a regression we hit when an earlier
 // design used `border-left + margin-left: -2px`.
+//
+// The transition covers `color` + `background-color` ONLY — NOT
+// `box-shadow`. A nav active-indicator must SNAP: when SPA nav moves
+// `aria-current`, animating the inset bar makes the just-left link's
+// bar linger for the transition duration, so clicking through links
+// faster than that leaves a trail of half-faded bars ("glitter").
+// The hover background still eases; the active bar + focus ring are
+// instant.
 
 import { Link } from '@place/component'
 
@@ -23,7 +31,7 @@ interface SidebarProps {
 
 const LINK =
   'block px-3 py-1.5 rounded-md text-muted text-[13px] leading-snug no-underline ' +
-  'transition-[color,background-color,box-shadow] duration-150 ' +
+  'transition-[color,background-color] duration-150 ' +
   'hover:text-fg hover:bg-card/55 ' +
   'aria-[current=page]:text-accent ' +
   'aria-[current=page]:bg-accent/10 ' +

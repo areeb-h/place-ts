@@ -112,35 +112,75 @@ var MAX_BYTES=8*1024*1024;
 // Hard timeout per nav. 10s is generous for the worst-case page;
 // beyond that the user is better off seeing a hard reload.
 var TIMEOUT_MS=10000;
+// Monotonic navigation token. A newer navigate() bumps it so a slower
+// in-flight (or prefetched) response can never swap in late over a
+// destination the user has since moved past.
+var navSeq=0;
+// **Prefetch cache** — url-key -> Promise<string html>. Warmed on
+// link hover / focus (see the listeners below) so that by the time
+// the user clicks, the destination HTML is already in hand and the
+// swap waits on ZERO network. This is what makes navigation feel
+// instant on a CDN regardless of edge-cache state. Bounded; a failed
+// entry is dropped so a real navigation retries cleanly.
+var prefetchCache=Object.create(null);
+var prefetchN=0;
+var PREFETCH_MAX=24;
+// Canonical cache key for a URL — path + search, hash-stripped (a
+// hash anchor targets the same document). Same key from click-href,
+// popstate, and hover so warm hits actually hit.
+function navKey(u){
+  try{var p=new URL(u,location.href);return p.pathname+p.search;}catch(_){return u;}
+}
+// Validate a Response + resolve its HTML text. Shared by prefetch and
+// the live fetch so both apply identical same-origin / content-type /
+// size guards.
+function readHtml(r){
+  if(!r.ok)throw new Error('http '+r.status);
+  try{
+    if(new URL(r.url).origin!==location.origin)throw new Error('cross-origin redirect');
+  }catch(_){throw new Error('bad response URL');}
+  if((r.headers.get('content-type')||'').indexOf('text/html')!==0)throw new Error('not html');
+  return r.text().then(function(html){
+    if(html.length>MAX_BYTES)throw new Error('response too large');
+    return html;
+  });
+}
+// Warm the cache for a likely-next destination. No-ops when already
+// cached, over budget, or the user has Data Saver enabled.
+function prefetch(url){
+  var k=navKey(url);
+  if(prefetchCache[k]||prefetchN>=PREFETCH_MAX)return;
+  var c=navigator.connection;
+  if(c&&c.saveData)return;
+  prefetchN++;
+  prefetchCache[k]=fetch(k,{headers:{'Accept':'text/html'},credentials:'same-origin',redirect:'follow'})
+    .then(readHtml)
+    .catch(function(err){delete prefetchCache[k];throw err;});
+}
 function navigate(url,push){
   if(inflight)inflight.abort();
-  var ctl=new AbortController();inflight=ctl;
-  var timer=setTimeout(function(){ctl.abort();},TIMEOUT_MS);
-  fetch(url,{
-    headers:{'Accept':'text/html'},
-    credentials:'same-origin',
-    redirect:'follow',
-    signal:ctl.signal
-  })
-    .then(function(r){
-      clearTimeout(timer);
-      if(!r.ok)throw new Error('http '+r.status);
-      // Same-origin guard: a redirect to a different origin would
-      // bypass our intercept policy. Fall back to full nav.
-      try{
-        var responseUrl=new URL(r.url);
-        if(responseUrl.origin!==location.origin)throw new Error('cross-origin redirect');
-      }catch(_){throw new Error('bad response URL');}
-      // Content-type check: only swap text/html responses. Anything
-      // else falls back to full nav so the browser can handle it
-      // (downloads, JSON, etc.).
-      var ct=r.headers.get('content-type')||'';
-      if(ct.indexOf('text/html')!==0)throw new Error('not html');
-      return r.text();
-    })
+  var myseq=++navSeq;
+  var timer=null;
+  var k=navKey(url);
+  var htmlPromise=prefetchCache[k];
+  if(htmlPromise){
+    // Warm hit — a hover/focus prefetch already fetched this. No new
+    // request, no abort controller; the swap is immediate.
+    inflight=null;
+  }else{
+    var ctl=new AbortController();inflight=ctl;
+    timer=setTimeout(function(){ctl.abort();},TIMEOUT_MS);
+    htmlPromise=fetch(k,{
+      headers:{'Accept':'text/html'},
+      credentials:'same-origin',
+      redirect:'follow',
+      signal:ctl.signal
+    }).then(function(r){if(timer)clearTimeout(timer);return readHtml(r);});
+  }
+  htmlPromise
     .then(function(html){
-      if(ctl.signal.aborted)return;
-      if(html.length>MAX_BYTES)throw new Error('response too large');
+      // Superseded by a newer navigation — drop this stale swap.
+      if(myseq!==navSeq)return;
       inflight=null;
       var doc=new DOMParser().parseFromString(html,'text/html');
       var newMain=doc.querySelector('main');
@@ -249,7 +289,9 @@ function navigate(url,push){
       window.scrollTo(0,0);
     })
     .catch(function(err){
-      clearTimeout(timer);
+      if(timer)clearTimeout(timer);
+      // A newer navigation already took over — don't hard-reload over it.
+      if(myseq!==navSeq)return;
       inflight=null;
       if(err&&err.name==='AbortError')return;
       // Hard fallback so the user can always navigate even if SPA breaks.
@@ -285,6 +327,21 @@ document.addEventListener('click',function(e){
   e.preventDefault();
   navigate(t.href,true);
 },true);
+// **Prefetch on intent.** Hovering or focusing a framework link is a
+// strong signal the user is about to navigate there. Warm the cache
+// now so the click resolves instantly. \`prefetch()\` de-dupes + caps
+// itself, so the firehose of pointerover events is cheap.
+function prefetchFromEvent(e){
+  var t=e.target;
+  while(t&&t.nodeType===1&&t.tagName!=='A')t=t.parentNode;
+  if(!t||t.tagName!=='A'||!t.hasAttribute('data-place-link'))return;
+  var u;try{u=new URL(t.href);}catch(_){return;}
+  if(u.origin!==location.origin)return;
+  if(u.pathname===location.pathname&&u.search===location.search)return;
+  prefetch(t.href);
+}
+document.addEventListener('pointerover',prefetchFromEvent,{passive:true});
+document.addEventListener('focusin',prefetchFromEvent);
 // Browser back/forward — refetch + swap (URL already updated by browser).
 window.addEventListener('popstate',function(){
   navigate(location.pathname+location.search+location.hash,false);
