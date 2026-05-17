@@ -109,7 +109,7 @@ export default page('/capabilities', {
       <h2 id="see-also">See also</h2>
       <ul>
         <li>
-          <Link to="/api/defineCapability">API: defineCapability()</Link>
+          <Link to="/api/define-capability">API: defineCapability()</Link>
         </li>
         <li>
           <Link to="/concepts/reactivity">Concepts: reactivity</Link>

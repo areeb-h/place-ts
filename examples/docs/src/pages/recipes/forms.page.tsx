@@ -30,9 +30,9 @@ const STANDALONE = `// Standalone action — when the form lives on multiple pag
 import { action, Form, shape } from '@place/component'
 
 export const subscribe = action({
-  path: '/_action/subscribe',
-  schema: shape({ email: 'string' }),
-  handler: async ({ email }) => {
+  path: 'POST /api/subscribe',
+  input: shape({ email: 'string' }),
+  fn: async ({ email }) => {
     await emailList.add(email)
     return { ok: true }
   },

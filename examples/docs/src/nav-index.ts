@@ -6,10 +6,12 @@
 // **Organization principle** (post-2026-05-17 restructure):
 //   1. Start — orientation, install, comparison, examples
 //   2. Learn — concepts (mental model) + recipes (how-to patterns)
-//   3. Reference — API, grouped by purpose:
-//        - Framework spine (app/page/layout/action/state/caps)
-//        - UI library (@place/design components)
-//        - Security (@place/security primitives)
+//   3. Reference — grouped by purpose:
+//        - API — the core framework spine (app/page/layout/action/
+//          state/caps/components/motion)
+//        - Packages — the on-top systems & libraries: @place/design,
+//          @place/security, @place/persistence, @place/data,
+//          @place/search
 //   4. Explore — roadmap
 
 export interface NavLink {
@@ -136,9 +138,13 @@ export const NAV: readonly NavSection[] = [
     ],
   },
   {
-    title: 'Framework API',
+    title: 'API',
     links: [
-      { to: '/api/app', label: 'app()', keywords: ['entry', 'serve', 'boot', 'run'] },
+      {
+        to: '/api/app',
+        label: 'app()',
+        keywords: ['entry', 'serve', 'boot', 'run', 'build', 'discoverPages', 'routes', 'static'],
+      },
       { to: '/api/page', label: 'page()', keywords: ['route', 'view', 'meta', 'load'] },
       {
         to: '/api/layout',
@@ -170,7 +176,7 @@ export const NAV: readonly NavSection[] = [
         keywords: ['reactive', 'signal', 'effect', 'batch'],
       },
       {
-        to: '/api/defineCapability',
+        to: '/api/define-capability',
         label: 'defineCapability()',
         keywords: ['cap', 'context', 'install', 'use'],
       },
@@ -198,7 +204,7 @@ export const NAV: readonly NavSection[] = [
     ],
   },
   {
-    title: 'UI library',
+    title: 'Packages',
     links: [
       {
         to: '/api/design',
@@ -226,11 +232,6 @@ export const NAV: readonly NavSection[] = [
           'design',
         ],
       },
-    ],
-  },
-  {
-    title: 'Security',
-    links: [
       {
         to: '/api/security',
         label: '@place/security',
@@ -247,6 +248,52 @@ export const NAV: readonly NavSection[] = [
           'cookies',
           'csp',
           'fromStandard',
+        ],
+      },
+      {
+        to: '/api/persistence',
+        label: '@place/persistence',
+        keywords: [
+          'persistedState',
+          'localStorage',
+          'indexeddb',
+          'cross-tab',
+          'crosstab',
+          'broadcastchannel',
+          'sync',
+          'adapter',
+          'storage',
+          'memory',
+          'server',
+        ],
+      },
+      {
+        to: '/api/data',
+        label: '@place/data',
+        keywords: [
+          'collection',
+          'crud',
+          'keyed',
+          'entity',
+          'store',
+          'array',
+          'add',
+          'update',
+          'remove',
+        ],
+      },
+      {
+        to: '/api/search',
+        label: '@place/search',
+        keywords: [
+          'searchable',
+          'search',
+          'filter',
+          'query',
+          'substring',
+          'token',
+          'fulltext',
+          'find',
         ],
       },
     ],

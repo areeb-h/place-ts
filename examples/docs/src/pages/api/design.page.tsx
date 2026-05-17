@@ -303,14 +303,15 @@ const CODEBLOCK_SLOT = `// Replace the entire header with your own slot. The fra
 />`
 
 const STYLES_WIRING = `// Wire the design library's Tailwind input (Dialog @starting-style
-// transitions, etc.) into your app's styles:
+// transitions, etc.) into your app's styles. \`styles\` takes a string
+// array — each entry is a layer, concatenated in order.
 
 import { styles as designStyles } from '@place/design'
 import { styles as appStyles } from './styles.ts'
 
 app({
   pages: [...],
-  styles: \`\${designStyles}\\n\${appStyles}\`,
+  styles: [designStyles, appStyles],
 }).run()`
 
 export default page('/design', {
@@ -405,8 +406,8 @@ export default page('/design', {
       <h2>Wire the library's styles</h2>
       <p>
         The library ships a small Tailwind input file for things utility classes can't express
-        (currently the Dialog's <code>@starting-style</code> transitions). Concat it with your
-        app's styles:
+        (currently the Dialog's <code>@starting-style</code> transitions). Pass it to{' '}
+        <code>app()</code>'s <code>styles</code> option — a string array, one entry per layer:
       </p>
       <CodeBlock code={STYLES_WIRING} />
 

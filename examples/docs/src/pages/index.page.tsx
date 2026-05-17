@@ -1,4 +1,4 @@
-// Landing page. Big hero with a typing code preview + a 6-feature
+// Landing page. Big hero with a typing code preview + a feature
 // grid + a "what's inside" rundown of every shipping system. The
 // page is denser than the typical framework landing because place is
 // a *platform of nine systems* — we name each one.
@@ -93,27 +93,27 @@ const SYSTEMS: readonly System[] = [
   },
   {
     name: 'routing',
-    summary: 'pathRouter · memoryRouter · urlState · Link',
+    summary: 'pathRouter · hashRouter · memoryRouter · route · searchParams',
   },
   {
     name: 'data',
-    summary: 'collections · shape · validators',
+    summary: 'collection() — keyed CRUD over State<T[]>',
   },
   {
     name: 'persistence',
-    summary: 'localStorage · cross-tab sync · websocket sync-server',
+    summary: 'persistedState · localStorage · IndexedDB · cross-tab · server sync',
   },
   {
     name: 'search',
-    summary: 'in-process indexer · prefix + fuzzy queries',
+    summary: 'searchable() · reactive substring + token match',
   },
   {
     name: 'security',
     summary: 'CSP-strict · auto-CSRF · same-origin · body-limit',
   },
   {
-    name: 'build',
-    summary: 'Bun.build · Tailwind v4 · content-hashed assets',
+    name: 'design',
+    summary: 'theme() · themeTokens() · typed CSS-variable theming',
   },
 ]
 
@@ -126,7 +126,7 @@ export default page('/', {
       <section class="mb-20">
         <Badge intent="accent" class="mb-6 font-mono">
           <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-          v0.5 · motion + design library shipped
+          v0.8 · docs site + commonplace polish
         </Badge>
         <h1 class="text-5xl sm:text-6xl font-semibold tracking-tight text-fg mb-5 leading-[1.05]">
           One platform.
@@ -143,8 +143,8 @@ export default page('/', {
         <p class="text-base sm:text-lg text-muted leading-relaxed mb-7 max-w-2xl">
           place is a TypeScript-first web platform built on Bun. Smaller surface than Next, fewer
           footguns than Remix, more honest than TanStack. Nine composable systems with explicit
-          boundaries — reactivity, components, capabilities, routing, data, cache, persistence,
-          search, security — plus a curated design library on top.
+          boundaries — reactivity, component, capability, routing, data, persistence, search,
+          security, design.
         </p>
         <div class="flex flex-wrap items-center gap-3">
           <Link to="/getting-started" class={button({ intent: 'primary', size: 'lg' })}>

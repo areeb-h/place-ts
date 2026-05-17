@@ -186,7 +186,7 @@ export default page('/getting-started', {
           </Link>
         </li>
         <li>
-          Roadmap: see the <code>docs/roadmap.md</code> file in the repo.
+          <Link to="/roadmap">Roadmap</Link> — shipped milestones and what's next.
         </li>
         <li>
           Examples: <code>examples/commonplace</code> is a real reference app. Every shipping

@@ -74,19 +74,30 @@ const WIRE = `<!-- Server emits a typed marker, NOT a virtual-DOM hash. -->
   defer
 ></script>`
 
-const SUSPENSE = `// suspense() emits a comment-marker pair around its content.
-// The fallback ships in the initial HTML; once the async children
-// resolve, the framework streams a swap chunk that replaces the
-// placeholder anchors. Works pre-hydration; no client JS required
-// for the swap itself.
+const SUSPENSE = `// suspense() takes ONE options object: { fallback, children, on }.
+// It emits a comment-marker pair around its content — the fallback
+// ships in the initial HTML; once every resource in \`on\` resolves,
+// the framework streams a swap chunk that replaces the placeholder
+// anchors. Works pre-hydration; no client JS required for the swap.
+import { suspense } from '@place/component'
+import { resource } from '@place/reactivity'
+
+const article = resource(
+  (signal) => fetch(\`/api/articles/\${id}\`, { signal }).then((r) => r.json()),
+  { hydrationKey: \`article:\${id}\` },
+)
 
 view: () => (
   <section>
     <h1>Article</h1>
-    {suspense(
-      async () => <ArticleBody />,
-      <Skeleton />,
-    )}
+    {suspense({
+      fallback: <Skeleton />,
+      on: [article],
+      children: () => {
+        const s = article.status()
+        return s.state === 'ready' ? <ArticleBody data={s.value} /> : null
+      },
+    })}
   </section>
 )`
 
@@ -170,11 +181,8 @@ export default page('/ssr', {
       <CodeBlock code={SUSPENSE} />
       <p>
         ISR (incremental static regeneration) is built on the same primitive plus a typed cache
-        store. See the{' '}
-        <Link to="/recipes/data-fetching">
-          <code>cache(fn, { '{ ttl, tags }' })</code> recipe
-        </Link>{' '}
-        for revalidation patterns.
+        store. See <Link to="/recipes/data-fetching">Recipes: Data fetching</Link> for the{' '}
+        <code>load()</code> + <code>revalidate</code> revalidation pattern.
       </p>
 
       <h2>No client/server directives</h2>

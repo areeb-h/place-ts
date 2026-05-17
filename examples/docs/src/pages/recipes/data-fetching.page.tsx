@@ -34,15 +34,31 @@ page('/posts', {
 })`
 
 const RESOURCE = `// Client-side fetch with reactive status. Auto-disposes on unmount.
+// The loader receives an AbortSignal — forward it so stale fetches
+// are cancelled at the network layer.
 import { resource } from '@place/reactivity'
 
-const data = resource(() => fetch('/api/health').then((r) => r.json()))
+const data = resource((signal) =>
+  fetch('/api/health', { signal }).then((r) => r.json()),
+)
 
+// The value read is the callable resource itself — data(), not
+// data.value(). It returns the resolved value, or undefined while
+// loading / on error. .loading() / .error() / .status() are the
+// reactive status accessors.
 <div>
   {() => data.loading() && <Spinner />}
-  {() => data.error()   && <p>{data.error().message}</p>}
-  {() => data.value()   && <Status v={data.value()} />}
-</div>`
+  {() => data.error()   && <p>{String(data.error())}</p>}
+  {() => data()         && <Status v={data()} />}
+</div>
+
+// Or switch on the discriminated status — the cleanest shape:
+{() => {
+  const s = data.status()
+  if (s.state === 'loading') return <Spinner />
+  if (s.state === 'error')   return <p>{String(s.error)}</p>
+  return <Status v={s.value} />
+}}`
 
 export default page('/data-fetching', {
   // No `meta:` — auto-title from `<h1>Data fetching</h1>`.
@@ -76,8 +92,11 @@ export default page('/data-fetching', {
       <h2 id="resource">resource() — client-only</h2>
       <CodeBlock code={RESOURCE} />
       <p>
-        <code>resource()</code> returns reactive <code>value()</code>, <code>loading()</code>, and{' '}
-        <code>error()</code> functions. Use for browser-only fetches that can't run on SSR.
+        The <code>Resource</code> itself is the value accessor — call it (<code>data()</code>) to
+        read the resolved value reactively; it returns <code>undefined</code> while loading or on
+        error. Status lives on <code>.loading()</code>, <code>.error()</code>, and the discriminated{' '}
+        <code>.status()</code>. There is no <code>.value()</code> method. Use for browser-only
+        fetches that can't run on SSR.
       </p>
 
       <h2 id="see-also">See also</h2>

@@ -121,9 +121,9 @@ errorBoundary({
 const FORM = `import { Form, action, shape } from '@place/component'
 
 const subscribe = action({
-  path: '/_action/subscribe',
-  schema: shape({ email: 'string' }),
-  handler: async ({ email }) => { /* ... */ return { ok: true } },
+  path: 'POST /api/subscribe',
+  input: shape({ email: 'string' }),
+  fn: async ({ email }) => { /* ... */ return { ok: true } },
 })
 
 <Form action={subscribe}>

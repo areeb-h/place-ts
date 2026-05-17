@@ -33,6 +33,46 @@ const CAPS_PER_RUNTIME = `caps: [
   }],
 ]`
 
+const BUILD = `// app().build({ outDir }) — pre-render to a static site. Runs the
+// full server setup (Tailwind compile, island discovery + bundling,
+// theme resolution) then, instead of starting a server, writes the
+// complete static site to outDir:
+//
+//   <outDir>/index.html, <outDir>/about/index.html, …
+//   <outDir>/islands/<name>-<hash>.js   (+ shared chunks)
+//   <outDir>/_headers                   (Cloudflare strict CSP)
+//
+// The exported site is fully interactive — island bundles ship and
+// SPA-nav works. Server-side only; for CDN static hosts.
+
+import { app } from '@place/component'
+import { pages } from './pages'
+
+await app({ pages, theme: tokens }).build({ outDir: 'dist' })`
+
+const DISCOVER = `// discoverPages(dir) — async helper that imports every *.page.tsx
+// (plus subdir index.ts barrels) under a directory and returns a
+// flat Page[]. It does NOT derive routes from file paths — each
+// page's page('/path', def) declaration stays the source of truth.
+import { app, discoverPages } from '@place/component'
+
+export default app({
+  pages: await discoverPages('./src/pages'),
+}).run()`
+
+const ROUTES = `// routes(prefix, pages, opts?) — a pure value transform: prefixes
+// every page's path and (optionally) applies a shared layout. Used
+// to group feature folders. No registration, no side effects.
+import { routes } from '@place/component'
+
+// admin/index.ts
+export default routes('/admin', [dashboard, users, settings], {
+  layout: adminLayout,
+})
+
+// app.ts — compose the groups into one app:
+app({ pages: [home, ...adminRoutes, ...postRoutes] }).run()`
+
 export default page('/app', {
   // No `meta:` — auto-title from `<h1><code>app()</code></h1>`.
   view: () => (
@@ -154,6 +194,42 @@ export default page('/app', {
         per-runtime cap factory split.
       </Callout>
 
+      <h2 id="build">
+        <code>.build({'{ outDir }'})</code> — static export
+      </h2>
+      <p>
+        Instead of <code>.run()</code>, call <code>.build({'{ outDir }'})</code> to pre-render the
+        whole app to a static site. It runs the full server setup — Tailwind compile, island
+        discovery and bundling, theme resolution — then writes <code>index.html</code> per route,
+        the island chunks, and a <code>_headers</code> file (Cloudflare strict CSP) to{' '}
+        <code>outDir</code>. The exported site is fully interactive; it's the right shape for CDN
+        static hosts. Server-side only.
+      </p>
+      <CodeBlock code={BUILD} />
+
+      <h2 id="discover-pages">
+        <code>discoverPages(dir)</code>
+      </h2>
+      <p>
+        An async helper that imports every <code>*.page.tsx</code> (and subdirectory{' '}
+        <code>index.ts</code> barrel) under a directory and returns a flat <code>Page[]</code> —
+        feed it straight into <code>pages</code> with top-level await. It does <em>not</em> derive
+        routes from file paths: each page's <code>page('/path', def)</code> declaration stays the
+        single source of truth for its route.
+      </p>
+      <CodeBlock code={DISCOVER} />
+
+      <h2 id="routes">
+        <code>routes(prefix, pages, opts?)</code>
+      </h2>
+      <p>
+        A pure value transform — prefixes every page's <code>path</code> and optionally applies a
+        shared <code>layout</code> (pages with their own layout keep theirs). No registration, no
+        side effects; composes recursively. Use it to group feature folders, then spread the
+        groups into <code>app()</code>.
+      </p>
+      <CodeBlock code={ROUTES} />
+
       <h2 id="see-also">See also</h2>
       <ul>
         <li>
@@ -163,7 +239,7 @@ export default page('/app', {
           <Link to="/api/layout">layout()</Link>
         </li>
         <li>
-          <Link to="/api/defineCapability">defineCapability()</Link>
+          <Link to="/api/define-capability">defineCapability()</Link>
         </li>
       </ul>
     </article>

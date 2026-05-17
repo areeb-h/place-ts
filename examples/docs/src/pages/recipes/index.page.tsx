@@ -35,6 +35,12 @@ const RECIPES: readonly Recipe[] = [
     body: 'Mark the page streaming: true, wrap slow children in <Suspense>. Comment-marker swap, no React baggage.',
     tag: 'perf',
   },
+  {
+    to: '/recipes/theming',
+    title: 'Theming & dark mode',
+    body: 'theme() with bare color keys, auto light-dark() mode, no-flash cookie persistence. themeTokens() for custom CSS variables.',
+    tag: 'design',
+  },
 ]
 
 // Local path `/` = index of the `/recipes` group; composed in

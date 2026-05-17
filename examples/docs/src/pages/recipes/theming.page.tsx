@@ -1,89 +1,71 @@
-// /recipes/theming — themeTokens() + dark mode + custom themes.
+// /recipes/theming — theme() + dark mode + custom themes.
 // CSS-variable-based theming with cookie persistence + SSR.
+//
+// theme() is the canonical entry-point (bare bg/fg/accent keys,
+// auto-derived siblings, auto light-dark() mode). themeTokens() is
+// the low-level primitive — documented at the end for custom --*
+// CSS variables that aren't colors.
 
 import { Link, page } from '@place/component'
 import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
 
-const DEFINE_TOKENS = `// theme.ts — declare your tokens once, get a typed object + a
-// Tailwind v4 @theme block + per-theme classes + a CSS-variable
-// emission that respects prefers-color-scheme.
-//
-// Token keys MUST start with \`--\` (CSS custom-property convention).
-// Names like \`--color-accent\` follow Tailwind v4's @theme protocol so
-// utilities (\`bg-accent\`, \`text-accent\`) generate automatically.
+const DEFINE_THEME = `// theme.ts — declare your color modes once. theme() is the
+// canonical entry-point: bare color keys (no \`--color-\` prefix),
+// tasteful sibling tokens auto-derived, and — for the common 2-mode
+// case — automatic light-dark() emission so theme switching is a
+// single CSS property, zero JS plumbing.
 
-import { themeTokens } from '@place/component'
+import { theme } from '@place/component'
 
-export const tokens = themeTokens({
-  themes: {
+export const tokens = theme({
+  modes: {
     light: {
-      '--color-bg':              'oklch(0.98 0.005 100)',
-      '--color-fg':              'oklch(0.18 0.01 280)',
-      '--color-card':            'oklch(0.96 0.008 100)',
-      '--color-border':          'oklch(0.88 0.008 100)',
-      '--color-accent':          'oklch(0.62 0.18 30)',
-      '--color-accent-fg':       'oklch(0.98 0.005 100)',
-      '--color-muted':           'oklch(0.55 0.02 280)',
-      '--color-destructive':     'oklch(0.55 0.20 25)',
-      '--color-destructive-fg':  'oklch(0.98 0.005 100)',
+      bg:     'oklch(0.98 0.005 100)',
+      fg:     'oklch(0.18 0.01 280)',
+      accent: 'oklch(0.62 0.18 30)',
     },
     dark: {
-      '--color-bg':              'oklch(0.13 0.01 280)',
-      '--color-fg':              'oklch(0.95 0.005 100)',
-      '--color-card':            'oklch(0.18 0.012 280)',
-      '--color-border':          'oklch(0.28 0.012 280)',
-      '--color-accent':          'oklch(0.78 0.16 30)',
-      '--color-accent-fg':       'oklch(0.13 0.01 280)',
-      '--color-muted':           'oklch(0.58 0.015 280)',
-      '--color-destructive':     'oklch(0.68 0.20 25)',
-      '--color-destructive-fg':  'oklch(0.13 0.01 280)',
+      bg:     'oklch(0.13 0.01 280)',
+      fg:     'oklch(0.95 0.005 100)',
+      accent: 'oklch(0.78 0.16 30)',
     },
   },
   default: 'dark',
-})`
-
-const SUBTREE_OVERRIDE = `// Per-subtree theme override — drop the theme class on any element.
-// CSS custom properties cascade to descendants; \`bg-bg\`/\`text-fg\`
-// utilities read from whichever theme block is closest. Lets you nest
-// a dark callout inside a light page (or vice versa) with no extra API.
-
-<section class={tokens.htmlClass('dark')}>
-  <h2 class="text-fg">Always dark</h2>
-  <p class="text-muted bg-card">Even if the page is in light mode.</p>
-</section>`
-
-const RECIPES_PATTERN = `// design-system.ts — define your visual recipes ONCE, use everywhere.
-// \`recipe()\` returns a function that takes variants and produces a
-// class string. Replaces the wall-of-Tailwind on every call site.
-
-import { recipe } from '@place/component'
-
-export const button = recipe({
-  base: 'inline-flex items-center gap-2 rounded-md font-medium transition-colors',
-  variants: {
-    intent: {
-      primary:   'bg-accent text-accent-fg hover:opacity-90',
-      secondary: 'bg-card border border-border text-fg hover:border-accent',
-      ghost:     'text-muted hover:text-fg',
-    },
-    size: {
-      sm: 'px-2.5 py-1 text-xs',
-      md: 'px-4 py-2 text-sm',
-      lg: 'px-5 py-2.5 text-sm',
-    },
-  },
-  defaults: { intent: 'primary', size: 'md' },
 })
 
-// Call site:
-<button class={button({ intent: 'secondary', size: 'sm' })}>Save draft</button>`
+// theme() auto-fills the sibling tokens you didn't list — card,
+// card-fg, border, muted, accent-fg, success, warn, destructive
+// (+ -fg pairs) — via color-mix() over your anchors. Override any
+// of them by listing the key explicitly in a mode. Each key emits
+// \`--color-<key>\`, so Tailwind v4 generates bg-bg, text-fg,
+// bg-accent, border-border, text-muted … utilities automatically.`
 
-const WIRE = `// app.ts — pass tokens to app(). Framework wires:
-//   - @theme block into Tailwind (semantic class names: bg-accent etc.)
-//   - <html class="theme-…"> on SSR'd output (reads cookie, defaults to default)
-//   - <meta name="color-scheme"> hint
-//   - prefers-color-scheme media query for SSR-time best guess
+const TYPOGRAPHY = `// theme() (and themeTokens()) take an optional \`typography\` config.
+// It emits a modular type scale, font families / weights, leading +
+// tracking scales, and semantic role utility classes
+// (.text-display, .text-h1 … .text-body, .text-meta).
+
+export const tokens = theme({
+  modes: { light: { /* … */ }, dark: { /* … */ } },
+  default: 'dark',
+  typography: {
+    scale: 'major-third',    // named ratio (1.25) or a raw number
+    base: 16,                // base font size in px
+    // family / weight / leading / tracking / roles all overridable;
+    // omitted ones fall back to tasteful system defaults.
+  },
+})
+
+// Then in markup — role classes compose size + leading + tracking
+// + weight + family; color is left to bg-*/text-* so they compose:
+<h1 class="text-h1 text-fg">Title</h1>
+<p class="text-body text-muted">Body copy.</p>`
+
+const WIRE = `// app.ts — pass the tokens to app({ theme }). The framework wires:
+//   - the @theme block into Tailwind (bg-accent, text-fg, … utilities)
+//   - <html class="theme-…"> on SSR'd output (reads the theme cookie)
+//   - the no-flash early script (see below) into every page <head>
 
 import { app } from '@place/component'
 import { tokens } from './theme.ts'
@@ -91,30 +73,59 @@ import { tokens } from './theme.ts'
 app({
   pages: [...],
   theme: tokens,
-  router: pathRouter,
 }).run()`
 
-const SWITCH = `// theme-toggle.tsx — flip the active theme. The framework's theme
-// signal is a module-scoped state; flipping it writes a cookie AND
-// updates <html class="…"> immediately.
+const EARLY_SCRIPT = `// You write nothing for no-flash theme persistence — when \`theme\`
+// is passed to app(), the framework injects themeEarlyScript()
+// into every page's <head> automatically. It runs BEFORE <body>
+// parses: reads the theme cookie, applies the matching theme-*
+// class (or none, for 'system'), mirrors the choice onto
+// <html data-place-theme="…">. Works on a live server AND on a
+// static export from app().build().
 
-import { state } from '@place/reactivity'
-import { activeTheme, setTheme } from '@place/component'
+// Calling it by hand is only needed if you're not using app({theme}):
+import { themeEarlyScript } from '@place/component'
+import { tokens } from './theme.ts'
 
-export const ThemeToggle = component(() => (
-  <button
-    aria-label="Toggle theme"
-    onClick={() => setTheme(activeTheme() === 'dark' ? 'light' : 'dark')}
-  >
-    {() => activeTheme() === 'dark' ? '☾' : '☀'}
-  </button>
-))
+const earlyJs = themeEarlyScript(tokens)  // raw JS statement string`
 
-// SSR: reads the theme cookie; cookie persists across requests.
-// Client: changing the theme writes the cookie + updates DOM in one tick.`
+const SWITCH = `// theme-toggle.tsx — flip the theme. setTheme(tokens, name)
+// strips every theme-* class, adds the chosen one, mirrors it to
+// <html data-place-theme>, and writes the cookie — all in one tick.
+//
+// Signature: setTheme(tokens, theme, options?)
+//   - \`tokens\`: the theme()/themeTokens() result
+//   - \`theme\`: a mode name OR the special string 'system'
+//   - \`options?\`: { cookieName? }
+//
+// There is no \`activeTheme\` export — read the current choice off
+// <html data-place-theme> (the early script + setTheme keep it
+// current) or track your own state cell.
 
-const USE_IN_COMPONENTS = `// Use semantic Tailwind classes — they're bound to the CSS variables
-// emitted by the theme. Theme switching is invisible to components.
+import { setTheme } from '@place/component'
+import { tokens } from './theme.ts'
+
+export const ThemeToggle = component(() => {
+  const current = () =>
+    document.documentElement.dataset['placeTheme'] ?? tokens.default
+  return (
+    <button
+      aria-label="Toggle theme"
+      onClick={() => setTheme(tokens, current() === 'dark' ? 'light' : 'dark')}
+    >
+      {() => (current() === 'dark' ? '☾' : '☀')}
+    </button>
+  )
+})
+
+// 'system' clears every theme class so the stylesheet's
+// prefers-color-scheme bindings drive appearance from the OS:
+<button onClick={() => setTheme(tokens, 'system')}>Match system</button>`
+
+const USE_IN_COMPONENTS = `// Use semantic Tailwind classes — they're bound to the CSS
+// variables the theme emits. Theme switching is invisible to
+// components: the class on <html> changes, the variables resolve
+// differently, every utility re-skins atomically.
 
 <div class="bg-card border border-border text-fg">
   <h1 class="text-fg">Title</h1>
@@ -122,27 +133,60 @@ const USE_IN_COMPONENTS = `// Use semantic Tailwind classes — they're bound to
   <button class="bg-accent text-accent-fg">Primary</button>
 </div>
 
-// Or read the typed tokens object for non-Tailwind code:
+// Or read the typed tokens object for non-Tailwind code (canvas,
+// motion interpolation between OKLCH values, server-side meta tags):
 import { tokens } from './theme.ts'
 console.log(tokens.themes.dark['--color-accent'])  // 'oklch(0.78 0.16 30)'`
 
-const CUSTOM = `// Add as many named themes as you want. Each becomes a
-// .theme-<name> class the framework swaps via cookie.
+const SUBTREE_OVERRIDE = `// Per-subtree theme override — drop the theme class on any element.
+// CSS custom properties cascade to descendants; bg-*/text-*
+// utilities read from whichever theme block is closest. Lets you
+// nest a dark callout inside a light page (or vice versa).
 
-themeTokens({
+<section class={tokens.htmlClass('dark')}>
+  <h2 class="text-fg">Always dark</h2>
+  <p class="text-muted bg-card">Even if the page is in light mode.</p>
+</section>`
+
+const PRIMITIVE = `// themeTokens() — the low-level primitive theme() wraps. Reach for
+// it directly only when you need to set arbitrary --* CSS variables
+// that AREN'T colors (custom --shadow-*, --radius-*), or when
+// authoring your own theme()-shaped helper.
+//
+// You write the full --color-* token keys; every theme must declare
+// the SAME key set (a missing key is a type error at the call site).
+
+import { themeTokens } from '@place/component'
+
+export const tokens = themeTokens({
   themes: {
-    light: { /* … */ },
-    dark:  { /* … */ },
-    sepia: {
-      '--color-bg': 'oklch(0.93 0.04 80)',
-      '--color-fg': 'oklch(0.20 0.04 60)',
-      // …
+    light: {
+      '--color-bg':     'oklch(0.98 0.005 100)',
+      '--color-fg':     'oklch(0.18 0.01 280)',
+      '--color-accent': 'oklch(0.62 0.18 30)',
+      '--radius-card':  '0.75rem',
     },
-    'high-contrast': {
-      '--color-bg': '#000',
-      '--color-fg': '#fff',
-      // …
+    dark: {
+      '--color-bg':     'oklch(0.13 0.01 280)',
+      '--color-fg':     'oklch(0.95 0.005 100)',
+      '--color-accent': 'oklch(0.78 0.16 30)',
+      '--radius-card':  '0.75rem',
     },
+  },
+  default: 'dark',
+  typography: { scale: 'major-third' },   // same config as theme()
+})`
+
+const CUSTOM = `// More than two modes, or modes not named light/dark? theme()
+// stays in classic 'classes' mode (one .theme-<name> class per
+// mode, swapped via the cookie). Add as many as you want.
+
+theme({
+  modes: {
+    light:           { bg: '…', fg: '…', accent: '…' },
+    dark:            { bg: '…', fg: '…', accent: '…' },
+    sepia:           { bg: 'oklch(0.93 0.04 80)', fg: 'oklch(0.20 0.04 60)', accent: '…' },
+    'high-contrast': { bg: '#000', fg: '#fff', accent: '#ff0' },
   },
   default: 'dark',
 })`
@@ -153,43 +197,71 @@ export default page('/theming', {
     <article class="prose max-w-3xl">
       <h1>Theming &amp; dark mode</h1>
       <p>
-        place ships a typed theming primitive — <code>themeTokens()</code> — that produces a
-        Tailwind v4 <code>@theme</code> block, per-theme CSS-variable classes, and a typed JS
-        object exposing the raw values. Theme switching is one cookie write + one class on{' '}
-        <code>&lt;html&gt;</code>; nothing JS-y propagates through the tree.
+        place ships a typed theming primitive. <code>theme()</code> is the canonical
+        entry-point — bare color keys, auto-derived sibling tokens, and (for the common 2-mode
+        case) automatic <code>light-dark()</code> emission. It produces a Tailwind v4{' '}
+        <code>@theme</code> block, per-theme CSS-variable classes, and a typed JS object exposing
+        the raw values. <code>themeTokens()</code> is the low-level primitive underneath — reach
+        for it only when you need non-color <code>--*</code> variables.
       </p>
 
-      <h2>1. Declare tokens</h2>
-      <CodeBlock code={DEFINE_TOKENS} />
+      <h2>1. Declare your theme</h2>
+      <CodeBlock code={DEFINE_THEME} />
 
       <Callout kind="tip" title="Why oklch?">
         Themes that use perceptual color (oklch / oklab) interpolate cleanly across hue and
-        lightness. Mixing accent tints (<code>color-mix(in oklab, …)</code>) stays in gamut and
-        looks correct in light + dark themes from the same source values.
+        lightness. <code>theme()</code> derives siblings via <code>color-mix(in oklab, …)</code>{' '}
+        — staying in gamut and looking correct in light + dark from the same anchor values.
       </Callout>
 
-      <h2>2. Wire into <code>app()</code></h2>
-      <CodeBlock code={WIRE} />
-      <p>
-        The <code>theme</code> option drives:
-      </p>
-      <ul>
-        <li>Tailwind's <code>@theme</code> block (so <code>bg-accent</code> etc. work)</li>
-        <li>
-          A <code>{`<html class="theme-…">`}</code> class on the SSR'd document, read from a cookie
-        </li>
-        <li>
-          A <code>{`<meta name="color-scheme">`}</code> hint for the browser
-        </li>
-        <li>
-          A <code>prefers-color-scheme</code> media-query fallback for first-time visitors
-        </li>
-      </ul>
+      <Callout kind="note" title="Auto light-dark() mode">
+        When you pass exactly two modes named <code>light</code> and <code>dark</code>,{' '}
+        <code>theme()</code> auto-selects <code>light-dark()</code> output: one{' '}
+        <code>--token: light-dark(lightVal, darkVal)</code> per token plus{' '}
+        <code>color-scheme: light dark</code> on <code>:root</code>. Theme switching becomes a
+        single CSS property — no <code>.theme-X</code> class proliferation, no JS theme-provider.
+        More modes, or modes not named <code>light</code>/<code>dark</code>, fall back to the
+        classic class-based mode.
+      </Callout>
 
-      <h2>3. Switch themes</h2>
+      <h2>2. Typography</h2>
+      <p>
+        <code>theme()</code> and <code>themeTokens()</code> take an optional{' '}
+        <code>typography</code> config — a modular type scale, font families / weights, leading
+        and tracking scales, plus semantic role utility classes (<code>.text-display</code>,{' '}
+        <code>.text-h1</code> … <code>.text-body</code>, <code>.text-meta</code>) emitted into the
+        same stylesheet as the color tokens.
+      </p>
+      <CodeBlock code={TYPOGRAPHY} />
+
+      <h2>
+        3. Wire into <code>app()</code>
+      </h2>
+      <CodeBlock code={WIRE} />
+
+      <h2>4. No-flash persistence is automatic</h2>
+      <p>
+        When <code>theme</code> is passed to <code>app()</code>, the framework injects{' '}
+        <code>themeEarlyScript()</code> into every page's <code>&lt;head&gt;</code>{' '}
+        automatically — apps get no-flash theme persistence for free. It runs before{' '}
+        <code>&lt;body&gt;</code> parses, reads the theme cookie, and applies the matching class.
+        Works on a live server <em>and</em> on a static export from <code>app().build()</code>,
+        where there's no per-request cookie read at SSR time.
+      </p>
+      <CodeBlock code={EARLY_SCRIPT} />
+
+      <h2>5. Switch themes</h2>
+      <p>
+        <code>setTheme(tokens, theme, options?)</code> flips the active theme: it strips every{' '}
+        <code>theme-*</code> class, adds the chosen one, mirrors the choice onto{' '}
+        <code>&lt;html data-place-theme&gt;</code>, and writes the cookie. The <code>theme</code>{' '}
+        argument accepts a mode name or the special string <code>'system'</code> (which clears
+        every class so the OS preference drives appearance). There is no <code>activeTheme</code>{' '}
+        export — read the current choice off <code>&lt;html data-place-theme&gt;</code>.
+      </p>
       <CodeBlock code={SWITCH} />
 
-      <h2>4. Use in components</h2>
+      <h2>6. Use in components</h2>
       <CodeBlock code={USE_IN_COMPONENTS} />
 
       <h2>Per-subtree override</h2>
@@ -201,14 +273,17 @@ export default page('/theming', {
       </p>
       <CodeBlock code={SUBTREE_OVERRIDE} />
 
-      <h2>Streamline with recipes</h2>
+      <h2>
+        The low-level primitive: <code>themeTokens()</code>
+      </h2>
       <p>
-        Wall-of-Tailwind class strings are easy to write but hard to maintain. Use{' '}
-        <code>recipe()</code> to define your visual vocabulary once and reference it by intent.
-        The recipe still uses Tailwind utilities under the hood — you get the full classes plus a
-        typed function for the call site.
+        <code>theme()</code> wraps <code>themeTokens()</code>. Reach for the primitive directly
+        only when you need to emit arbitrary <code>--*</code> CSS variables that aren't colors
+        (custom <code>--shadow-*</code>, <code>--radius-*</code>) or when you're authoring your own{' '}
+        <code>theme()</code>-shaped helper. It has the same return shape, so it drops into{' '}
+        <code>app({ '{ theme }' })</code> unchanged.
       </p>
-      <CodeBlock code={RECIPES_PATTERN} />
+      <CodeBlock code={PRIMITIVE} />
 
       <h2>Custom themes</h2>
       <CodeBlock code={CUSTOM} />
@@ -216,8 +291,8 @@ export default page('/theming', {
       <h2>What you DON'T do</h2>
       <ul>
         <li>
-          No <code>ThemeProvider</code>. The theme isn't a context; it's a single state +{' '}
-          <code>&lt;html&gt;</code> class.
+          No <code>ThemeProvider</code>. The theme isn't a context; it's a class on{' '}
+          <code>&lt;html&gt;</code> plus a cookie.
         </li>
         <li>
           No JS theme prop on every component. Components use semantic Tailwind classes
@@ -225,11 +300,11 @@ export default page('/theming', {
         </li>
         <li>
           No CSS-in-JS runtime. Tokens compile to CSS variables at build; theme switching is a
-          class swap.
+          class swap (or, in <code>light-dark()</code> mode, a single CSS property).
         </li>
         <li>
-          No <code>@media (prefers-color-scheme)</code> in your own CSS. The framework already
-          handles the SSR-time first-paint guess via the cookie + media query.
+          No hand-written pre-paint script. <code>themeEarlyScript()</code> is injected for you
+          when <code>theme</code> is passed to <code>app()</code>.
         </li>
       </ul>
 

@@ -1,4 +1,4 @@
-// /api/state — state, watch, derived, peek, untrack, batch, flush.
+// /api/state — state, watch, derived, .peek(), untrack, batch, flush.
 // Documented as the canonical reactive surface; all primitives are
 // re-exported from `@place/component` so apps don't need a second
 // import root.
@@ -10,8 +10,9 @@ import { CodeBlock } from '@place/design'
 const STATE = `import { state } from '@place/component'
 
 const count = state(0)
-count()      // 0 (tracks if inside a reactive context)
-count.set(1)`
+count()              // 0 (tracks if inside a reactive context)
+count.set(1)         // direct write
+count.update((c) => c + 1)   // functional updater`
 
 const STATE_LAZY = `// Pass a function for lazy init — runs once, on first read.
 const heavy = state(() => computeExpensiveDefault())`
@@ -38,11 +39,14 @@ c()       // 5 (cached — no recomputation)
 a.set(10)
 c()       // 13 (recomputed once)`
 
-const PEEK = `import { peek } from '@place/component'
+const PEEK = `// .peek() is a METHOD on every state / derived cell — there is no
+// standalone peek import. It reads the current value WITHOUT
+// subscribing the surrounding watch / derived.
 
 watch(() => {
-  const v = peek(a)         // read without subscribing
-  console.log('current a =', v)
+  const tracked = a()       // subscribes — watch re-runs when a changes
+  const v = b.peek()        // reads b WITHOUT subscribing
+  console.log('a =', tracked, 'b (snapshot) =', v)
 })`
 
 const UNTRACK = `import { untrack } from '@place/component'
@@ -83,8 +87,11 @@ export default page('/state', {
       <CodeBlock code={STATE} />
       <CodeBlock code={STATE_LAZY} />
       <p>
-        <code>state(initial)</code> returns a cell with <code>read()</code> and <code>write()</code>
-        . Reading inside a tracking context subscribes that context to writes.
+        <code>state(initial)</code> returns a callable cell — call it to read (the canonical form),
+        and write with <code>.set(value)</code> or <code>.update(prev =&gt; next)</code>. Reading
+        inside a tracking context subscribes that context to writes. <code>.read()</code> /{' '}
+        <code>.write()</code> are back-compat aliases for the callable read and{' '}
+        <code>.set</code> / <code>.update</code>; prefer the canonical forms in new code.
       </p>
 
       <h2 id="watch">watch()</h2>
@@ -114,7 +121,13 @@ export default page('/state', {
         Reach for <code>derived</code> when caching matters.
       </Callout>
 
-      <h2 id="peek">peek()</h2>
+      <h2 id="peek">.peek()</h2>
+      <p>
+        <code>.peek()</code> is a method on every state and <code>derived</code> cell — not a
+        standalone import. It returns the current value without subscribing the active{' '}
+        <code>watch</code> / <code>derived</code>. Reach for it when you need a value's current
+        snapshot but don't want a dependency edge (logging, one-shot reads inside an effect).
+      </p>
       <CodeBlock code={PEEK} />
 
       <h2 id="untrack">untrack()</h2>

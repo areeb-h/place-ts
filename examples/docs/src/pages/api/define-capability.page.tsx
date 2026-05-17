@@ -1,4 +1,4 @@
-// /api/defineCapability — capability primitive reference.
+// /api/define-capability — capability primitive reference.
 
 import { Link, page } from '@place/component'
 import { CodeBlock } from '@place/design'
@@ -27,17 +27,19 @@ const logger = LoggerCap.tryUse()     // returns null if unprovisioned`
 const INSTALL = `// app() install:
 caps: [[LoggerCap, () => console]]
 
-// Or imperatively (rare):
-LoggerCap.install(myLogger)
-// ...
-LoggerCap.uninstall()`
+// Or imperatively (rare): install(impl) RETURNS a disposer.
+// Call the disposer to remove that specific installation —
+// there is no .uninstall() method.
+const dispose = LoggerCap.install(myLogger)
+// ...later, to tear it down:
+dispose()`
 
 const SCOPED = `import { withCapability } from '@place/component'
 
 // Provision for a single subtree:
 withCapability(LoggerCap, scopedLogger, <Subtree />)`
 
-export default page('/defineCapability', {
+export default page('/define-capability', {
   // No `meta:` — auto-title from `<h1><code>defineCapability()</code></h1>`.
   view: () => (
     <article class="prose max-w-2xl">
@@ -46,7 +48,9 @@ export default page('/defineCapability', {
       </h1>
       <p>
         Declares a typed slot. The returned <code>Capability</code> has{' '}
-        <code>.use() / .tryUse() / .install() / .uninstall()</code> methods.
+        <code>.use()</code>, <code>.tryUse()</code>, <code>.provide()</code>, and{' '}
+        <code>.install()</code> methods. <code>install(impl)</code> returns a disposer — call it to
+        remove that installation; there is no <code>uninstall</code>.
       </p>
 
       <h2 id="signature">Signature</h2>
@@ -69,6 +73,10 @@ export default page('/defineCapability', {
 
       <h2 id="install">install() — at the app level</h2>
       <CodeBlock code={INSTALL} />
+      <p>
+        Each <code>install(impl)</code> call is tracked by a unique token, so the returned disposer
+        removes exactly that installation regardless of stack order. Disposing twice is a no-op.
+      </p>
 
       <h2 id="scoped">Scoped provision</h2>
       <CodeBlock code={SCOPED} />
