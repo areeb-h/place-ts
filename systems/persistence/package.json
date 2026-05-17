@@ -1,0 +1,19 @@
+{
+  "name": "@place/persistence",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Storage adapters for @place/reactivity state. v0.1 ships a synchronous localStorage adapter and a persistedState helper. IndexedDB / sync server adapters land when reactivity Phase 5 introduces async-as-pending.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
