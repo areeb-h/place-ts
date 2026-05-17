@@ -6697,6 +6697,32 @@ export interface ServeOptions {
    * `/robots.txt`. App-provided handlers always win.
    */
   robots?: string | false
+  /**
+   * **Static-export mode (T19-A / ADR 0051).** When set, `serve()`
+   * does its FULL setup (Tailwind compile, island discovery +
+   * bundling, theme resolution) exactly as for a live server — then,
+   * instead of binding `Bun.serve`, it pre-renders every GET page
+   * route to HTML and writes a complete static site to
+   * `static.outDir`:
+   *
+   *   <outDir>/index.html
+   *   <outDir>/about/index.html
+   *   <outDir>/islands/<name>-<hash>.js   (+ shared chunks)
+   *   <outDir>/_headers                   (Cloudflare strict CSP)
+   *
+   * The exported site is fully interactive — island bundles ship,
+   * SPA-nav works (static hosts serve `/path/index.html` for
+   * `/path`). Dynamic routes (`/posts/:id`) opt in via the page's
+   * `getStaticPaths()`.
+   *
+   * Static renders carry NO per-request CSP nonce; the strict CSP
+   * is delivered out-of-band via the generated `_headers` file
+   * (hashes of every inline script + style). Designed for CDN
+   * static hosts (Cloudflare Pages, etc.).
+   *
+   * Prefer `app({...}).build({ outDir })` — it wires this for you.
+   */
+  staticExport?: { outDir: string }
 }
 
 interface CompiledRoute {
@@ -6917,7 +6943,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // Observability flags. Default-on in dev (banner + per-request log),
   // default-off in production (a single one-line ready message). Apps
   // can override either way via `serve({ log })`.
-  const isDev = process.env['NODE_ENV'] !== 'production'
+  // Static-export mode (T19-A / ADR 0051) implies production build
+  // semantics: minified island bundles, stable SRI, no HMR, no dev
+  // watcher. A static site IS a production artefact.
+  const staticMode = options.staticExport !== undefined
+  const isDev = !staticMode && process.env['NODE_ENV'] !== 'production'
   const wantsBanner = options.log?.banner ?? isDev
   const wantsRequestLog = options.log?.requests ?? isDev
   // Timings captured during startup; emitted by the banner.
@@ -6934,7 +6964,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // Production deploys use a process supervisor (the bundle is fixed
   // for the process lifetime), so a 5-minute cache is harmless and
   // saves CDN hits.
-  const isProduction = process.env['NODE_ENV'] === 'production'
+  const isProduction = staticMode || process.env['NODE_ENV'] === 'production'
   const bundleCacheControl = isProduction
     ? 'public, max-age=300'
     : 'no-cache, no-store, must-revalidate'
@@ -8272,6 +8302,82 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         }
       : hmrHandler
     : userWs
+  // ===== Static-export branch (T19-A / ADR 0051) =====
+  //
+  // All setup is done: Tailwind compiled, island bundles built into
+  // `splitterBundles` (SRI in `scriptIntegrity`), routes `compiled`.
+  // Instead of binding `Bun.serve`, pre-render every GET page route
+  // to HTML and write a full static site. The island bundles written
+  // are the SAME bytes that were SRI-hashed, so the `integrity="…"`
+  // attributes verify on the static host. Returns before any server
+  // bind / dev watcher / banner.
+  if (options.staticExport) {
+    const { writeStaticSite } = (await _serverDynImport('./build-static.ts')) as {
+      writeStaticSite: typeof import('./build-static.ts').writeStaticSite
+    }
+    // Default theme class — static renders have no request cookie, so
+    // the document ships the theme's default; the theme-toggle island
+    // flips it on the client at hydrate.
+    const staticHtmlClass =
+      options.theme !== undefined
+        ? options.theme.htmlClass((options.theme as { default: string }).default as never)
+        : ''
+    const staticRoutes = compiled
+      .filter((r) => r.page !== null && (r.method === 'GET' || r.method === '*'))
+      .map((r) => ({ pattern: r.matcher.pattern, page: r.page as AnyPage }))
+    const staticSpaNav = Object.keys(islandRegistry).length > 0
+    const renderStatic = async (
+      page: AnyPage,
+      pathStr: string,
+      params: Record<string, string>,
+    ): Promise<{ html: string; styleHashes: string[] }> => {
+      const req = new Request(`http://localhost${pathStr}`)
+      const perRouteBootstrap =
+        (page.path !== undefined ? routeToBundle.get(page.path) : undefined) ??
+        splitterDefaultBundleUrl ??
+        null
+      const bootstrap = perRouteBootstrap ?? (clientJs !== null ? effectiveClientPath : null)
+      // No `scriptNonce` and no `enableHmr` — a static document carries
+      // no per-request nonce (the strict CSP is delivered via `_headers`
+      // — T19-B) and is a production artefact.
+      const res = await renderPage(page, req, params, {
+        ...(bootstrap !== null ? { bootstrap } : {}),
+        ...(staticSpaNav ? { enableSpaNav: true } : {}),
+        ...(options.viewTransitions === true ? { spaNavViewTransitions: true } : {}),
+        ...(Object.keys(scriptIntegrity).length > 0 ? { scriptIntegrity } : {}),
+        ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
+        ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
+        ...(options.transformBody ? { transformBody: options.transformBody } : {}),
+      })
+      const html = await res.text()
+      const styleHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)
+      const styleHashes = styleHeader
+        ? styleHeader.split(',').filter((h) => h.length > 0)
+        : []
+      return { html, styleHashes }
+    }
+    // Merge the legacy single-client bundle (non-islands apps) into the
+    // bundle map so it's written verbatim alongside the island bundles.
+    const allBundles = new Map(splitterBundles)
+    if (clientJs !== null && clientJsBytes !== null) {
+      allBundles.set(effectiveClientPath, clientJsBytes)
+    }
+    const staticResult = await writeStaticSite({
+      outDir: options.staticExport.outDir,
+      routes: staticRoutes,
+      render: renderStatic,
+      bundles: allBundles,
+    })
+    process.stdout.write(
+      `place: static export → ${staticResult.outDir} ` +
+        `(${staticResult.pages.length} pages, ${staticResult.bundles.length} bundles)\n`,
+    )
+    // Static export produces no server. `app().build()` discards this
+    // return; the cast keeps `_serveImpl`'s signature intact for the
+    // normal (server) path.
+    return undefined as unknown as Bun.Server<unknown>
+  }
+
   // Cast: Bun's `fetch` typing requires `MaybePromise<Response>` but
   // returning `undefined` is the runtime contract for "this request
   // was handled via `server.upgrade()`" (Bun's own examples in the

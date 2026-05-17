@@ -104,3 +104,4 @@ Optional. Things future readers might find useful — links, references, follow-
 | [0048](0048-popover-substrate.md) | Tier 17-B — unified popover substrate via CSS Anchor Positioning (kill 3 JS positioners) | accepted | 2026-05-17 |
 | [0049](0049-light-dark-theme.md) | Tier 17-C — `light-dark()` theme migration (drop `.dark`-class proliferation) | accepted | 2026-05-17 |
 | [0050](0050-classnames-customization-contract.md) | Tier 17-D — typed `class` + `classNames` customization contract | accepted | 2026-05-17 |
+| [0051](0051-static-export-islands.md) | Tier 19 — islands-aware static export + Cloudflare Pages deploy | accepted | 2026-05-17 |

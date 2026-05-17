@@ -242,7 +242,7 @@ describe('isValidationFailure()', () => {
     const payload: unknown = { fields: { email: 'bad' } }
     if (isValidationFailure(payload)) {
       // TS: payload.fields is Readonly<Record<string, string>>
-      const msg: string | undefined = payload.fields.email
+      const msg: string | undefined = payload.fields['email']
       expect(msg).toBe('bad')
     } else {
       expect.fail('expected narrowing')

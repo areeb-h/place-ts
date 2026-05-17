@@ -189,6 +189,21 @@ export interface App {
    * file).
    */
   run(): Promise<Bun.Server<unknown>> | undefined
+  /**
+   * Pre-render the app to a static site (T19-A / ADR 0051). Runs the
+   * full server setup — Tailwind compile, island discovery + bundling,
+   * theme resolution — then, instead of starting a server, writes the
+   * complete static site to `outDir`:
+   *
+   *   <outDir>/index.html, <outDir>/about/index.html, …
+   *   <outDir>/islands/<name>-<hash>.js  (+ shared chunks)
+   *   <outDir>/_headers                  (Cloudflare strict CSP)
+   *
+   * The exported site is fully interactive (island bundles ship,
+   * SPA-nav works). Server-side only — for CDN static hosts
+   * (Cloudflare Pages, etc.).
+   */
+  build(options: { outDir: string }): Promise<void>
   /** Derived routes object: `{ '/path': page, '/other': page2, ... }`. */
   readonly routes: Record<string, AnyPage>
 }
@@ -487,6 +502,21 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       // Server runtime: install server caps, then start Bun.serve.
       installCapsFor('server')
       return serve(resolveServeOpts())
+    },
+    async build(buildOptions: { outDir: string }): Promise<void> {
+      if (typeof window !== 'undefined') {
+        throw new Error(
+          'app.build() was called in a browser context. Run it from a ' +
+            'server / build entry — it pre-renders the site and only runs server-side.',
+        )
+      }
+      // Server caps install for the build the same way they do for a
+      // live server — pages' load()s may read them during pre-render.
+      installCapsFor('server')
+      // `serve({ staticExport })` does the full setup then writes the
+      // static site instead of binding a port; its return is the
+      // cast-undefined sentinel — discarded here.
+      await serve({ ...resolveServeOpts(), staticExport: { outDir: buildOptions.outDir } })
     },
   }
 }
