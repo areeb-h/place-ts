@@ -26,7 +26,7 @@ import { docsLayout } from './layouts/docs.layout.tsx'
 import { styles as appStyles } from './styles.ts'
 import { tokens } from './theme.ts'
 
-export default app({
+const docsApp = app({
   name: '@place/docs',
   pages: await discoverPages('./src/pages'),
   layout: docsLayout,
@@ -34,4 +34,16 @@ export default app({
   styles: [designStyles, appStyles],
   router: pathRouter,
   islandsDir: './src/islands',
-}).run()
+})
+
+// One entry, two modes. `PLACE_BUILD=<outDir>` pre-renders the whole
+// site to a static `outDir` (T19-A / ADR 0051) and exits — used by
+// `bun run build` for the Cloudflare Pages deploy. Unset → normal
+// dev/prod server (or client-side hydrate, which `run()` dispatches
+// to via the `__PLACE_BROWSER__` build define).
+const buildOutDir =
+  typeof process !== 'undefined' ? process.env['PLACE_BUILD'] : undefined
+
+export default buildOutDir
+  ? await docsApp.build({ outDir: buildOutDir })
+  : docsApp.run()

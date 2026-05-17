@@ -1,0 +1,55 @@
+# Deploy the docs site to Cloudflare Pages (Tier 19 / ADR 0051).
+#
+# The docs site (`examples/docs`) is exported to a fully-static,
+# fully-interactive island site via `app({...}).build()` — page HTML
+# + island bundles + a strict `_headers` CSP — then published to
+# Cloudflare Pages' global edge. No server runs in production.
+#
+# Required GitHub Actions secrets (Settings → Secrets and variables →
+# Actions):
+#   - CLOUDFLARE_API_TOKEN   — a token scoped to "Cloudflare Pages: Edit"
+#   - CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID
+# `wrangler pages deploy --project-name` creates the Pages project on
+# the first run if it does not already exist.
+
+name: Deploy docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# One deploy at a time; a newer push supersedes an in-flight run.
+concurrency:
+  group: deploy-docs
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build docs static export
+        # `build` = PLACE_BUILD=dist NODE_ENV=production bun src/app.ts
+        # → examples/docs/dist  (HTML + /islands/*.js + _headers)
+        run: bun --filter '@place/docs' build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy examples/docs/dist --project-name=place-docs --branch=main

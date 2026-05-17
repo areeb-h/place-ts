@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "bun src/app.ts",
     "start": "bun src/app.ts",
+    "build": "PLACE_BUILD=dist NODE_ENV=production bun src/app.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
