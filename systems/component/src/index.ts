@@ -4837,9 +4837,13 @@ export async function renderPage(
       const tabsScript = options?.enableSpaNav
         ? `<script${nonceAttr}>${placeTabs()}</script>`
         : ''
-      const streamEarlyHead = options?.enableSpaNav
-        ? [placeEarly(), ...(options.extraEarlyHead ?? [])]
-        : []
+      // `placeEarly()` rides with SPA-nav; `extraEarlyHead` (theme
+      // early script + app earlyHead entries) ships whenever present,
+      // independent of SPA-nav.
+      const streamEarlyHead = [
+        ...(options?.enableSpaNav ? [placeEarly()] : []),
+        ...(options?.extraEarlyHead ?? []),
+      ]
       const streamChunks = options?.enableSpaNav ? _getSharedChunkUrls() : []
       return renderDocument(body + tabsScript + dataScript, {
         ...(meta ? { meta } : {}),
@@ -5158,9 +5162,16 @@ export async function renderPage(
   // (analytics consent, feature flags, locale direction, etc.) come
   // after the framework's built-ins so app code can read the
   // framework hints if it wants.
-  const earlyHead = options?.enableSpaNav
-    ? [placeEarly(), ...(options.extraEarlyHead ?? [])]
-    : []
+  // `placeEarly()` (platform / reduced-motion hints) rides with the
+  // SPA-nav runtime. `extraEarlyHead` — the theme early-paint script
+  // and any app `earlyHead` entries — must ship whenever it exists,
+  // independent of SPA-nav: theme persistence + the `data-place-theme`
+  // attribute a theme picker reads are needed on every page, including
+  // pure content pages with no islands.
+  const earlyHead = [
+    ...(options?.enableSpaNav ? [placeEarly()] : []),
+    ...(options?.extraEarlyHead ?? []),
+  ]
   // Shared chunks → modulepreload in <head>. Lets the browser fetch
   // them in parallel with the HTML doc + island entries; without
   // this, chunks are discovered only after an island parses its
@@ -8172,6 +8183,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           ...(spaNavVT ? { spaNavViewTransitions: true } : {}),
           ...(Object.keys(spaNavThemeClassMap).length > 0
             ? { spaNavThemeClassMap }
+            : {}),
+          ...(effectiveEarlyHead.length > 0
+            ? { extraEarlyHead: effectiveEarlyHead }
             : {}),
           ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
           ...(isProduction ? {} : { enableHmr: true }),
