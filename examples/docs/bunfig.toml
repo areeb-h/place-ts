@@ -1,0 +1,12 @@
+# Docs-site Bun configuration. Bun reads bunfig.toml from the project
+# root (where the package.json lives), not from parent directories —
+# the workspace-root bunfig.toml doesn't propagate here.
+
+jsx = "react-jsx"
+jsxImportSource = "@place/component"
+
+# Auto-import preload. Registers `Bun.plugin(placeAutoImport())` so
+# framework primitives (`state`, `Activity`, `cookieState`, `onMount`,
+# `Show`, `Tabs`, …) become importless across the docs site. The TS
+# counterpart is the ambient declaration file picked up via tsconfig.
+preload = ["../../systems/component/src/preload.ts"]

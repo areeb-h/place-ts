@@ -1,0 +1,20 @@
+{
+  "name": "@place/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The official place documentation site. Dogfoods the framework — every page is a `page()`, the layout is `layout()`, the syntax-highlighted code blocks are reactive components.",
+  "scripts": {
+    "dev": "bun src/app.ts",
+    "start": "bun src/app.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@place/component": "workspace:*",
+    "@place/design": "workspace:*",
+    "@place/reactivity": "workspace:*",
+    "@place/routing": "workspace:*",
+    "@tailwindcss/node": "^4.2.4",
+    "tailwindcss": "^4.2.4"
+  }
+}
