@@ -126,7 +126,7 @@ export default page('/', {
       <section class="mb-20">
         <Badge intent="accent" class="mb-6 font-mono">
           <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-          v0.9 · static export + first public deploy
+          v0.11 · static export + first public deploy
         </Badge>
         <h1 class="text-5xl sm:text-6xl font-semibold tracking-tight text-fg mb-5 leading-[1.05]">
           One platform.

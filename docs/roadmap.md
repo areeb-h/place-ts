@@ -18,12 +18,18 @@ The living plan for `place`. Each section: what we're committing to, why, and ho
 
 | Version | What it means | Status |
 |---|---|---|
-| **v0.1–v0.3** | Reactivity core, render layer, SSR + server primitives | shipped |
-| **v0.4–v0.5** | Production-grade SSR primitives, deployment adapters, image/font helpers | shipped |
-| **v0.6–v0.7** | Streaming, ISR, `virtualList`, View Transitions, production polish | shipped |
-| **v0.8** | Docs site + commonplace polish | shipped |
-| **v0.9** | Islands-aware static export, first public deploy (Cloudflare Pages), hover-prefetch nav | shipped |
-| **v0.10** | Migration guides + Cloudflare/Vercel adapters | next |
+| **v0.1** | Reactivity core | shipped |
+| **v0.2** | Component system + render layer | shipped |
+| **v0.3** | SSR + server primitives (page/serve/boot) | shipped |
+| **v0.4** | Production SSR — ALS scopes, `action()`, ISR, streaming | shipped |
+| **v0.5** | Deployment + DX — adapters, `buildStatic`, error overlay | shipped |
+| **v0.6** | The "smaller app" arc + `virtualList` + commonplace flagship | shipped |
+| **v0.7** | Motion + design library | shipped |
+| **v0.8** | Islands architecture — islands-only hydration, per-route splitting, HMR | shipped |
+| **v0.9** | Design-system rewrite + foundation — anchor positioning, `light-dark()`, conformance | shipped |
+| **v0.10** | Docs site — concepts + API + recipes | shipped |
+| **v0.11** | Islands-aware static export + first public deploy (Cloudflare Pages) | shipped |
+| **v0.12** | Migration guides + Cloudflare/Vercel adapters | next |
 | **v1.0** | API freeze + semver, published benchmarks, examples gallery | planned |
 
 ### What's currently true
