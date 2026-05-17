@@ -3662,6 +3662,24 @@ export interface LoadCtx {
   req: Request
   url: URL
   params: Record<string, string>
+  /**
+   * `true` when this request is a speculative **prefetch** — the
+   * SPA-nav runtime warmed the page on link hover/focus, the user has
+   * not actually navigated here. A prefetch `load()` MUST render the
+   * SAME content it would for a real visit (the prefetched HTML is
+   * what gets swapped in on the click) but should SKIP side effects:
+   * analytics, view-count increments, audit logging, anything that
+   * mutates state. Reads should still run.
+   *
+   *   load: (ctx) => {
+   *     if (!ctx.prefetch) recordVisit(ctx.req)   // effect — skip on prefetch
+   *     return { article: getArticle(ctx.params.id) }  // content — always
+   *   }
+   *
+   * Derived from the `X-Place-Prefetch` request header. Always
+   * `false` for a normal navigation or hard load.
+   */
+  prefetch: boolean
 }
 
 /** Definition handed to `page()`. Both `url` and `load` are optional. */
@@ -4500,6 +4518,11 @@ export interface RenderPageOptions {
    */
   spaNavThemeClassMap?: Readonly<Record<string, string>>
   /**
+   * Enable hover/focus prefetch in the SPA-nav runtime. `serve()`
+   * threads this from `ServeOptions.prefetch`. Default `true`.
+   */
+  spaNavPrefetch?: boolean
+  /**
    * SRI hashes for the emitted scripts (T5-D phase 2 / ADR 0025). The
    * framework computes SHA-384 of each bundle at build time; renderPage
    * emits `integrity="sha384-…" crossorigin="anonymous"` on each
@@ -4644,7 +4667,16 @@ export async function renderPage(
   // results into a single loadData. Each layout's load() sees the same
   // ctx — they're peers. Page's load() runs last and can shadow keys.
   const loadData: Record<string, unknown> = {}
-  const ctx: LoadCtx = { req, url, params }
+  // `X-Place-Prefetch: 1` is set by the SPA-nav runtime on hover/focus
+  // prefetch requests. `load()` reads `ctx.prefetch` to skip side
+  // effects on speculative loads. (Forbidden `Sec-` prefix rules out
+  // `Sec-Purpose`, which only the browser's native speculation sends.)
+  const ctx: LoadCtx = {
+    req,
+    url,
+    params,
+    prefetch: req.headers.get('x-place-prefetch') === '1',
+  }
   for (const l of layouts) {
     if (l.load) {
       try {
@@ -5036,6 +5068,7 @@ export async function renderPage(
         ...(options?.spaNavThemeClassMap
           ? { themeClassMap: options.spaNavThemeClassMap }
           : {}),
+        ...(options?.spaNavPrefetch === false ? { prefetch: false } : {}),
       })}</script>`
     : ''
   // Inline tabs runtime — single delegated click handler shared by
@@ -6625,6 +6658,22 @@ export interface ServeOptions {
    */
   viewTransitions?: boolean
   /**
+   * Hover/focus **prefetch** in the SPA-nav runtime. When `true`
+   * (default), hovering or focusing a `<Link>` warms a per-URL HTML
+   * cache so the click resolves with zero network wait.
+   *
+   * Prefetch requests carry an `X-Place-Prefetch: 1` header; server
+   * `load()` reads `ctx.prefetch` and skips side effects (analytics,
+   * counters) on the speculative load. Cached entries expire after
+   * 30 s; redirected responses (e.g. auth-expiry → `/login`) are not
+   * cached. Individual links opt out with `data-no-prefetch`.
+   *
+   * Set `false` to disable prefetch app-wide — for an app whose GET
+   * routes cannot be made speculation-safe even with `ctx.prefetch`.
+   * Default: `true`.
+   */
+  prefetch?: boolean
+  /**
    * Extra early-paint inline-JS statements. Each entry runs in
    * `<head>` BEFORE the body parses, AFTER the framework's built-in
    * platform + motion hints. Use for app-specific first-paint hints:
@@ -8115,6 +8164,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           ...(Object.keys(spaNavThemeClassMap).length > 0
             ? { spaNavThemeClassMap }
             : {}),
+          ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
           ...(isProduction ? {} : { enableHmr: true }),
           ...(integrityForRender ? { scriptIntegrity: integrityForRender } : {}),
           scriptNonce: nonce,
@@ -8400,6 +8450,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(Object.keys(spaNavThemeClassMap).length > 0
           ? { spaNavThemeClassMap }
           : {}),
+        ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
         ...(Object.keys(scriptIntegrity).length > 0 ? { scriptIntegrity } : {}),
         ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
@@ -8948,6 +8999,8 @@ export function boot(routes: BootRoutes, options?: BootOptions): Disposer {
         req: new Request(location.href),
         url: new URL(location.href),
         params: matchedParams,
+        // Client-side error/not-found render — never a prefetch.
+        prefetch: false,
       })
       let pageView: View
       try {

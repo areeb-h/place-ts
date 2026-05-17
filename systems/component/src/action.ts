@@ -30,6 +30,15 @@ export interface LoadCtx {
   req: Request
   url: URL
   params: Record<string, string>
+  /**
+   * `true` when the request is a speculative SPA-nav **prefetch**
+   * (warmed on link hover/focus, not an actual visit). Effect-running
+   * code branches on this. Always `false` for an action invocation —
+   * actions are POST and never prefetched — but the field is present
+   * so this `LoadCtx` stays structurally identical to the component
+   * system's `LoadCtx` (the `on:` handler interop point).
+   */
+  prefetch: boolean
 }
 
 /**
@@ -659,7 +668,10 @@ export function action<I, R>(def: ActionDef<I, R>): Action<I, R> {
     let result: R
     try {
       const url = new URL(req.url)
-      const ctx: LoadCtx = { req, url, params }
+      // Actions are POST and never prefetched — `prefetch` is present
+      // for structural parity with the component `LoadCtx` and is
+      // always false here.
+      const ctx: LoadCtx = { req, url, params, prefetch: false }
       result = await def.fn(validated, ctx)
     } catch (e) {
       // Handler threw. If it's an ActionError, honor its status.

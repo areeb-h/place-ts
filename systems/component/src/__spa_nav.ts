@@ -53,6 +53,17 @@ export interface PlaceSpaNavOptions {
    * Empty (the default) when the app has no `theme` configured.
    */
   readonly themeClassMap?: Readonly<Record<string, string>>
+  /**
+   * Prefetch destination HTML on link hover / focus so the click
+   * resolves with zero network wait. Default `true`.
+   *
+   * Prefetch requests are marked with an `X-Place-Prefetch: 1`
+   * header — server `load()` sees `ctx.prefetch === true` and must
+   * skip side effects (analytics, counters) while rendering the same
+   * content. Set `false` for an app whose GET routes can't be made
+   * speculation-safe; individual links opt out with `data-no-prefetch`.
+   */
+  readonly prefetch?: boolean
 }
 
 /**
@@ -68,10 +79,12 @@ export interface PlaceSpaNavOptions {
  */
 export function placeSpaNav(options: PlaceSpaNavOptions = {}): string {
   const ENABLE_VT = options.viewTransitions === true
+  const ENABLE_PREFETCH = options.prefetch !== false
   const themeClassMap = options.themeClassMap ?? {}
   return `(function(){
 if(window.__place_spa)return;window.__place_spa=1;
 var ENABLE_VT=${ENABLE_VT ? 'true' : 'false'};
+var ENABLE_PREFETCH=${ENABLE_PREFETCH ? 'true' : 'false'};
 var THEME_CLASS_MAP=${JSON.stringify(themeClassMap)};
 function shouldIntercept(e,a){
   if(e.defaultPrevented)return false;
@@ -116,15 +129,30 @@ var TIMEOUT_MS=10000;
 // in-flight (or prefetched) response can never swap in late over a
 // destination the user has since moved past.
 var navSeq=0;
-// **Prefetch cache** — url-key -> Promise<string html>. Warmed on
-// link hover / focus (see the listeners below) so that by the time
-// the user clicks, the destination HTML is already in hand and the
-// swap waits on ZERO network. This is what makes navigation feel
-// instant on a CDN regardless of edge-cache state. Bounded; a failed
-// entry is dropped so a real navigation retries cleanly.
+// **Prefetch cache** — url-key -> { at, p:Promise<string html> }.
+// Warmed on link hover / focus so that by the time the user clicks,
+// the destination HTML is already in hand and the swap waits on ZERO
+// network — instant nav on a CDN regardless of edge-cache state.
+//
+// Correctness guarantees (so this is safe for dynamic / authed apps,
+// not just static content):
+//   - Every prefetch request carries the X-Place-Prefetch:1 header.
+//     Server load() sees ctx.prefetch===true and MUST skip side
+//     effects (analytics, view counts, logging) while rendering the
+//     SAME content — a speculative load must not mutate state.
+//   - priority:'low' — a prefetch never contends with the current
+//     page's own resources. Zero perf regression on the page you're on.
+//   - TTL — a cached entry older than PREFETCH_TTL_MS is discarded;
+//     the click does a fresh fetch. Bounds staleness for live data.
+//   - Redirected responses are NOT cached (an auth-expiry redirect to
+//     /login must not be swapped in as the destination) — the click
+//     re-fetches live and follows the redirect properly.
+//   - Per-link data-no-prefetch opts a link out entirely; the whole
+//     mechanism is gated on the ENABLE_PREFETCH app option.
 var prefetchCache=Object.create(null);
 var prefetchN=0;
 var PREFETCH_MAX=24;
+var PREFETCH_TTL_MS=30000;
 // Canonical cache key for a URL — path + search, hash-stripped (a
 // hash anchor targets the same document). Same key from click-href,
 // popstate, and hover so warm hits actually hit.
@@ -153,21 +181,38 @@ function prefetch(url){
   var c=navigator.connection;
   if(c&&c.saveData)return;
   prefetchN++;
-  prefetchCache[k]=fetch(k,{headers:{'Accept':'text/html'},credentials:'same-origin',redirect:'follow'})
-    .then(readHtml)
+  var p=fetch(k,{
+    headers:{'Accept':'text/html','X-Place-Prefetch':'1'},
+    credentials:'same-origin',
+    redirect:'follow',
+    priority:'low'
+  })
+    .then(function(r){
+      // A prefetch that was redirected (e.g. session expired ->
+      // /login) must NOT be cached as this destination — drop it so
+      // the real click re-fetches live and the redirect is honored.
+      if(r.redirected)throw new Error('prefetch redirected');
+      return readHtml(r);
+    })
     .catch(function(err){delete prefetchCache[k];throw err;});
+  prefetchCache[k]={at:Date.now(),p:p};
 }
 function navigate(url,push){
   if(inflight)inflight.abort();
   var myseq=++navSeq;
   var timer=null;
   var k=navKey(url);
-  var htmlPromise=prefetchCache[k];
-  if(htmlPromise){
-    // Warm hit — a hover/focus prefetch already fetched this. No new
+  var entry=prefetchCache[k];
+  var htmlPromise;
+  if(entry&&(Date.now()-entry.at)<PREFETCH_TTL_MS){
+    // Warm hit — a hover/focus prefetch fetched this recently. No new
     // request, no abort controller; the swap is immediate.
+    htmlPromise=entry.p;
     inflight=null;
   }else{
+    // Stale (past TTL) or never prefetched — fetch live so the
+    // content is current. Drop a stale entry so it can't be reused.
+    if(entry)delete prefetchCache[k];
     var ctl=new AbortController();inflight=ctl;
     timer=setTimeout(function(){ctl.abort();},TIMEOUT_MS);
     htmlPromise=fetch(k,{
@@ -329,19 +374,29 @@ document.addEventListener('click',function(e){
 },true);
 // **Prefetch on intent.** Hovering or focusing a framework link is a
 // strong signal the user is about to navigate there. Warm the cache
-// now so the click resolves instantly. \`prefetch()\` de-dupes + caps
+// now so the click resolves instantly. prefetch() de-dupes + caps
 // itself, so the firehose of pointerover events is cheap.
+//
+// Gated on the ENABLE_PREFETCH app option (default on). A link — or
+// any ancestor — carrying data-no-prefetch is skipped entirely:
+// the escape hatch for routes whose GET has effects that even
+// ctx.prefetch can't make safe, or pages that must never be
+// speculatively loaded into client memory.
 function prefetchFromEvent(e){
+  if(!ENABLE_PREFETCH)return;
   var t=e.target;
   while(t&&t.nodeType===1&&t.tagName!=='A')t=t.parentNode;
   if(!t||t.tagName!=='A'||!t.hasAttribute('data-place-link'))return;
+  if(t.closest&&t.closest('[data-no-prefetch]'))return;
   var u;try{u=new URL(t.href);}catch(_){return;}
   if(u.origin!==location.origin)return;
   if(u.pathname===location.pathname&&u.search===location.search)return;
   prefetch(t.href);
 }
-document.addEventListener('pointerover',prefetchFromEvent,{passive:true});
-document.addEventListener('focusin',prefetchFromEvent);
+if(ENABLE_PREFETCH){
+  document.addEventListener('pointerover',prefetchFromEvent,{passive:true});
+  document.addEventListener('focusin',prefetchFromEvent);
+}
 // Browser back/forward — refetch + swap (URL already updated by browser).
 window.addEventListener('popstate',function(){
   navigate(location.pathname+location.search+location.hash,false);
