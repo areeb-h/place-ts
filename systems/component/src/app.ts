@@ -357,23 +357,21 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     }
   }
 
-  // Auto-default `clientEntry` to `Bun.main` (the script Bun was
-  // invoked with). In the canonical "one file, both runtimes" shape,
-  // `app.ts` IS the entry, so `Bun.main === app.ts`'s absolute path —
-  // exactly what serve() needs to bundle for the client. Callers that
-  // pre-build (`clientJs:`) or use a separate browser entry (`clientEntry:`)
-  // win — the default only fills the gap when neither is set.
+  // No `clientEntry` auto-default. The framework's hydration model is
+  // islands-only — ADR 0020 retired full-page hydration. Every
+  // interactive sub-tree is an island, bundled on its own; a page with
+  // no island ships zero framework JavaScript.
   //
-  // T5-D-phase-2 (ADR 0019): when `islands` is set, **don't** auto-
-  // default clientEntry. Every interactive sub-tree is an island; no
-  // full-page hydration bundle is needed. Pages without any island
-  // ship 0 KB framework JS. Apps that genuinely want both (gradual
-  // migration) can opt in by passing `clientEntry` explicitly.
+  // The old behaviour auto-defaulted `clientEntry` to `Bun.main` unless
+  // `islands`/`islandsDir` was set. That regressed every app that
+  // simply had no islands yet (or declared its islands a different
+  // way): `Bun.main` is the isomorphic `app.ts`, so bundling it for the
+  // client dragged the ENTIRE framework onto a plain content page —
+  // ~19 KB gzipped — the exact opposite of the islands thesis.
   //
-  // Skipped when Bun isn't the runtime (Node adapter, tests under a
-  // non-Bun harness). The downstream serve() throws a helpful error if
-  // clientEntry is set but Bun.build is unavailable, so this default
-  // doesn't introduce a worse failure mode.
+  // `clientEntry` / `clientJs` are still honored when passed explicitly
+  // (a legacy / gradual-migration escape hatch); `app()` never
+  // synthesizes one.
   const resolveServeOpts = (): ServeOptions => {
     const opts: Partial<ServeOptions> = { ...serveOpts, port: resolvePort(), routes }
     // Auto-defaults — the framework principle is "secure by default."
@@ -384,28 +382,19 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     if (opts.security === undefined) {
       opts.security = 'standard'
     }
+    // T5-D-phase-2 (ADR 0024): auto cap-install. For each cap config
+    // the user passed via `router:` or `caps:`, extract the
+    // `__placeClientImport` metadata and forward as `clientCaps` so
+    // the island bundler can generate `_auto-init.ts` automatically.
+    // Eliminates the user-authored `_init.ts` side-effect module
+    // pattern entirely. Only relevant when the app has islands — a
+    // zero-island app ships no client code, so no client caps either.
     const hasIslands =
       (Array.isArray(config.islands) && config.islands.length > 0) ||
       (config.islands !== undefined &&
         !Array.isArray(config.islands) &&
         Object.keys(config.islands).length > 0) ||
       typeof config.islandsDir === 'string'
-    if (
-      opts.clientEntry === undefined &&
-      opts.clientJs === undefined &&
-      !hasIslands &&
-      typeof Bun !== 'undefined' &&
-      typeof Bun.main === 'string' &&
-      Bun.main.length > 0
-    ) {
-      opts.clientEntry = Bun.main
-    }
-    // T5-D-phase-2 (ADR 0024): auto cap-install. For each cap config
-    // the user passed via `router:` or `caps:`, extract the
-    // `__placeClientImport` metadata and forward as `clientCaps` so
-    // the island bundler can generate `_auto-init.ts` automatically.
-    // Eliminates the user-authored `_init.ts` side-effect module
-    // pattern entirely.
     const clientCaps: ClientCapInstall[] = []
     if (hasIslands) {
       // `router:` slot — desugars to RouterCap install with the
