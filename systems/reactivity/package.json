@@ -1,0 +1,21 @@
+{
+  "name": "@place/reactivity",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Time-indexed reactive primitives — derivation as primary, graph as artefact",
+  "exports": {
+    ".": "./src/index.ts",
+    "./motion": "./src/motion/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  }
+}
