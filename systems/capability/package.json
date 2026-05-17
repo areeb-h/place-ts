@@ -1,0 +1,19 @@
+{
+  "name": "@place/capability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scoped capability handlers — runtime foundation for Phase 4 typed effects. Replaces React-style implicit context globals with explicit, lexically-scoped providers.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
