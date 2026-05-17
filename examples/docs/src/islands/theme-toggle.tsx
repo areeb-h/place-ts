@@ -1,102 +1,77 @@
 // Three-way theme picker — light / dark / system. ISLAND.
 //
-// SSR renders the buttons with the cookie-derived initial state (no
-// blip on hard refresh). The island bundle attaches reactivity on
-// client mount; clicking a button writes the cookie + applies the
-// theme class to <html> in one tick.
+// Theme persistence + no-flash application is FRAMEWORK-OWNED. Passing
+// `theme` to `app()` makes `serve()` / `app().build()` auto-inject
+// `themeEarlyScript()` into every page's `<head>` — it reads the
+// `place-theme` cookie, applies the matching class before first paint
+// (on a live server AND a static export), and mirrors the choice to
+// `<html data-place-theme="…">`.
 //
-// 'system' leaves the <html> theme class unset so the framework's
-// `@media (prefers-color-scheme: …)` CSS bindings drive appearance.
-// matchMedia listens for OS-theme changes and re-applies after mount.
-
-// `island`, `cookie`, `onMount`, `setTheme`, `state` are framework
-// primitives auto-imported via the @place/component plugin.
+// So this island only:
+//   1. writes the choice on click via `setTheme()` (cookie + class +
+//      `data-place-theme`), and
+//   2. reflects the choice in `aria-pressed` for assistive tech.
+//
+// The PRESSED VISUAL is pure CSS keyed off `<html data-place-theme>`
+// (see `.place-theme-opt` in styles.ts) — set pre-paint by the early
+// script, so there is no SSR/hydration mismatch and no blip on a hard
+// refresh. `'system'` removes every theme class, letting the
+// stylesheet's `@media (prefers-color-scheme)` bindings track the OS
+// with zero JS.
+//
+// `island`, `setTheme`, `state` are framework primitives auto-imported
+// via the `@place/component` plugin.
 import { tokens } from '../theme.ts'
 
 type Choice = 'light' | 'dark' | 'system'
 
-const CHOICE_COOKIE = 'place-theme-choice'
-
-const writeChoiceCookie = (choice: Choice): void => {
-  // biome-ignore lint/suspicious/noDocumentCookie: synchronous cookie write — matches setTheme().
-  document.cookie = `${CHOICE_COOKIE}=${choice}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`
-}
-
-const systemTheme = (): 'light' | 'dark' =>
-  window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-
-const applyChoice = (choice: Choice): void => {
-  const effective = choice === 'system' ? systemTheme() : choice
-  setTheme(tokens, effective)
-  writeChoiceCookie(choice)
-}
-
-const initialChoice = (): Choice => {
-  const raw = cookie(CHOICE_COOKIE)
-  return raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system'
+// Current choice — read from the `data-place-theme` attribute the
+// early script already resolved (client), else `'system'` (SSR).
+const currentChoice = (): Choice => {
+  if (typeof document === 'undefined') return 'system'
+  const v = document.documentElement.dataset['placeTheme']
+  return v === 'light' || v === 'dark' ? v : 'system'
 }
 
 const OPT =
-  'inline-flex items-center justify-center w-[26px] h-[26px] rounded-md text-[13px] ' +
-  'text-muted bg-transparent border-0 cursor-pointer ' +
-  'transition-colors duration-150 hover:text-fg ' +
-  'aria-[pressed=true]:text-accent aria-[pressed=true]:bg-accent/12'
+  'place-theme-opt inline-flex items-center justify-center w-[26px] h-[26px] ' +
+  'rounded-md text-[13px] text-muted bg-transparent border-0 cursor-pointer ' +
+  'transition-colors duration-150 hover:text-fg'
 
 const ThemeToggleImpl = () => {
-  const choice = state<Choice>(initialChoice())
-
-  onMount(() => {
-    const mql = window.matchMedia('(prefers-color-scheme: light)')
-    const onChange = (): void => {
-      if (choice() === 'system') applyChoice('system')
-    }
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  })
+  const choice = state<Choice>(currentChoice())
 
   const pick = (next: Choice): void => {
     choice.set(next)
-    applyChoice(next)
+    // Writes the `place-theme` cookie, applies / clears the theme
+    // class, and updates `<html data-place-theme>` — which the CSS
+    // pressed-state rule keys off.
+    setTheme(tokens, next)
   }
+
+  const opt = (value: Choice, glyph: string, label: string) => (
+    <button
+      type="button"
+      class={OPT}
+      data-choice={value}
+      aria-pressed={() => String(choice() === value)}
+      aria-label={label}
+      onClick={() => pick(value)}
+    >
+      {glyph}
+    </button>
+  )
 
   return (
     <fieldset
       class="inline-flex items-center gap-0.5 p-[3px] rounded-lg border border-border/60 bg-card/50"
       aria-label="Theme"
     >
-      <button
-        type="button"
-        class={OPT}
-        aria-pressed={() => String(choice() === 'light')}
-        aria-label="Light"
-        onClick={() => pick('light')}
-      >
-        ☀
-      </button>
-      <button
-        type="button"
-        class={OPT}
-        aria-pressed={() => String(choice() === 'system')}
-        aria-label="System"
-        onClick={() => pick('system')}
-      >
-        ⌬
-      </button>
-      <button
-        type="button"
-        class={OPT}
-        aria-pressed={() => String(choice() === 'dark')}
-        aria-label="Dark"
-        onClick={() => pick('dark')}
-      >
-        ☾
-      </button>
+      {opt('light', '☀', 'Light')}
+      {opt('system', '⌬', 'System')}
+      {opt('dark', '☾', 'Dark')}
     </fieldset>
   )
 }
 
 export default island(ThemeToggleImpl)
-
-// hmr-test-mark
-
-// hmr-test-mark

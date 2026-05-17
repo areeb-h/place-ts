@@ -95,7 +95,7 @@ import {
   _isHydratedSignal as _isHydratedState,
   _setHydrated,
 } from './_internal/hydration.ts'
-import { readThemeFromRequest } from './theme.ts'
+import { readThemeFromRequest, themeEarlyScript } from './theme.ts'
 
 // Build-time define injected by Bun.build's `define` option in the
 // client-bundle path. `true` in the browser bundle, undefined on the
@@ -6985,6 +6985,28 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       : [options.layout]
     : []
 
+  // **Auto theme early-paint script.** When `theme` is configured the
+  // framework prepends a script that reads the theme cookie + applies
+  // the matching class to `<html>` BEFORE first paint. Apps no longer
+  // hand-write a theme `earlyHead` entry — persistence (incl. on a
+  // static export, where there is no per-request SSR cookie read) and
+  // no-flash behaviour are framework-owned. App `earlyHead` entries
+  // run after it. See `themeEarlyScript()`.
+  const effectiveEarlyHead: readonly string[] = [
+    ...(options.theme
+      ? // `htmlClass` is typed `(theme: never) => string` on the
+        // generic `ThemeTokens` (so narrowed callbacks pass elsewhere);
+        // at runtime it accepts any theme-name string. Cast the slice.
+        [
+          themeEarlyScript({
+            names: options.theme.names,
+            htmlClass: options.theme.htmlClass as (n: string) => string,
+          }),
+        ]
+      : []),
+    ...(options.earlyHead ?? []),
+  ]
+
   // Compile Tailwind once at startup if requested. Lazy import keeps
   // apps without tailwind from pulling the heavy deps. The resulting
   // CSS is injected as a regular inline style on each compiled page
@@ -7715,8 +7737,8 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(enableSpaNav ? { enableSpaNav: true } : {}),
         ...(spaNavVT ? { spaNavViewTransitions: true } : {}),
         ...(isProduction ? {} : { enableHmr: true }),
-        ...(options.earlyHead && options.earlyHead.length > 0
-          ? { extraEarlyHead: options.earlyHead }
+        ...(effectiveEarlyHead.length > 0
+          ? { extraEarlyHead: effectiveEarlyHead }
           : {}),
         ...(integrityForRender ? { scriptIntegrity: integrityForRender } : {}),
         scriptNonce,
@@ -8348,12 +8370,12 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
         ...(options.transformBody ? { transformBody: options.transformBody } : {}),
-        // App `earlyHead` statements (e.g. theme persistence) MUST
-        // reach the static render — on a static host there is no
-        // server to read a cookie at SSR, so the early-paint script
-        // is the only thing that applies a persisted choice.
-        ...(options.earlyHead && options.earlyHead.length > 0
-          ? { extraEarlyHead: options.earlyHead }
+        // earlyHead — the auto theme script + app entries. MUST reach
+        // the static render: on a static host there is no server to
+        // read a cookie at SSR, so the early-paint script is the only
+        // thing that applies the persisted theme.
+        ...(effectiveEarlyHead.length > 0
+          ? { extraEarlyHead: effectiveEarlyHead }
           : {}),
       })
       const html = await res.text()
@@ -9386,6 +9408,7 @@ export {
   type ThemeTokens,
   type ThemeTokensOptions,
   themeCookieHeader,
+  themeEarlyScript,
   themeTokens,
   type TypographyOptions,
   type TypographyRole,

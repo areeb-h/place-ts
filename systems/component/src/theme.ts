@@ -758,28 +758,80 @@ export function themeCookieHeader(
  *
  *   import { setTheme } from '@place/component'
  *   <button onClick={() => setTheme(myTokens, 'dark')}>Dark</button>
+ *
+ * The special value `'system'` clears every theme class so the
+ * stylesheet's `@media (prefers-color-scheme: …)` bindings drive
+ * appearance from the OS preference. The cookie stores `'system'`
+ * verbatim; `themeEarlyScript()` re-applies it before paint on the
+ * next load.
  */
 export function setTheme<Themes extends Readonly<Record<string, ThemeMap>>>(
   tokens: ThemeTokens<Themes>,
-  theme: keyof Themes,
+  theme: keyof Themes | 'system',
   options?: { cookieName?: string },
 ): void {
   if (typeof document === 'undefined') return
-  // Strip any existing theme- class then add the new one.
   const html = document.documentElement
-  const className = tokens.htmlClass(theme)
+  // Strip every theme- class first.
   const all = tokens.names.map((n) => tokens.htmlClass(n))
   for (const c of all) html.classList.remove(c)
-  html.classList.add(className)
-  // Persist via cookie so the next request picks the same theme. We
-  // deliberately set `document.cookie` (not the Cookie Store API): the
-  // Cookie Store API is a fetch-style replacement that ships with
-  // Chromium browsers only; `document.cookie` works everywhere and is
-  // synchronous, which matches the no-flash theme-toggle UX.
+  // 'system' → no class (the @media bindings take over). A named
+  // theme → add its class.
+  if (theme !== 'system') {
+    html.classList.add(tokens.htmlClass(theme))
+  }
+  // Mirror the choice onto a data attribute so a theme picker can
+  // drive its pressed state from CSS — no SSR/hydration mismatch,
+  // no blip. `themeEarlyScript()` sets the same attribute pre-paint.
+  html.dataset['placeTheme'] = String(theme)
+  // Persist via cookie so the next request / early script picks the
+  // same choice. We deliberately set `document.cookie` (not the
+  // Cookie Store API, which is Chromium-only) — it works everywhere
+  // and is synchronous, which matches the no-flash toggle UX.
   // biome-ignore lint/suspicious/noDocumentCookie: synchronous cross-browser cookie write — Cookie Store API not universally available
   document.cookie =
     `${options?.cookieName ?? DEFAULT_THEME_COOKIE}=${encodeURIComponent(String(theme))}; ` +
     `Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`
+}
+
+/**
+ * Build the theme early-paint script (T19 follow-up). `serve()` and
+ * `app().build()` inject this automatically into every page's
+ * `<head>` when `theme` is configured — it runs BEFORE `<body>`
+ * parses, so the persisted theme is applied with zero flash, on a
+ * live server AND on a static export (where there is no per-request
+ * cookie read at SSR).
+ *
+ * It reads the theme cookie, applies the matching `theme-*` class
+ * (or none, for `'system'` — letting the `@media` bindings drive),
+ * and mirrors the choice to `<html data-place-theme="…">` so a
+ * theme picker can render its pressed state from CSS with no blip.
+ *
+ * Returned as a raw JS statement string — the framework wraps it in
+ * a nonced/hashed `<script>` like any other `earlyHead` entry.
+ */
+export function themeEarlyScript(
+  tokens: { names: ReadonlyArray<string>; htmlClass: (n: string) => string },
+  cookieName: string = DEFAULT_THEME_COOKIE,
+): string {
+  const classes = tokens.names.map((n) => tokens.htmlClass(n))
+  const removeArgs = classes.map((c) => JSON.stringify(c)).join(',')
+  const applyChecks = tokens.names
+    .map(
+      (n, i) =>
+        `if(v===${JSON.stringify(n)})r.classList.add(${JSON.stringify(classes[i])});`,
+    )
+    .join('')
+  return (
+    '(function(){try{' +
+    `var m=document.cookie.match(/(?:^|; )${cookieName}=([^;]+)/);` +
+    "var v=m?decodeURIComponent(m[1]):'system';" +
+    'var r=document.documentElement;' +
+    `r.classList.remove(${removeArgs});` +
+    applyChecks +
+    'r.dataset.placeTheme=v;' +
+    '}catch(e){}})()'
+  )
 }
 
 // ============================================================

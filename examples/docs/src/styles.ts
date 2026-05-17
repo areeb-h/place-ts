@@ -470,4 +470,15 @@ body::before {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 40%, transparent); }
   50%      { opacity: 0.85; box-shadow: 0 0 0 6px transparent; }
 }
+
+/* Theme-toggle pressed state — driven purely by the <html data-place-theme>
+   attribute that themeEarlyScript() sets BEFORE first paint. No
+   reactive aria-pressed in the CSS path, so there is no SSR/hydration
+   mismatch and no blip when the page hard-refreshes. */
+[data-place-theme="light"]  .place-theme-opt[data-choice="light"],
+[data-place-theme="dark"]   .place-theme-opt[data-choice="dark"],
+[data-place-theme="system"] .place-theme-opt[data-choice="system"] {
+  color: var(--color-accent);
+  background-color: color-mix(in oklab, var(--color-accent) 12%, transparent);
+}
 `
