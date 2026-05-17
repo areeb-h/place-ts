@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    "types": ["bun"],
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    "noEmit": true,
+    "resolveJsonModule": true
+  },
+  "include": ["systems/**/*.ts", "tests/**/*.ts", "benchmarks/**/*.ts", "*.ts"],
+  "exclude": [
+    "node_modules",
+    "**/dist",
+    "**/node_modules",
+    "examples/**",
+    "systems/component/**",
+    "systems/design/**",
+    "systems/persistence/**",
+    "systems/routing/**",
+    "systems/security/**"
+  ]
+}

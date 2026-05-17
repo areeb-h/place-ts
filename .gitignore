@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build artefacts
+dist/
+*.tsbuildinfo
+.place/
+
+# Test / coverage
+coverage/
+.vitest-cache/
+
+# Local databases (dev sync-server, etc.)
+*.db
+
+# Scratch — local-only working notes + temp dev scripts.
+# Kept on disk for the author; never committed.
+/tmp/
+/.tmp-*.sh
+/research-dx-painpoints.md
+/research-file-split-plan.md
+/research-hmr-codesplit.md
+/research-img-vt-cli.md
+/research-tanstack-comparison.md
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# Claude Code: keep agents committed; ignore local-only settings +
+# machine-specific dev tooling (absolute WSL paths, dev-only secrets).
+.claude/settings.local.json
+.claude/launch.json
+.claude/dev*.sh
+
+# Env
+.env
+.env.local
+.env.*.local

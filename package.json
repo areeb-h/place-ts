@@ -1,0 +1,49 @@
+{
+  "name": "place",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "place — a platform of nine interlocking systems built around a content-heavy commonplace book reference design",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "workspaces": [
+    "systems/*",
+    "examples/*",
+    "tools/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:property": "vitest run --dir systems --testNamePattern '^property:'",
+    "test:conformance": "vitest run tests/conformance",
+    "test:ui": "vitest --ui",
+    "dev": "bun --filter '@place/sandbox' dev",
+    "commonplace": "bun --filter '@place/commonplace' dev",
+    "docs": "bun --filter '@place/docs' dev",
+    "sync-server": "bun --filter '@place/sync-server' start",
+    "bench": "vitest bench --run",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p systems/capability && tsc --noEmit -p systems/data && tsc --noEmit -p systems/persistence && tsc --noEmit -p systems/routing && tsc --noEmit -p systems/search && tsc --noEmit -p systems/security && tsc --noEmit -p systems/component && tsc --noEmit -p systems/design && tsc --noEmit -p examples/sandbox && tsc --noEmit -p examples/commonplace && tsc --noEmit -p examples/docs && tsc --noEmit -p examples/sync-server && tsc --noEmit -p tools/create-app",
+    "ci": "bun run lint && bun run typecheck && bun run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "latest",
+    "@tailwindcss/node": "^4.2.4",
+    "@tailwindcss/oxide": "^4.2.4",
+    "@types/bun": "latest",
+    "@vitest/ui": "latest",
+    "fake-indexeddb": "^6.2.5",
+    "fast-check": "latest",
+    "happy-dom": "latest",
+    "solid-js": "latest",
+    "tailwindcss": "^4.2.4",
+    "typescript": "latest",
+    "vitest": "latest"
+  },
+  "dependencies": {
+    "devalue": "^5.8.0"
+  }
+}
