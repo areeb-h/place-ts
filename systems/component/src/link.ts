@@ -24,7 +24,7 @@
 //   <Link to="/notes/abc" replace>Open</Link>
 //   <Link to="/?tag=react" preserveQuery>Filter</Link>
 
-import { RouterCap } from '../../routing/src/index.ts'
+import { RouterCap } from '@place/routing'
 import { type Child, cls, component, el } from './index.ts'
 
 /**

@@ -30,7 +30,7 @@
 //     localStorage are cheap; if a real workload needs debouncing, the
 //     consumer wraps the adapter.
 
-import { type Disposer, type State, state, watch } from '../../reactivity/src/index.ts'
+import { type Disposer, type State, state, watch } from '@place/reactivity'
 
 export interface PersistenceAdapter<T> {
   /** Load the persisted value. Returns the default when not present. */

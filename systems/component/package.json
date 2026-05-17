@@ -1,6 +1,6 @@
 {
   "name": "@place/component",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Component system — rendering layer on top of @place/reactivity. JSX-shape via TS automatic runtime (per ADR 0002).",
@@ -27,7 +27,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "devalue": "^5.8.0"
+    "@place/capability": "workspace:*",
+    "@place/reactivity": "workspace:*",
+    "@place/routing": "workspace:*",
+    "devalue": "^5.8.0",
+    "typescript": "^6.0.0"
   },
   "peerDependencies": {
     "@tailwindcss/node": "^4.2.4",

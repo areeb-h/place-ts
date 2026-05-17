@@ -39,7 +39,7 @@
 //     when the consumer's `Bun.serve` handler builds responses; the
 //     constants below are starter values, not a one-call solution.
 
-import { defineCapability } from '../../capability/src/index.ts'
+import { defineCapability } from '@place/capability'
 
 // ===== Internal: HMAC + base64url + constant-time compare =====
 

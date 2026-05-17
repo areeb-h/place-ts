@@ -23,7 +23,7 @@
 //
 // All of those would force conventions; this just dispatches.
 
-import { route } from '../../routing/src/index.ts'
+import { route } from '@place/routing'
 
 export type RouteHandler = (
   req: Request,

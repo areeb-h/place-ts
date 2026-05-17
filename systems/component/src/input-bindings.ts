@@ -11,8 +11,8 @@ import {
   state,
   untrack,
   watch,
-} from '../../reactivity/src/index.ts'
-import { RouterCap } from '../../routing/src/index.ts'
+} from '@place/reactivity'
+import { RouterCap } from '@place/routing'
 import { onCleanup } from './_internal/cleanup.ts'
 
 // ===== wire — two-way binding helper for inputs =====

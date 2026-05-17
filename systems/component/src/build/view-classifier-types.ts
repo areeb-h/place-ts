@@ -55,8 +55,8 @@
 
 import * as ts from 'typescript'
 import type * as TS from 'typescript'
-import type { Effect, ViewLevel } from '../../../reactivity/src/effects.ts'
-import { levelOf, lubEffect } from '../../../reactivity/src/effects.ts'
+import type { Effect, ViewLevel } from '@place/reactivity/effects'
+import { levelOf, lubEffect } from '@place/reactivity/effects'
 import type {
   ClassifierFinding,
   ClassifierResult,

@@ -52,7 +52,7 @@
 //     pathological case. Acceptable for v0.2; lists with thousands of items
 //     warrant a future optimization (e.g. precomputed range cache).
 
-import { type Disposer, untrack, watch } from '../../reactivity/src/index.ts'
+import { type Disposer, untrack, watch } from '@place/reactivity'
 import type { View } from './types.ts'
 
 export function keyed<T, K>(

@@ -34,8 +34,8 @@
 // Do NOT add runtime imports from `./build/*` here. Adding either
 // would re-open the leak vector this file exists to close.
 
-import type { Capability, Provision } from '../../capability/src/index.ts'
-import type { Disposer } from '../../reactivity/src/index.ts'
+import type { Capability, Provision } from '@place/capability'
+import type { Disposer } from '@place/reactivity'
 import { _setHydrated } from './_internal/hydration.ts'
 import { makeSlot } from './_internal/slot.ts'
 import type { View } from './types.ts'

@@ -1,16 +1,5 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "lib": ["ESNext", "DOM"],
-    "jsx": "react-jsx",
-    "jsxImportSource": "@place/component",
-    "paths": {
-      "@place/security": ["../../systems/security/src/index.ts"],
-      "@place/component": ["../../systems/component/src/index.ts"],
-      "@place/component/jsx-runtime": ["../../systems/component/src/jsx-runtime.ts"],
-      "@place/reactivity": ["../../systems/reactivity/src/index.ts"]
-    }
-  },
   "include": ["src/**/*.ts", "src/**/*.tsx", "scripts/**/*.ts", "scripts/**/*.tsx"],
   "exclude": ["node_modules"]
 }

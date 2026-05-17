@@ -83,13 +83,17 @@
     },
     "systems/capability": {
       "name": "@place/capability",
-      "version": "0.0.0",
+      "version": "0.1.0",
     },
     "systems/component": {
       "name": "@place/component",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
+        "@place/capability": "workspace:*",
+        "@place/reactivity": "workspace:*",
+        "@place/routing": "workspace:*",
         "devalue": "^5.8.0",
+        "typescript": "^6.0.0",
       },
       "peerDependencies": {
         "@tailwindcss/node": "^4.2.4",
@@ -102,11 +106,14 @@
     },
     "systems/data": {
       "name": "@place/data",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@place/reactivity": "workspace:*",
+      },
     },
     "systems/design": {
       "name": "@place/design",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@place/component": "workspace:*",
         "@place/reactivity": "workspace:*",
@@ -114,23 +121,34 @@
     },
     "systems/persistence": {
       "name": "@place/persistence",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@place/reactivity": "workspace:*",
+      },
     },
     "systems/reactivity": {
       "name": "@place/reactivity",
-      "version": "0.0.0",
+      "version": "0.1.0",
     },
     "systems/routing": {
       "name": "@place/routing",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@place/capability": "workspace:*",
+        "@place/reactivity": "workspace:*",
+      },
     },
     "systems/search": {
       "name": "@place/search",
-      "version": "0.0.0",
+      "version": "0.1.0",
     },
     "systems/security": {
       "name": "@place/security",
-      "version": "0.0.0",
+      "version": "0.1.0",
+      "dependencies": {
+        "@place/capability": "workspace:*",
+        "@place/component": "workspace:*",
+      },
     },
     "tools/create-app": {
       "name": "@place/create-app",

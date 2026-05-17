@@ -30,7 +30,7 @@
 //
 // Each will land when a workload demands it. Anti-bloat over speculation.
 
-import type { State } from '../../reactivity/src/index.ts'
+import type { State } from '@place/reactivity'
 
 export interface CollectionOptions<T> {
   /**

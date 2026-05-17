@@ -41,7 +41,7 @@
 // `session.can()` resolves is what gets gated. Apps choose: dotted
 // names, RBAC role:resource:verb tuples, Cerbos policy IDs, etc.
 
-import { Fragment, type Child, type View } from '../../component/src/index.ts'
+import { Fragment, type Child, type View } from '@place/component'
 import { SessionCap } from './index.ts'
 
 export interface CanProps {

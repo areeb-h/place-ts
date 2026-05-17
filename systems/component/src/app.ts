@@ -27,8 +27,8 @@
 // stay values, refactors stay TypeScript renames, no codegen, no
 // stale `.d.ts`.
 
-import type { Capability } from '../../capability/src/index.ts'
-import { RouterCap } from '../../routing/src/index.ts'
+import type { Capability } from '@place/capability'
+import { RouterCap } from '@place/routing'
 import type { AnyLayout, AnyPage, ClientCapInstall, ServeOptions } from './index.ts'
 import { boot, serve } from './index.ts'
 

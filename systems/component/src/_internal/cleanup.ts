@@ -13,7 +13,7 @@
 // component's late setup tears down before its early setup. Internal
 // helpers stay non-exported; `onCleanup` is the only public surface.
 
-import type { Disposer } from '../../../reactivity/src/index.ts'
+import type { Disposer } from '@place/reactivity'
 
 let currentCleanups: Disposer[] | null = null
 

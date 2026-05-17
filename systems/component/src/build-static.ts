@@ -44,7 +44,7 @@
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { type Route as RouteMatcher, route as routeFactory } from '../../routing/src/index.ts'
+import { type Route as RouteMatcher, route as routeFactory } from '@place/routing'
 import type { AnyPage, ServeRoutes } from './index.ts'
 import { isPage, renderPage } from './index.ts'
 

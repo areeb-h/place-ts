@@ -30,7 +30,7 @@ import {
   ClientOnlyAbort,
   defineCapability,
   runWithCapabilityScope,
-} from '../../capability/src/index.ts'
+} from '@place/capability'
 import {
   batch,
   type Disposer,
@@ -39,13 +39,13 @@ import {
   state,
   untrack,
   watch,
-} from '../../reactivity/src/index.ts'
+} from '@place/reactivity'
 import {
   type ParamsOf,
   RouterCap,
   route,
   serverRouter as createServerRouter,
-} from '../../routing/src/index.ts'
+} from '@place/routing'
 import { action } from './action.ts'
 import { placeAutoImport } from './auto-import-plugin.ts'
 // `validateIslandName` is inlined here (instead of imported from
@@ -2232,7 +2232,7 @@ export function renderToString(view: View): string {
 // seroval (which requires `eval` and would break our `security: 'strict'`).
 
 import { stringify as devalueStringify } from 'devalue'
-import type { Resource } from '../../reactivity/src/index.ts'
+import type { Resource } from '@place/reactivity'
 import { PLACE_RUNTIME } from './__place_runtime.ts'
 import { placeDeferredIslands } from './__deferred-islands.ts'
 import { placeEarly } from './__early.ts'
@@ -6988,9 +6988,18 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // a parallel check for `__PLACE_DEV_CHILD` handles the child path.
   // Tests that need supervisor behavior verify it through unit tests
   // of `runDevSupervisor` directly, not by booting `serve()`.
+  // **Static-export mode bypasses the supervisor.** A static export
+  // (`app().build()` / `serve({ staticExport })`, ADR 0051) is a
+  // one-shot build that writes files and returns — it is never a
+  // long-lived server. The dev supervisor must not wrap it: it would
+  // spawn a child, the child would write the site and exit 0, and the
+  // supervisor would respawn it forever. `staticExport` is the single
+  // discriminator, independent of `NODE_ENV`, so a static build is
+  // correct whether or not the caller set `NODE_ENV=production`.
+  const staticMode = options.staticExport !== undefined
   const isDevMode = process.env['NODE_ENV'] !== 'production'
   const isTest = process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test'
-  if (isDevMode && !isTest && !process.env['__PLACE_DEV_CHILD']) {
+  if (isDevMode && !isTest && !staticMode && !process.env['__PLACE_DEV_CHILD']) {
     await runDevSupervisor()
     // `runDevSupervisor` only returns when the child exits non-zero
     // (an error). In that case it has already called `process.exit`
@@ -7006,8 +7015,8 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // can override either way via `serve({ log })`.
   // Static-export mode (T19-A / ADR 0051) implies production build
   // semantics: minified island bundles, stable SRI, no HMR, no dev
-  // watcher. A static site IS a production artefact.
-  const staticMode = options.staticExport !== undefined
+  // watcher. A static site IS a production artefact. `staticMode` is
+  // resolved above — it also gates the dev supervisor.
   const isDev = !staticMode && process.env['NODE_ENV'] !== 'production'
   const wantsBanner = options.log?.banner ?? isDev
   const wantsRequestLog = options.log?.requests ?? isDev
@@ -9390,7 +9399,7 @@ export function errorBoundary(props: ErrorBoundaryProps): View {
 // `Provision` and `provide()` live in @place/capability — they're the
 // fundamental "bind a cap to an impl" primitive. We re-export them from
 // here so component consumers see a single import surface.
-export { cap, type Provision, provide } from '../../capability/src/index.ts'
+export { cap, type Provision, provide } from '@place/capability'
 // Re-export the reactivity primitives so apps don't need a second import
 // root for state/watch/derived. Anything you reach for inside a component
 // — `state`, `watch`, `derived`, `untrack`, `batch` — is now in the same
@@ -9416,7 +9425,7 @@ export {
   untrack,
   type WatchOptions,
   watch,
-} from '../../reactivity/src/index.ts'
+} from '@place/reactivity'
 export {
   type Action,
   type ActionDef,

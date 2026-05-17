@@ -14,8 +14,8 @@
 // component using `cookie('place-theme-choice')` for its initial state
 // produces matching HTML on both runtimes — no flip on hydration.
 
-import { defineCapability } from '../../capability/src/index.ts'
-import { type State, state, watch } from '../../reactivity/src/index.ts'
+import { defineCapability } from '@place/capability'
+import { type State, state, watch } from '@place/reactivity'
 
 /** Internal: holds the parsed cookies for the in-flight SSR request. */
 export const _CookieJarCap = defineCapability<ReadonlyMap<string, string>>('CookieJar')

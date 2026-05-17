@@ -38,8 +38,8 @@
 //     still fires for external sources (browser back/forward, manual hash
 //     edits); state.write dedupes the second write.
 
-import { type Capability, defineCapability, type Provision } from '../../capability/src/index.ts'
-import { type Disposer, state, untrack } from '../../reactivity/src/index.ts'
+import { type Capability, defineCapability, type Provision } from '@place/capability'
+import { type Disposer, state, untrack } from '@place/reactivity'
 
 export interface Router {
   /** Reactive current path. For hash routing, the part after `#`. */

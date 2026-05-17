@@ -5,7 +5,7 @@
 // `Disposer` comes from @place/reactivity since cleanup semantics are
 // defined there; we just consume the contract.
 
-import type { Disposer } from '../../reactivity/src/index.ts'
+import type { Disposer } from '@place/reactivity'
 
 // ===== Public types =====
 

@@ -1,6 +1,6 @@
 {
   "name": "@place/security",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Security primitives for the place platform: signed tokens, CSRF, rate limiting, session capability, and secure-by-default cookie helpers. Web Crypto-based, runs in browser + Bun + Node 19+. Tight surface area: secure defaults, few options.",
@@ -15,5 +15,9 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@place/capability": "workspace:*",
+    "@place/component": "workspace:*"
   }
 }

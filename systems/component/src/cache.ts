@@ -1,4 +1,4 @@
-import { runWithCapabilityScopeSync } from '../../capability/src/index.ts'
+import { runWithCapabilityScopeSync } from '@place/capability'
 
 // @place/component cache primitive — used by ISR (revalidate-after-N-seconds)
 // and the image optimizer (lazy variant generation). This is NOT a general-
