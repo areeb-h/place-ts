@@ -74,9 +74,14 @@ delivered out-of-band via a generated Cloudflare `_headers` file:
   (token colors via CSS custom properties) is a `<CodeBlock>`
   refactor tracked separately.
 
-Deploy is a GitHub Actions workflow (`.github/workflows/deploy-docs.yml`):
-on push to `main`, install Bun → `bun --filter '@place/docs' build`
-→ `wrangler pages deploy`.
+Deploy uses **Cloudflare Pages' native Git integration**: the
+`place-ts` repo is connected in the Cloudflare dashboard; on every
+push to `main`, Cloudflare runs the build (`bun --filter '@place/docs'
+build`, output `examples/docs/dist`) and deploys. No GitHub Actions
+workflow, no API tokens, no repo secrets — Cloudflare's GitHub App
+handles auth. (An earlier draft used a `wrangler`-based GitHub
+Actions workflow; the dashboard Git integration is simpler and was
+chosen instead.)
 
 ## Consequences
 
