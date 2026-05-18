@@ -182,8 +182,8 @@ export function _auditHydrationFrame(node: Element, props: Record<string, unknow
         client: typeof value === 'function' ? '(reactive)' : String(value),
         kind: 'mismatch',
         fixHint:
-          'Wrap dynamic content in <ClientOnly> or <Deferred fallback={...}> ' +
-          'so the server emits a stable placeholder and the client fills in post-hydrate.',
+          'Move browser-only dynamic content into an island() so it renders ' +
+          'a stable placeholder on the server and hydrates on the client.',
       })
     }
   }

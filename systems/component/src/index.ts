@@ -1441,85 +1441,24 @@ function mountReactiveChild(parent: ParentNode, fn: () => Child, anchor: Node | 
 //
 // Groups siblings without adding a wrapping DOM element.
 
-// ===== Hydration corrector primitives =====
+// `_isHydratedState` lives in `./_internal/hydration.ts`; imported at
+// the top of this file. It backs `onMount`, the hydration auditor,
+// and the internal `ClientOnly` helper below.
 //
-// `<ClientOnly>` and `<Deferred>` give app authors a structural way to
-// fix hydration mismatches the auditor detects. SSR emits a stable
-// placeholder; client renders the real content after hydration. The
-// auditor's `mismatch` warnings point at this fix.
-//
-// Implementation: a module-level reactive flag flips from false to
-// true at the end of `boot()`'s hydration. SSR sees false, never
-// evaluates the children function. Client also sees false initially
-// (so hydrate sees an empty wrapper, matches), then the flag flips
-// and the reactive child re-renders with real content.
-//
-// One wrapper element per use (`<span>`) — keeps the markup simple
-// and lets hydrate find a stable element to adopt. Trade-off accepted:
-// inline-text uses get an extra `<span>` boundary. If that becomes a
-// problem in practice, revisit with a Fragment-based variant; for now
-// the wrapper makes the contract simple and reliable.
+// The public `<ClientOnly>` / `<Deferred>` full-page-hydration
+// corrector components were removed with the islands migration —
+// interactive browser-only content belongs in an `island()`. The
+// `ClientOnly` helper survives as an INTERNAL primitive only: it
+// backs the auto-placeholder `component()` emits when a `clientOnly`
+// capability is touched during SSR. Not exported, not auto-imported.
 
-// `_isHydratedState`, `_setHydrated`, `_readHydrated` live in
-// `./_internal/hydration.ts`; imported at the top of this file under
-// the local name `_isHydratedState` for backward-compatible call sites.
-
-export interface ClientOnlyProps {
-  /** Function returning the content to render after hydration completes. */
+interface ClientOnlyProps {
   children: () => Child
 }
 
-/**
- * Renders nothing on the server; renders `children()` on the client
- * after hydration completes. Use for content that depends on browser-
- * only state (`window`, `Date.now()`, geolocation, navigator-language)
- * — wrapping it here prevents the SSR/client divergence that would
- * otherwise produce a hydration mismatch warning from the auditor.
- *
- * ```tsx
- * <ClientOnly>{() => <TimeAgo at={Date.now()} />}</ClientOnly>
- * ```
- *
- * One `<span>` wrapper per use so the framework has a stable element
- * to adopt at hydrate. The wrapper sets `display: contents` so it
- * doesn't participate in the box model — flex / grid / `h-full` on
- * the wrapped subtree inherit from the span's *parent*, which is
- * almost always what callers want. Override via the `class` prop only
- * if you need the span as a visible inline container.
- */
-export function ClientOnly(props: ClientOnlyProps): View {
+function ClientOnly(props: ClientOnlyProps): View {
   return el('span', { 'data-place-client-only': '', 'data-place-contents': '' }, () =>
     _isHydratedState.read() ? props.children() : null,
-  )
-}
-
-export interface DeferredProps {
-  /** Server-renderable placeholder. Stays in place until hydration completes. */
-  fallback: Child
-  /** Function returning the real content to swap in after hydration. */
-  children: () => Child
-}
-
-/**
- * Renders `fallback` on the server (and during the brief pre-hydrate
- * window on the client), then swaps to `children()` after hydration
- * completes. Use when SSR'd structure matters for layout stability —
- * e.g. a date placeholder reserves space so the real timestamp doesn't
- * cause a layout shift on first interaction.
- *
- * ```tsx
- * <Deferred fallback={<span>—</span>}>
- *   {() => <TimeAgo at={Date.now()} />}
- * </Deferred>
- * ```
- *
- * One `<span>` wrapper per use, same `display: contents` default as
- * `<ClientOnly>` — the wrapper is transparent to flex / grid / height
- * inheritance.
- */
-export function Deferred(props: DeferredProps): View {
-  return el('span', { 'data-place-deferred': '', 'data-place-contents': '' }, () =>
-    _isHydratedState.read() ? props.children() : props.fallback,
   )
 }
 
@@ -9686,24 +9625,6 @@ function isBrowserGlobalRef(e: unknown): boolean {
  */
 export function clientOnly<P>(fn: (props: P) => View): (props: P) => View {
   return component(fn, { clientOnly: true })
-}
-
-/**
- * Render `fallback` on the server; mount `fn(props)` on the client after
- * hydration completes. Like `clientOnly()` but keeps SSR'd structure for
- * layout stability — the fallback occupies space until the real body
- * arrives, avoiding a layout shift on first interaction.
- *
- *   const TimeAgo = deferred(<span>—</span>, (props: { at: number }) =>
- *     <span>{formatRelative(props.at, Date.now())}</span>,
- *   )
- */
-export function deferred<P>(fallback: Child, fn: (props: P) => View): (props: P) => View {
-  return (props: P): View =>
-    Deferred({
-      fallback,
-      children: () => fn(props),
-    })
 }
 
 export function component<P>(

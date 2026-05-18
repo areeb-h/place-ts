@@ -92,7 +92,6 @@ export const Foo = () => 'noop'`
       'Tab',
       'Tabs',
       'Activity',
-      'ClientOnly',
       'Show',
       'Fragment',
     ]

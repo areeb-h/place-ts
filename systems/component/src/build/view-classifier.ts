@@ -88,7 +88,6 @@ export const KNOWN_EFFECTS: Readonly<Record<string, Effect>> = {
   // 'suspense' — combines with L2 effects to promote to L3.
   Suspense: 'suspense',
   suspense: 'suspense',
-  Deferred: 'suspense',
   resource: 'suspense',
 }
 

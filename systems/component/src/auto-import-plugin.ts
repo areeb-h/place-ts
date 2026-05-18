@@ -53,8 +53,6 @@ export const PLACE_AUTO_IMPORTS: AutoImportRegistry = {
   Tabs: '@place/component',
   tabsState: '@place/component',
   Activity: '@place/component',
-  ClientOnly: '@place/component',
-  Deferred: '@place/component',
   Show: '@place/component',
   Fragment: '@place/component',
   // ----- Theme -----

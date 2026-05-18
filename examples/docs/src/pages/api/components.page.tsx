@@ -3,8 +3,7 @@
 // Leads with `island()` because that's the hydration boundary in
 // place's islands-only model. Then the boundary helpers that compose
 // inside or outside islands: Show, Suspense, errorBoundary, Form,
-// keyed, virtualList. ClientOnly/Deferred are documented as
-// inline-opt-out helpers; islands are the recommended path.
+// keyed, virtualList.
 
 import { Link, page } from '@place/component'
 import { Callout } from '../../components/callout.tsx'

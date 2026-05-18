@@ -7,9 +7,7 @@ import {
   _readHydrationDeltas,
   _setHydrated,
   button,
-  ClientOnly,
   component,
-  Deferred,
   div,
   Fragment,
   hydrate,
@@ -225,7 +223,7 @@ describe('hydration auditor — detects SSR/client divergence (dev-only)', () =>
     const deltas = _readHydrationDeltas()
     expect(deltas).toHaveLength(1)
     expect(deltas[0]).toMatchObject({ attribute: 'class', kind: 'mismatch' })
-    expect(deltas[0]?.fixHint).toContain('ClientOnly')
+    expect(deltas[0]?.fixHint).toContain('island')
   })
 
   test('style divergence is detected', () => {
@@ -267,61 +265,6 @@ describe('hydration auditor — detects SSR/client divergence (dev-only)', () =>
     const root = ssrInto(renderToString(div({ class: 'a b c' })))
     hydrate(div({ class: 'c  b   a' }), root)
     expect(_readHydrationDeltas().filter((d) => d.attribute === 'class')).toHaveLength(0)
-  })
-})
-
-describe('<ClientOnly> + <Deferred> — hydration corrector primitives', () => {
-  // Both primitives gate on a module-level reactive flag flipped at
-  // end of boot()'s hydrate. Tests simulate the SSR (flag false) and
-  // post-hydrate (flag true) phases via _setHydrated.
-  beforeEach(() => {
-    _setHydrated(false)
-  })
-  afterEach(() => {
-    _setHydrated(false)
-  })
-
-  test('<ClientOnly> renders nothing inside its wrapper on the server', () => {
-    const view = ClientOnly({ children: () => span({}, ['real']) })
-    const html = renderToString(view)
-    // Wrapper span exists; inside is empty (children fn not invoked).
-    expect(html).toContain('data-place-client-only')
-    expect(html).not.toContain('real')
-  })
-
-  test('<ClientOnly> populates after hydrate (flag flips → reactive child re-renders)', () => {
-    const root = ssrInto(renderToString(ClientOnly({ children: () => span({}, ['real']) })))
-    expect(root.textContent).toBe('') // SSR rendered nothing inside
-    hydrate(ClientOnly({ children: () => span({}, ['real']) }), root)
-    // Pre-flip: still empty.
-    expect(root.textContent).toBe('')
-    // Simulate post-hydrate flip.
-    _setHydrated(true)
-    expect(root.textContent).toBe('real')
-  })
-
-  test('<Deferred> renders fallback on the server', () => {
-    const view = Deferred({
-      fallback: span({}, ['…']),
-      children: () => span({}, ['real']),
-    })
-    const html = renderToString(view)
-    expect(html).toContain('data-place-deferred')
-    expect(html).toContain('…')
-    expect(html).not.toContain('real')
-  })
-
-  test('<Deferred> swaps fallback → children after hydrate flip', () => {
-    const view = Deferred({
-      fallback: span({}, ['…']),
-      children: () => span({}, ['real']),
-    })
-    const root = ssrInto(renderToString(view))
-    expect(root.textContent).toBe('…') // SSR fallback
-    hydrate(Deferred({ fallback: span({}, ['…']), children: () => span({}, ['real']) }), root)
-    expect(root.textContent).toBe('…') // pre-flip still fallback
-    _setHydrated(true)
-    expect(root.textContent).toBe('real')
   })
 })
 

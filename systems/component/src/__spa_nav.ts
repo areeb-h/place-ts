@@ -432,14 +432,3 @@ window.addEventListener('place:navigate',function(e){
 });
 })();`
 }
-
-/**
- * Back-compat default: the previous default-true view-transition wrap
- * is now opt-in (see `placeSpaNav`). This constant remains for any
- * call site that imported the literal — it bakes in the new default
- * (instant, no fade).
- *
- * @deprecated Prefer `placeSpaNav({ viewTransitions })` so per-app
- * config flows into the generated source.
- */
-export const PLACE_SPA_NAV: string = placeSpaNav()

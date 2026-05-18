@@ -21,10 +21,8 @@
 
 import type {
   Activity as _Activity,
-  ClientOnly as _ClientOnly,
   cookie as _cookie,
   cookieState as _cookieState,
-  Deferred as _Deferred,
   derived as _derived,
   Fragment as _Fragment,
   island as _island,
@@ -65,8 +63,6 @@ declare global {
   const Tabs: typeof _Tabs
   const tabsState: typeof _tabsState
   const Activity: typeof _Activity
-  const ClientOnly: typeof _ClientOnly
-  const Deferred: typeof _Deferred
   const Show: typeof _Show
   const Fragment: typeof _Fragment
   // ----- Theme -----
