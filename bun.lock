@@ -22,21 +22,6 @@
         "vitest": "latest",
       },
     },
-    "examples/commonplace": {
-      "name": "@place/commonplace",
-      "version": "0.0.0",
-      "dependencies": {
-        "@place/capability": "workspace:*",
-        "@place/component": "workspace:*",
-        "@place/data": "workspace:*",
-        "@place/persistence": "workspace:*",
-        "@place/reactivity": "workspace:*",
-        "@place/routing": "workspace:*",
-        "@place/search": "workspace:*",
-        "@tailwindcss/node": "^4.2.4",
-        "tailwindcss": "^4.2.4",
-      },
-    },
     "examples/docs": {
       "name": "@place/docs",
       "version": "0.0.0",
@@ -54,31 +39,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@place/component": "workspace:*",
-      },
-    },
-    "examples/sandbox": {
-      "name": "@place/sandbox",
-      "version": "0.0.0",
-      "dependencies": {
-        "@place/capability": "workspace:*",
-        "@place/component": "workspace:*",
-        "@place/persistence": "workspace:*",
-        "@place/reactivity": "workspace:*",
-        "@place/routing": "workspace:*",
-        "@tailwindcss/node": "^4.2.4",
-        "tailwindcss": "^4.2.4",
-      },
-    },
-    "examples/sync-server": {
-      "name": "@place/sync-server",
-      "version": "0.0.0",
-      "dependencies": {
-        "@place/component": "workspace:*",
-        "@place/reactivity": "workspace:*",
-        "@place/security": "workspace:*",
-      },
-      "devDependencies": {
-        "happy-dom": "latest",
       },
     },
     "systems/capability": {
@@ -199,8 +159,6 @@
 
     "@place/capability": ["@place/capability@workspace:systems/capability"],
 
-    "@place/commonplace": ["@place/commonplace@workspace:examples/commonplace"],
-
     "@place/component": ["@place/component@workspace:systems/component"],
 
     "@place/create-app": ["@place/create-app@workspace:tools/create-app"],
@@ -219,13 +177,9 @@
 
     "@place/routing": ["@place/routing@workspace:systems/routing"],
 
-    "@place/sandbox": ["@place/sandbox@workspace:examples/sandbox"],
-
     "@place/search": ["@place/search@workspace:systems/search"],
 
     "@place/security": ["@place/security@workspace:systems/security"],
-
-    "@place/sync-server": ["@place/sync-server@workspace:examples/sync-server"],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
