@@ -27,7 +27,7 @@ describe('CodeBlock — base rendering', () => {
     )
     expect(html).toContain('src/app.tsx')
     expect(html).toContain('tsx')
-    expect(html).toContain('data-place-code-copy')
+    expect(html).toContain('data-place-copy')
     // The inline copy runtime is emitted by `renderPage` (NOT by the
     // component itself), so it doesn't appear in the bare-component
     // SSR output. The component MARKS the flag; renderPage consumes
@@ -43,7 +43,7 @@ describe('CodeBlock — base rendering', () => {
     )
     expect(html).not.toContain('ignored.ts')
     // No header markup at all → no copy button either.
-    expect(html).not.toContain('data-place-code-copy')
+    expect(html).not.toContain('data-place-copy')
   })
 
   test('showCopy=false suppresses copy without hiding chrome', () => {
@@ -51,7 +51,7 @@ describe('CodeBlock — base rendering', () => {
       CodeBlock({ code: 'x', lang: 'ts', filename: 'a.ts', showCopy: false }),
     )
     expect(html).toContain('a.ts')
-    expect(html).not.toContain('data-place-code-copy')
+    expect(html).not.toContain('data-place-copy')
     // Inline runtime NOT emitted when no copy buttons exist.
     expect(html).not.toContain('__placeCopy')
   })
@@ -61,7 +61,7 @@ describe('CodeBlock — base rendering', () => {
     const html = renderToString(CodeBlock({ code }))
     // URL-encode the code; check it's reflected in the data attr.
     const encoded = encodeURIComponent(code)
-    expect(html).toContain(`data-place-code-copy-text="${encoded}"`)
+    expect(html).toContain(`data-place-copy-text="${encoded}"`)
   })
 
   test('copyLabels customizes the idle/copied text', () => {
@@ -159,7 +159,7 @@ describe('CodeBlock — line features', () => {
     )
     expect(html).toContain('CUSTOM')
     expect(html).not.toContain('should-be-hidden.ts')
-    expect(html).not.toContain('data-place-code-copy')
+    expect(html).not.toContain('data-place-copy')
   })
 })
 
@@ -260,7 +260,7 @@ describe('CodeBlock — runtime contract', () => {
     // can execute it. Verified in `page.test.ts` integration cases.
     const html = renderToString(CodeBlock({ code: 'a' }))
     expect(html).not.toContain('__placeCopy')
-    expect(html).toContain('data-place-code-copy')
+    expect(html).toContain('data-place-copy')
   })
 
   test('copy button surface has data-state="idle" initially', () => {

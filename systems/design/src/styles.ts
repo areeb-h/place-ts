@@ -304,9 +304,8 @@ export const styles =
 
 /* Copy button label state — driven by data-state set by the inline
  * copy runtime. CSS does the visual swap; no reactive runtime needed.
- * Generic [data-place-copy] is the new marker; the legacy
- * [data-place-code-copy] is kept for one release for any in-flight
- * external consumer.
+ * Copy and CodeBlock both emit the generic [data-place-copy] marker
+ * plus [data-copy-idle] / [data-copy-done] label children.
  *
  * data-state values:
  *   - "idle" (initial): show the idle label.
@@ -315,37 +314,27 @@ export const styles =
  *   - "failed": show the done label with a cross — only fires when
  *     BOTH the Clipboard API and execCommand fallback failed.
  */
-[data-place-copy] [data-copy-idle],
-[data-place-code-copy] [data-cb-copy-idle] { display: inline; }
-[data-place-copy] [data-copy-done],
-[data-place-code-copy] [data-cb-copy-done] { display: none; }
+[data-place-copy] [data-copy-idle] { display: inline; }
+[data-place-copy] [data-copy-done] { display: none; }
 [data-place-copy][data-state="copied"] [data-copy-idle],
-[data-place-copy][data-state="failed"] [data-copy-idle],
-[data-place-code-copy][data-state="copied"] [data-cb-copy-idle],
-[data-place-code-copy][data-state="failed"] [data-cb-copy-idle] { display: none; }
+[data-place-copy][data-state="failed"] [data-copy-idle] { display: none; }
 [data-place-copy][data-state="copied"] [data-copy-done],
-[data-place-copy][data-state="failed"] [data-copy-done],
-[data-place-code-copy][data-state="copied"] [data-cb-copy-done],
-[data-place-code-copy][data-state="failed"] [data-cb-copy-done] { display: inline; }
-[data-place-copy][data-state="copied"] [data-copy-done]::before,
-[data-place-code-copy][data-state="copied"] [data-cb-copy-done]::before {
+[data-place-copy][data-state="failed"] [data-copy-done] { display: inline; }
+[data-place-copy][data-state="copied"] [data-copy-done]::before {
   content: "✓ ";
   color: var(--color-accent, currentColor);
   font-weight: 600;
 }
-[data-place-copy][data-state="copied"],
-[data-place-code-copy][data-state="copied"] {
+[data-place-copy][data-state="copied"] {
   color: var(--color-accent, currentColor) !important;
   border-color: color-mix(in oklab, var(--color-accent, currentColor) 50%, transparent) !important;
 }
-[data-place-copy][data-state="failed"] [data-copy-done]::before,
-[data-place-code-copy][data-state="failed"] [data-cb-copy-done]::before {
+[data-place-copy][data-state="failed"] [data-copy-done]::before {
   content: "✗ ";
   color: var(--color-destructive, currentColor);
   font-weight: 600;
 }
-[data-place-copy][data-state="failed"],
-[data-place-code-copy][data-state="failed"] {
+[data-place-copy][data-state="failed"] {
   color: var(--color-destructive, currentColor) !important;
 }
 

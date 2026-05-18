@@ -36,9 +36,9 @@
 //     the runtime is emitted multiple times (e.g. SPA-nav between
 //     pages that both have copy buttons).
 //
-// **Backward-compat aliases.** The legacy CodeBlock-specific
-// markers (`data-place-code-copy` + `data-place-code-copy-text`)
-// continue to work — the listener checks both attribute names.
+// Both `<Copy>` and `<CodeBlock>` emit the same `data-place-copy` +
+// `data-place-copy-text` marker pair, so the listener matches one
+// attribute name.
 
 /**
  * Returns the inline JS source for the copy runtime. Hand-written
@@ -72,9 +72,9 @@ export function placeCopyRuntime(): string {
     'document.addEventListener("click",function(e){' +
     'var t=e.target;' +
     'if(!t||!t.closest)return;' +
-    'var b=t.closest("[data-place-copy]")||t.closest("[data-place-code-copy]");' +
+    'var b=t.closest("[data-place-copy]");' +
     'if(!b)return;' +
-    'var raw=b.getAttribute("data-place-copy-text")||b.getAttribute("data-place-code-copy-text")||"";' +
+    'var raw=b.getAttribute("data-place-copy-text")||"";' +
     'var code;try{code=decodeURIComponent(raw);}catch(_){return;}' +
     'if(navigator&&navigator.clipboard&&navigator.clipboard.writeText){' +
     'navigator.clipboard.writeText(code).then(function(){flip(b,"copied");}).catch(function(){' +

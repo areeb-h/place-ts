@@ -411,13 +411,13 @@ export const CodeBlock = (props: CodeBlockProps): View => {
           <button
             type="button"
             class="bg-transparent border border-transparent rounded px-2 py-0.5 text-muted font-inherit cursor-pointer transition-colors duration-150 hover:text-fg hover:border-border/80 hover:bg-card/60"
-            data-place-code-copy=""
-            data-place-code-copy-text={encodedCode}
+            data-place-copy=""
+            data-place-copy-text={encodedCode}
             data-state="idle"
             aria-label="Copy code"
           >
-            <span data-cb-copy-idle="">{idleLabel}</span>
-            <span data-cb-copy-done="">{copiedLabel}</span>
+            <span data-copy-idle="">{idleLabel}</span>
+            <span data-copy-done="">{copiedLabel}</span>
           </button>
         ) : null}
         {props.actionsSlot ?? null}
