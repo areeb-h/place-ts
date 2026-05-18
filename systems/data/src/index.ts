@@ -1,9 +1,9 @@
 // @place/data — data primitives over @place/reactivity.
 //
-// v0.1 ships ONE primitive: `collection<T>(state, options?)`. Keyed CRUD
-// over a `State<T[]>` with reactive lookups and optional sorting. Solves
-// the boring half of "I need an entity store" — every consumer in the
-// commonplace book had this exact shape, hand-rolled.
+// Ships ONE primitive: `collection<T>(state, options?)`. Keyed CRUD
+// over a `State<T[]>` with reactive lookups and optional sorting —
+// the boring half of "I need an entity store", which otherwise gets
+// hand-rolled per entity.
 //
 // Design rationale:
 //   - Primitive operates on a `State<T[]>`, NOT on an opaque store
@@ -11,9 +11,8 @@
 //     `persistedState`, `history`, `crossTabAdapter`, etc. unchanged.
 //   - Domain logic (id generation, timestamps, validation) lives in the
 //     consumer, not here. The collection just handles the keyed array
-//     manipulation. A hand-rolled `noteStoreFromCell` becomes a thin
-//     wrapper around `collection<Note>(notes)` that adds id+timestamps
-//     in `create`.
+//     manipulation — an entity store becomes a thin wrapper around
+//     `collection<Note>(notes)` that adds id + timestamps in `create`.
 //   - No internal indexes / Map for v0.1. `get(id)` is O(n) over the
 //     array; `all()` is O(n log n) when sorted. For 3-100 items this
 //     is faster than maintaining a parallel Map (write amplification).

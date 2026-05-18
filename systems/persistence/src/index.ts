@@ -1,24 +1,24 @@
 // @place/persistence — storage adapters for @place/reactivity state
 //
-// v0.1 shipped:
-//   - PersistenceAdapter<T>     the contract: load + save
-//   - persistedState(adapter)   a State<T> that loads on creation and saves
-//                               on every change
-//   - localStorageAdapter       sync, JSON-serializable values
-//   - memoryAdapter             in-memory, for tests / no-op fallbacks
+// A `PersistenceAdapter<T>` is a plain object — `load` / `save`, an
+// optional `observe(cb)` external-change hook, an optional `refresh`.
+// `persistedState(adapter)` wraps a `State<T>`: it loads on creation
+// and saves on every change.
 //
-// v0.2 adds:
-//   - PersistenceAdapter.observe?(cb) — optional external-change hook.
-//     persistedState subscribes and re-loads when the hook fires. The
-//     auto-save loop is broken via an `applyingRemote` flag so that
-//     remote-driven writes don't echo back through save.
-//   - crossTabAdapter(inner, channelName) — wraps any adapter with
-//     BroadcastChannel sync between tabs of the same origin.
+// Shipped adapters:
+//   - localStorageAdapter      sync, JSON-serializable values
+//   - indexedDBAdapter         async load via the resource primitive
+//   - serverAdapter            persist through a server endpoint
+//   - memoryAdapter            in-memory, for tests / no-op fallbacks
+//   - crossTabAdapter(inner)   wraps any adapter with BroadcastChannel
+//                              sync between tabs of the same origin
 //
-// Still deferred (Phase 5 unblocks but they're not built):
-//   - IndexedDB adapter (async load via the resource primitive)
-//   - Sync-server adapter (CRDT or last-write-wins, conflict handling)
-//   - Migration support across schema changes
+// `observe?(cb)` lets `persistedState` re-load on an external change;
+// the auto-save loop is broken via an `applyingRemote` flag so a
+// remote-driven write doesn't echo back through `save`.
+//
+// Deferred until a workload demands it: migration support across
+// schema changes; CRDT conflict resolution beyond last-write-wins.
 //
 // Design rationale:
 //   - The adapter is a *plain object*, not a class. Easy to test, easy to

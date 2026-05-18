@@ -9058,7 +9058,7 @@ export function errorBoundary(props: ErrorBoundaryProps): View {
 // `Provision` and `provide()` live in @place/capability — they're the
 // fundamental "bind a cap to an impl" primitive. We re-export them from
 // here so component consumers see a single import surface.
-export { cap, type Provision, provide } from '@place/capability'
+export { type Provision, provide } from '@place/capability'
 // Re-export the reactivity primitives so apps don't need a second import
 // root for state/watch/derived. Anything you reach for inside a component
 // — `state`, `watch`, `derived`, `untrack`, `batch` — is now in the same

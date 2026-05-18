@@ -373,30 +373,20 @@ export class ClientOnlyAbort extends Error {
 }
 
 /**
- * Create a capability — a typed slot that consumers reach for via
- * `.use()`. The canonical API in v1.0:
- *
- *   const Router = cap<RouterImpl>({ clientOnly: true })
- *   const Db = cap<DbConn>()
- *
- * Or for back-compat, pass a name string first:
+ * Create a capability — a typed slot consumers reach for via `.use()`
+ * (or `.tryUse()` for the nullable form). This is the single
+ * capability primitive:
  *
  *   const Router = defineCapability<RouterImpl>('Router', { clientOnly: true })
+ *   const Db = defineCapability<DbConn>('Db')
  *
- * The name is only used in error messages. When omitted, errors say
- * "capability (anonymous)" — apps that care about diagnostics name
- * their cap exports descriptively (the export binding IS the cap).
- *
- * @provisional — `cap()` is the anonymous-shorthand alternative.
- * `defineCapability(name, options)` remains the canonical
- * stability-pinned API (per `docs/stability-covenant.md`). Choose
- * `defineCapability` for shipped code; `cap()` is a convenience
- * sketch that may consolidate before v0.1 publish.
+ * `name` is used only in error messages — name the export
+ * descriptively (the export binding IS the cap). `clientOnly: true`
+ * makes an SSR-side `.use()` with no installation throw
+ * `ClientOnlyAbort` instead of the generic "not provided" error; the
+ * component framework catches that to substitute a placeholder and
+ * hydrate the real body client-side.
  */
-export function cap<T>(options: DefineCapabilityOptions = {}): Capability<T> {
-  return defineCapability<T>('(anonymous)', options)
-}
-
 export function defineCapability<T>(
   name: string,
   options: DefineCapabilityOptions = {},
