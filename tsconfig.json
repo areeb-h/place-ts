@@ -35,6 +35,7 @@
       "@place/capability": ["./systems/capability/src/index.ts"],
       "@place/routing": ["./systems/routing/src/index.ts"],
       "@place/component": ["./systems/component/src/index.ts"],
+      "@place/component/client": ["./systems/component/src/client.ts"],
       "@place/component/jsx-runtime": ["./systems/component/src/jsx-runtime.ts"],
       "@place/component/jsx-dev-runtime": ["./systems/component/src/jsx-runtime.ts"],
       "@place/component/tailwind": ["./systems/component/src/tailwind.ts"],
