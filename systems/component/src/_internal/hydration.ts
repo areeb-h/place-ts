@@ -1,14 +1,14 @@
 // Hydration state + dev-only audit registry.
 //
-// Two concerns colocated because they share the same lifecycle (boot()
-// flips the flag, drains the deltas) and the same audience (the
-// hydrate path on the client):
+// Two concerns colocated because they share the same lifecycle (the
+// island hydrate path flips the flag and drains the deltas) and the
+// same audience (the hydrate path on the client):
 //
 //   1. `_isHydratedState` — module-level reactive flag, false until
-//      `boot()` finishes hydrating the SSR'd DOM. Used by `<ClientOnly>`,
-//      `<Deferred>`, and `onMount` to decide "is now safe to run
-//      browser-only work?" Lives on the reactivity graph so subscribing
-//      to it (a `<ClientOnly>` child function) is automatic.
+//      the island runtime finishes hydrating the SSR'd DOM. Used by
+//      `onMount` and the internal `clientOnly`-capability placeholder
+//      to decide "is it now safe to run browser-only work?" Lives on
+//      the reactivity graph so subscribing to it is automatic.
 //
 //   2. The hydration auditor — dev-only mismatch detector. The framework
 //      already throws on tag mismatches at hydrate time; this catches the
@@ -23,9 +23,9 @@ import { state } from '@place/reactivity'
 const _isHydratedState = state(false)
 
 /**
- * Internal — flip the hydration-complete flag. Called by `boot()` after
- * hydrate finishes; exposed (with underscore prefix) so unit tests can
- * simulate post-hydrate state without a full boot.
+ * Internal — flip the hydration-complete flag. Called by the island
+ * hydrate path once hydration finishes; exposed (underscore prefix) so
+ * unit tests can simulate post-hydrate state.
  */
 export function _setHydrated(value: boolean): void {
   _isHydratedState.write(value)
@@ -33,15 +33,15 @@ export function _setHydrated(value: boolean): void {
 
 /**
  * Internal — read the current hydration-complete flag. Used by
- * `<ClientOnly>`, `<Deferred>`, `onMount`. Exported (underscore-prefixed)
- * for tests that need to assert on it directly.
+ * `onMount` and the internal `clientOnly`-capability placeholder.
+ * Exported (underscore-prefixed) for tests that assert on it.
  */
 export function _readHydrated(): boolean {
   return _isHydratedState.read()
 }
 
 /** Internal — reactive accessor used by primitives that subscribe to
- *  the flag (e.g. `<ClientOnly>` children re-rendering when the flag
+ *  the flag (e.g. `onMount`'s one-shot watch firing when the flag
  *  flips). Not part of the public API; the underscore prefix marks it. */
 export function _readHydratedReactive(): boolean {
   return _isHydratedState()
@@ -66,8 +66,8 @@ export const _isHydratedSignal = _isHydratedState
 //   - `mismatch`  — anything else. The user's view rendered different
 //     output server-side vs client-side. Common causes: `Date.now()` or
 //     `Math.random()` in render, `typeof window` branches, locale-
-//     dependent formatting. Fix by wrapping in `<ClientOnly>` or
-//     `<Deferred>`.
+//     dependent formatting. Fix by moving browser-only dynamic
+//     content into an island().
 
 export interface HydrationDelta {
   selector: string
@@ -83,15 +83,15 @@ const _hydrationDeltas: HydrationDelta[] = []
 /**
  * Test/inspection helper — read the accumulated deltas without
  * draining them. Internal; intended for the hydrate.test.ts unit tests
- * and the boot() flush at end of hydration.
+ * and the delta flush at end of island hydration.
  */
 export function _readHydrationDeltas(): readonly HydrationDelta[] {
   return _hydrationDeltas
 }
 
 /**
- * Test helper — drain accumulated deltas. The boot() flush calls this
- * after warn-summarizing.
+ * Test helper — drain accumulated deltas. The hydrate-end flush calls
+ * this after warn-summarizing.
  */
 export function _drainHydrationDeltas(): HydrationDelta[] {
   const out = _hydrationDeltas.slice()
@@ -223,9 +223,9 @@ export function _auditHydrationFrame(node: Element, props: Record<string, unknow
 }
 
 /**
- * Flush deltas to console at end of hydrate. Called once from `boot()`.
- * No-op in production (the entire path is dead-code-eliminated when
- * NODE_ENV is "production").
+ * Flush deltas to console at end of hydrate. Called once at the end
+ * of island hydration. No-op in production (the entire path is
+ * dead-code-eliminated when NODE_ENV is "production").
  */
 export function _flushHydrationDeltas(): void {
   const deltas = _drainHydrationDeltas()
