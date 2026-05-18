@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { describe, expect, test } from 'vitest'
-import { boot, button, div, h1, main, notFound, p, page, renderPage, span } from '../../src/index.ts'
+import { div, h1, main, notFound, p, page, renderPage, span } from '../../src/index.ts'
 
 // page() bundles {url, load, view, shell} into one object that both
 // serve() and boot() consume. renderPage exercises the server side end-
@@ -153,48 +153,6 @@ describe('page() — declarative page object', () => {
       await renderPage(user, new Request('http://x/users/42'), { id: '42' })
     ).text()
     expect(body).toContain('user:42')
-  })
-
-  test('boot: hydrates the matched route against document.body', () => {
-    const home = page({
-      url: (u) => ({ name: u.searchParams.get('name') ?? 'visitor' }),
-      load: () => ({ greeting: 'hello' }),
-      view: ({ name, greeting }) =>
-        div({ class: 'h' }, [
-          span({ class: 'g' }, [`${greeting}, ${name}`]),
-          button({ class: 'b', onClick: () => clickCount++ }, ['+1']),
-        ]),
-    })
-    let clickCount = 0
-    // Step 1: render server-side into the document body, including the
-    // load script tag — boot() needs both to round-trip.
-    return renderPage(home, new Request('http://x/?name=alice')).then(async (res) => {
-      const html = await res.text()
-      // Extract just the body innerHTML and load script for happy-dom.
-      const bodyMatch = html.match(/<body>([\s\S]*?)<\/body>/)
-      expect(bodyMatch).not.toBeNull()
-      document.body.innerHTML = bodyMatch?.[1] ?? ''
-      // Step 2: simulate the client URL.
-      history.replaceState(null, '', '/?name=alice')
-      // Step 3: boot picks the right route + hydrates.
-      const dispose = boot({ '/': home })
-      // The hydrated DOM is the SSR'd DOM, and the click handler is
-      // wired — proves load data + url props both reached the view.
-      const greet = document.body.querySelector('.g')
-      expect(greet?.textContent).toBe('hello, alice')
-      const btn = document.body.querySelector('.b') as HTMLButtonElement
-      btn.click()
-      btn.click()
-      expect(clickCount).toBe(2)
-      dispose()
-    })
-  })
-
-  test('boot: throws when no route matches, naming the registered patterns', () => {
-    document.body.innerHTML = ''
-    history.replaceState(null, '', '/nonexistent')
-    const home = page({ view: () => span({}, ['x']) })
-    expect(() => boot({ '/': home, '/about': home })).toThrow(/no route matched.*\/nonexistent/)
   })
 })
 

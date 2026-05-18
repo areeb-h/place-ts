@@ -4,7 +4,6 @@
 // grouping helper. Pure-value transforms; no Bun runtime needed.
 
 import { describe, expect, test } from 'vitest'
-import { RouterCap } from '../../../routing/src/index.ts'
 import { app, layout, page, routes, span } from '../../src/index.ts'
 
 describe('app(pages, opts) — Round 5 entry factory', () => {
@@ -45,12 +44,6 @@ describe('app(pages, opts) — Round 5 entry factory', () => {
     // rejects. Confirms we got into the serve() flow.
     const a = app([home], { clientJs: 'export {}', clientPath: '/' })
     await expect(a.serve()).rejects.toThrow(/collides with clientPath/)
-  })
-
-  test('.boot() in non-browser env throws a clear runtime guard', () => {
-    const home = page('/', { view: () => span({}, ['home']) })
-    const a = app([home])
-    expect(() => a.boot()).toThrow(/outside a browser context/)
   })
 })
 
@@ -136,68 +129,5 @@ describe('routes(prefix, pages, opts) — feature-folder grouping', () => {
     const home = page('/', { view: () => span({}, ['h']) })
     const a = app([home, ...adminRoutes])
     expect(Object.keys(a.routes).sort()).toEqual(['/', '/admin/dashboard', '/admin/users'])
-  })
-})
-
-describe('app({ router }) — first-class router slot', () => {
-  // Helper: stub `window` so `.boot()` doesn't throw the browser-only
-  // guard, and stub `RouterCap.install` to observe what gets installed
-  // without depending on a real router runtime. .boot() itself will
-  // throw past the cap-install step because there's no real DOM —
-  // we catch that and only inspect what happened *before* the throw.
-  function captureClientInstalls(fn: () => unknown): unknown[] {
-    const installs: unknown[] = []
-    const origInstall = RouterCap.install
-    RouterCap.install = ((v: unknown) => {
-      installs.push(v)
-      return () => {}
-    }) as typeof RouterCap.install
-    const hadWindow = 'window' in globalThis
-    // biome-ignore lint/suspicious/noExplicitAny: minimal window stub for the boot guard
-    ;(globalThis as any).window = { document: { body: {} } }
-    try {
-      try {
-        fn()
-      } catch {
-        // boot() needs a real DOM; the install happens before it
-        // throws, which is the part we care about.
-      }
-    } finally {
-      if (!hadWindow) delete (globalThis as { window?: unknown }).window
-      RouterCap.install = origInstall
-    }
-    return installs
-  }
-
-  test('config `router:` desugars to a client-side RouterCap install', () => {
-    const home = page('/', { view: () => span({}, ['home']) })
-    let factoryRuns = 0
-    const installs = captureClientInstalls(() => {
-      const a = app({
-        pages: [home],
-        router: () => {
-          factoryRuns++
-          return { tag: 'fake-router' } as unknown
-        },
-      })
-      a.boot()
-    })
-    expect(factoryRuns).toBe(1)
-    expect(installs).toEqual([{ tag: 'fake-router' }])
-  })
-
-  test('explicit `caps: [[RouterCap, …]]` wins over the `router:` sugar (no double-install)', () => {
-    const home = page('/', { view: () => span({}, ['home']) })
-    const installs = captureClientInstalls(() => {
-      const a = app({
-        pages: [home],
-        // Both forms provided — explicit `caps` entry should win.
-        router: () => ({ via: 'router-sugar' }) as unknown,
-        caps: [[RouterCap, () => ({ via: 'caps-array' }) as unknown]],
-      })
-      a.boot()
-    })
-    // Exactly one install — the caps-array one.
-    expect(installs).toEqual([{ via: 'caps-array' }])
   })
 })

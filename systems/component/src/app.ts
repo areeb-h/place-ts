@@ -6,10 +6,11 @@
 // pages' `path` fields — the path is written exactly once, where the
 // page lives.
 //
-// `app(pages, opts)` returns an `{ serve, boot }` pair that wraps the
-// existing `serve()` / `boot()`. The same `app(...)` value can be
-// invoked from either runtime: on the server, call `.serve()`; in the
-// browser, call `.boot()`. Same import, no server/client mirror file.
+// `app(config)` returns an `App` whose `.run()` (or `.serve()`) starts
+// Bun.serve, and `.build({ outDir })` pre-renders a static site. In the
+// islands hydration model `app()` runs only on the server — each island
+// ships and mounts its own client bundle, so there is no client-side
+// `app` entry.
 //
 // `routes(prefix, pages, opts)` is a pure value transform — for each
 // page in `pages`, returns a new Page whose `path` is `prefix + page.path`
@@ -30,14 +31,7 @@
 import type { Capability } from '@place/capability'
 import { RouterCap } from '@place/routing'
 import type { AnyLayout, AnyPage, ClientCapInstall, ServeOptions } from './index.ts'
-import { boot, serve } from './index.ts'
-
-// Build-time define injected by Bun.build's `define` option in the
-// client-bundle path. `true` in the browser bundle (the framework
-// passes `define: { __PLACE_BROWSER__: 'true' }` in its Bun.build
-// invocation), undefined on the server runtime. Used below to dead-
-// code-eliminate the server branch of `run()` from the client bundle.
-declare const __PLACE_BROWSER__: boolean | undefined
+import { serve } from './index.ts'
 
 /**
  * Options accepted by `app(pages, opts)` (the legacy positional form).
@@ -161,34 +155,28 @@ export interface AppConfig extends Omit<ServeOptions, 'routes' | 'port'> {
 }
 
 /**
- * The `app()` return value. Same instance dispatches to both runtimes:
+ * The `app()` return value.
  *
- *   - `.serve()` — call from the Bun server entry. Returns the live
- *     `Bun.Server`. Throws if invoked in a browser.
- *   - `.boot()` — call from the client entry. Hydrates the page tree
- *     against the SSR'd DOM. Throws if invoked outside a browser.
+ *   - `.run()` — the entry point. Installs server caps and starts
+ *     Bun.serve. Call it from the app entry: `app({…}).run()`.
+ *   - `.serve()` — the same, lower-level. Throws if invoked in a
+ *     browser.
+ *   - `.build({ outDir })` — pre-render a static site instead.
  *   - `.routes` — the derived routes object. Useful for tests, for
  *     adapters, and for users who need the underlying shape.
+ *
+ * In the islands hydration model there is no client-side `app` entry:
+ * each island ships and mounts its own bundle, so `app()` runs only
+ * on the server.
  */
 export interface App {
   /** Start Bun.serve with the derived routes. Server-side only. */
   serve(): Promise<Bun.Server<unknown>>
-  /** Hydrate against the SSR'd DOM. Browser-side only. */
-  boot(): void
   /**
-   * Universal entry: dispatches to `.serve()` on the server runtime
-   * (returns the started `Bun.Server` promise) and to caps-install +
-   * `.boot()` on the browser runtime (returns `void`). Reads `port`
-   * from `process.env.PORT` if not explicitly configured. Lets app
-   * entries collapse to a single `export default app({…}).run()`
-   * without the `if (typeof window)` branch.
-   *
-   * The return type is `Promise<Bun.Server<unknown>> | undefined`
-   * because the same expression has different shapes per runtime —
-   * the caller almost always discards the return (it's an entry-point
-   * file).
+   * The app entry point. Installs server-side capabilities, then
+   * starts Bun.serve. `export default app({…}).run()`.
    */
-  run(): Promise<Bun.Server<unknown>> | undefined
+  run(): Promise<Bun.Server<unknown>>
   /**
    * Pre-render the app to a static site (T19-A / ADR 0051). Runs the
    * full server setup — Tailwind compile, island discovery + bundling,
@@ -222,20 +210,15 @@ export interface App {
  *   import postRoutes from './posts'   // exports Page[] for /posts/*
  *   import adminRoutes from './admin'  // exports Page[] for /admin/*
  *
- *   export default app(
- *     [home, ...postRoutes, ...adminRoutes],
- *     { security: 'standard', port: 5173 },
- *   ).serve()
- *
- * For browser:
- *
- *   // client.tsx (or share app.tsx and invoke .boot())
- *   import app from './app'
- *   app.boot()
+ *   export default app({
+ *     pages: [home, ...postRoutes, ...adminRoutes],
+ *     security: 'standard',
+ *     port: 5173,
+ *   }).run()
  */
 // Two callable forms:
 //   1. Config-object form (preferred): `app({ pages: [...], caps: [...], ... }).run()`
-//   2. Legacy positional form: `app([...pages], opts).serve()` / `.boot()`
+//   2. Legacy positional form: `app([...pages], opts).run()`
 // The runtime detects by whether the first arg is an array.
 export function app(config: AppConfig): App
 export function app(pages: readonly AnyPage[], opts?: AppOptions): App
@@ -444,11 +427,12 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     async serve(): Promise<Bun.Server<unknown>> {
       if (typeof window !== 'undefined') {
         throw new Error(
-          'app.serve() was called in a browser context. Call app.boot() from ' +
-            'the client entry instead — .serve() starts Bun.serve and only runs server-side.',
+          'app.serve() was called in a browser context. `app()` runs only ' +
+            'on the server — it starts Bun.serve. Islands ship and mount ' +
+            'their own client bundles; there is no client-side app entry.',
         )
       }
-      // Install server-side caps before booting. Each factory runs
+      // Install server-side caps before serving. Each factory runs
       // ONCE here — the result is the process-wide baseline that
       // every request's capability scope inherits via ALS. This is
       // the right shape for read-only data (seeded stores, config,
@@ -457,38 +441,11 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       installCapsFor('server')
       return serve(resolveServeOpts())
     },
-    boot(): void {
-      if (typeof window === 'undefined') {
-        throw new Error(
-          'app.boot() was called outside a browser context. Call app.serve() from ' +
-            'the server entry instead — .boot() hydrates against the DOM and only runs client-side.',
-        )
-      }
-      // Install client-side caps before boot. Disposers are
-      // intentionally discarded — caps live for the page-session
-      // lifetime.
-      installCapsFor('client')
-      const layout = config.layout
-      const bootOpts = layout !== undefined ? { layout } : undefined
-      boot(routes, bootOpts)
-    },
-    run(): Promise<Bun.Server<unknown>> | undefined {
-      // `__PLACE_BROWSER__` is a build-time define set to `true` in the
-      // client bundle (see Bun.build invocation in `serve()`). On the
-      // server runtime the symbol is undefined; we treat that as the
-      // "not browser" case. This split is what lets the bundler drop
-      // `serve()` and its entire transitive closure on client builds —
-      // a runtime `typeof window` check leaves both branches in the
-      // bundle, a build-time literal doesn't.
-      if (typeof __PLACE_BROWSER__ !== 'undefined' && __PLACE_BROWSER__) {
-        // Browser runtime: install client caps, then hydrate.
-        installCapsFor('client')
-        const layout = config.layout
-        const bootOpts = layout !== undefined ? { layout } : undefined
-        boot(routes, bootOpts)
-        return undefined
-      }
-      // Server runtime: install server caps, then start Bun.serve.
+    run(): Promise<Bun.Server<unknown>> {
+      // The app entry. `app()` runs only on the server in the islands
+      // model — each island ships its own client bundle and mounts
+      // itself, so there is no client-side `app` runtime to dispatch
+      // to. `run()` installs server caps and starts Bun.serve.
       installCapsFor('server')
       return serve(resolveServeOpts())
     },
