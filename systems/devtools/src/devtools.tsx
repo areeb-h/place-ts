@@ -225,7 +225,9 @@ function scopeNodeRow(n: GraphNodeSnapshot): View {
       <span class="place-dt-badge" data-kind={n.kind}>
         {n.kind}
       </span>
-      <span class="place-dt-gnode-val">{n.kind === 'watch' ? 'effect' : (n.value ?? '—')}</span>
+      <span class="place-dt-gnode-val">
+        {n.kind === 'watch' ? (n.label ?? 'effect') : (n.value ?? '—')}
+      </span>
       <span class="place-dt-status" data-s={n.status}>
         {n.status}
       </span>
@@ -286,9 +288,7 @@ function activityRow(e: ActivityEntry): View {
         <span class="place-dt-act-from">{e.from}</span>
         <span class="place-dt-act-arrow"> → </span>
         <span class="place-dt-act-to">{e.to}</span>
-        {e.effects > 0 ? (
-          <span class="place-dt-act-fired">{`  +${e.effects} sync`}</span>
-        ) : null}
+        {e.effects > 0 ? <span class="place-dt-act-fired">{`  +${e.effects} sync`}</span> : null}
       </span>
     </li>
   )

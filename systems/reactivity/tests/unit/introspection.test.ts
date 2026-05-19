@@ -59,6 +59,32 @@ describe('inspectGraph — node enumeration', () => {
     stop()
   })
 
+  test('watch({ name }) surfaces as the snapshot node label', () => {
+    const s = state(778100)
+    const stop = watch(
+      () => {
+        s()
+      },
+      { name: 'attr:778100-marker' },
+    )
+    const node = inspectGraph().nodes.find((n) => n.label === 'attr:778100-marker')
+    expect(node).toBeDefined()
+    expect(node?.kind).toBe('watch')
+    stop()
+  })
+
+  test('an unlabeled watch has no label', () => {
+    const s = state(778101)
+    const stop = watch(() => {
+      s()
+    })
+    const node = inspectGraph().nodes.find(
+      (n) => n.kind === 'watch' && n.sources.length > 0 && n.label === undefined,
+    )
+    expect(node).toBeDefined()
+    stop()
+  })
+
   test('value preview tracks writes', () => {
     const s = state(778005)
     expect(nodeByValue(inspectGraph(), '778005')).toBeDefined()

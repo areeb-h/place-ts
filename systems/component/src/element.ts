@@ -663,10 +663,13 @@ function applyProp(node: HTMLElement, key: string, value: unknown, cleanups: Dis
 
   if (typeof value === 'function') {
     cleanups.push(
-      watch(() => {
-        const resolved = (value as () => unknown)()
-        setAttr(node, key, resolved)
-      }),
+      watch(
+        () => {
+          const resolved = (value as () => unknown)()
+          setAttr(node, key, resolved)
+        },
+        { name: `attr:${key}` },
+      ),
     )
     return
   }
@@ -691,11 +694,14 @@ function applyClassDirective(
   // cond can be a reactive function/state, or a static value.
   if (typeof value === 'function') {
     cleanups.push(
-      watch(() => {
-        const truthy = !!(value as () => unknown)()
-        if (truthy) node.classList.add(className)
-        else node.classList.remove(className)
-      }),
+      watch(
+        () => {
+          const truthy = !!(value as () => unknown)()
+          if (truthy) node.classList.add(className)
+          else node.classList.remove(className)
+        },
+        { name: `class:${className}` },
+      ),
     )
     return
   }
@@ -728,9 +734,12 @@ function applyStyleDirective(
   }
   if (typeof value === 'function') {
     cleanups.push(
-      watch(() => {
-        apply((value as () => unknown)())
-      }),
+      watch(
+        () => {
+          apply((value as () => unknown)())
+        },
+        { name: `style:${propName}` },
+      ),
     )
     return
   }
@@ -756,11 +765,14 @@ function applyBindDirective(
   const input = node as HTMLInputElement
   if (binding === 'value') {
     cleanups.push(
-      watch(() => {
-        const v = s()
-        const next = v === null || v === undefined ? '' : String(v)
-        if (input.value !== next) input.value = next
-      }),
+      watch(
+        () => {
+          const v = s()
+          const next = v === null || v === undefined ? '' : String(v)
+          if (input.value !== next) input.value = next
+        },
+        { name: 'bind:value' },
+      ),
     )
     const handler = (): void => {
       const peeked = s.peek()
@@ -777,10 +789,13 @@ function applyBindDirective(
   }
   if (binding === 'checked') {
     cleanups.push(
-      watch(() => {
-        const v = !!s()
-        if (input.checked !== v) input.checked = v
-      }),
+      watch(
+        () => {
+          const v = !!s()
+          if (input.checked !== v) input.checked = v
+        },
+        { name: 'bind:checked' },
+      ),
     )
     const handler = (): void => {
       s.set(input.checked as never)

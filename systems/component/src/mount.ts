@@ -91,21 +91,24 @@ function mountReactiveChild(parent: ParentNode, fn: () => Child, anchor: Node | 
   parent.insertBefore(slot, anchor)
   let current: Disposer = () => {}
 
-  const watchDispose = watch(() => {
-    try {
-      current()
-      const resolved = fn()
-      current = untrack(() => mountChild(parent, resolved, slot))
-    } catch (e) {
-      // Failed mount: no cleanup to run. Bubble the throw to the
-      // nearest error boundary; if none, re-throw so the page surfaces
-      // the error loudly instead of silently swallowing.
-      current = () => {}
-      const handler = ErrorBoundaryCap.tryUse()
-      if (handler === null) throw e
-      handler(e)
-    }
-  })
+  const watchDispose = watch(
+    () => {
+      try {
+        current()
+        const resolved = fn()
+        current = untrack(() => mountChild(parent, resolved, slot))
+      } catch (e) {
+        // Failed mount: no cleanup to run. Bubble the throw to the
+        // nearest error boundary; if none, re-throw so the page surfaces
+        // the error loudly instead of silently swallowing.
+        current = () => {}
+        const handler = ErrorBoundaryCap.tryUse()
+        if (handler === null) throw e
+        handler(e)
+      }
+    },
+    { name: 'reactive child' },
+  )
 
   return () => {
     watchDispose()
@@ -638,44 +641,47 @@ export const Fragment = (props: { children?: Children }): View => ({
           cursor = cursor.nextSibling
         }
         let firstRun = true
-        const watchDispose = watch(() => {
-          let resolved: Child
-          try {
-            resolved = fn()
-          } catch (e) {
-            const handler = ErrorBoundaryCap.tryUse()
-            if (handler === null) throw e
-            handler(e)
-            return
-          }
-          if (firstRun) {
-            firstRun = false
-            return
-          }
-          // Subsequent fires: tear down the previous render (listeners
-          // + DOM) and mount the new value into the bounded region.
-          disposeAll(subCleanups)
-          subCleanups = []
-          for (const n of currentNodes) n.parentNode?.removeChild(n)
-          currentNodes = []
-          let dispose: Disposer
-          try {
-            dispose = untrack(() => mountChild(parent, resolved, endAnchor))
-          } catch (e) {
-            const handler = ErrorBoundaryCap.tryUse()
-            if (handler === null) throw e
-            handler(e)
-            return
-          }
-          subCleanups.push(dispose)
-          // Re-snapshot the freshly-mounted range from startAnchor to
-          // endAnchor — same shape as the initial capture.
-          let c: Node | null = startAnchor.nextSibling
-          while (c !== null && c !== endAnchor) {
-            currentNodes.push(c)
-            c = c.nextSibling
-          }
-        })
+        const watchDispose = watch(
+          () => {
+            let resolved: Child
+            try {
+              resolved = fn()
+            } catch (e) {
+              const handler = ErrorBoundaryCap.tryUse()
+              if (handler === null) throw e
+              handler(e)
+              return
+            }
+            if (firstRun) {
+              firstRun = false
+              return
+            }
+            // Subsequent fires: tear down the previous render (listeners
+            // + DOM) and mount the new value into the bounded region.
+            disposeAll(subCleanups)
+            subCleanups = []
+            for (const n of currentNodes) n.parentNode?.removeChild(n)
+            currentNodes = []
+            let dispose: Disposer
+            try {
+              dispose = untrack(() => mountChild(parent, resolved, endAnchor))
+            } catch (e) {
+              const handler = ErrorBoundaryCap.tryUse()
+              if (handler === null) throw e
+              handler(e)
+              return
+            }
+            subCleanups.push(dispose)
+            // Re-snapshot the freshly-mounted range from startAnchor to
+            // endAnchor — same shape as the initial capture.
+            let c: Node | null = startAnchor.nextSibling
+            while (c !== null && c !== endAnchor) {
+              currentNodes.push(c)
+              c = c.nextSibling
+            }
+          },
+          { name: 'reactive child' },
+        )
         sink.push(watchDispose)
         sink.push(() => disposeAll(subCleanups))
       }

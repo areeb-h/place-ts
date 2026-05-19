@@ -68,6 +68,13 @@ interface BaseNode {
    * nodes that no island scope covers.
    */
   devScope?: string
+  /**
+   * Dev-only: a human label for what this node does — set on the
+   * framework's binding watches (`class:active`, `attr:href`,
+   * `reactive child`, …) via `watch(fn, { name })`. Surfaced by
+   * `inspectGraph()` so the devtools shows what each effect is.
+   */
+  devLabel?: string
   // **`Set<BaseNode>`, not `BaseNode[]`** — `track()` had been doing
   // `sources.includes(source)` (O(N)) and `clearSources` was doing
   // `dependents.indexOf(node)` (also O(N)), both inside the per-write
@@ -516,6 +523,14 @@ export interface WatchOptions {
    * synchronous forever, regardless of future scheduler changes.
    */
   defer?: boolean
+  /**
+   * Dev-only label describing what this watch does — `class:active`,
+   * `attr:href`, `reactive child`, etc. Surfaced by `inspectGraph()` so
+   * the devtools shows what each effect is rather than an anonymous
+   * "effect". The framework's element factory + mounter set it for
+   * their binding watches; never read in a production build.
+   */
+  name?: string
 }
 
 /**
@@ -652,7 +667,10 @@ export function watch(fn: () => void, options?: WatchOptions): Disposer {
     deferred: options?.defer === true,
     needsRerun: false,
   }
-  if (GRAPH_DEV) devRegister(node)
+  if (GRAPH_DEV) {
+    if (options?.name !== undefined) node.devLabel = options.name
+    devRegister(node)
+  }
   runWatch(node)
   // If the initial run wrote to a state the watch observes, runWatch's
   // finally re-queued the watch via needsRerun. Drain so the re-runs
@@ -1335,6 +1353,10 @@ export interface GraphNodeSnapshot {
    *  module-eval / SSR nodes no scope covered. Lets the devtools group
    *  the graph by the code a developer wrote. */
   readonly scope?: string
+  /** Human label for a `watch` — what the effect does (`class:active`,
+   *  `attr:href`, `reactive child`, …). Set by the framework's binding
+   *  watches; absent for `state` / `derived` and unlabeled user watches. */
+  readonly label?: string
 }
 
 /** A point-in-time picture of the whole reactive graph. */
@@ -1431,6 +1453,7 @@ export function inspectGraph(): GraphSnapshot {
       dependents,
       ...(value !== undefined ? { value } : {}),
       ...(node.devScope !== undefined ? { scope: node.devScope } : {}),
+      ...(node.devLabel !== undefined ? { label: node.devLabel } : {}),
     })
   }
   return { nodes, capturedAt: Date.now() }
