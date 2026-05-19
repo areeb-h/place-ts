@@ -15,16 +15,18 @@
 import { type Disposer, type State, untrack, watch } from '@place/reactivity'
 // Cleanup-scope helper shared with the element factory + SSR path.
 import { disposeAll } from './_internal/cleanup.ts'
+// `ErrorBoundaryCap` — the error-boundary capability the reactive-child
+// + Fragment mounters read. A `_internal/` leaf; no barrel cycle.
+import { ErrorBoundaryCap } from './_internal/error-boundary-cap.ts'
 import { _isHydratedSignal } from './_internal/hydration.ts'
 // Cookie-backed reactive state — backs `<Tabs group>` persistence.
 import { cookieState } from './cookies.ts'
 // Element factory + SSR string emitter. element.ts ⇄ mount.ts is a
 // benign function-level cycle (see header).
 import { childToHtml, el } from './element.ts'
-// `ErrorBoundaryCap` + `onMount` still live in index.ts; touched only
-// inside runtime functions, so the mount ⇄ index cycle stays benign.
-// Re-homed in later cuts.
-import { ErrorBoundaryCap, onMount } from './index.ts'
+// `onMount` still lives in index.ts; touched only inside runtime
+// functions, so the mount ⇄ index cycle stays benign.
+import { onMount } from './index.ts'
 import type { Child, Children, View } from './types.ts'
 
 export function mountChildren(

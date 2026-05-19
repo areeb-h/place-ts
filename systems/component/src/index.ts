@@ -26,7 +26,7 @@
 //   - Animations / transitions
 //   - Error boundaries
 
-import { ClientOnlyAbort, defineCapability, runWithCapabilityScope } from '@place/capability'
+import { ClientOnlyAbort, runWithCapabilityScope } from '@place/capability'
 import {
   type Disposer,
   type EffectBranded,
@@ -3850,9 +3850,13 @@ export function For<T>(props: ForProps<T>): View {
   })
 }
 
-// Exported for ./element.ts (makeView's error path reads it). Re-homed
-// to _internal/error-boundary-cap.ts in a later decomposition cut.
-export const ErrorBoundaryCap = defineCapability<(error: unknown) => void>('ErrorBoundary')
+// `ErrorBoundaryCap` — extracted to `./_internal/error-boundary-cap.ts`
+// (cut 7b), a leaf the render modules import without a barrel cycle.
+// `errorBoundary()` (below) installs under it; re-exported for public
+// + test consumers.
+import { ErrorBoundaryCap } from './_internal/error-boundary-cap.ts'
+
+export { ErrorBoundaryCap }
 
 export interface ErrorBoundaryProps {
   /** What to render in place of `children` when a throw is caught. */
