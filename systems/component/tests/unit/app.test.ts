@@ -38,11 +38,10 @@ describe('app(pages, opts) — Round 5 entry factory', () => {
     // method is async — checking startup-validation throws via the
     // existing `serve()` path is sufficient.
     const home = page('/', { view: () => span({}, ['home']) })
-    // Explicit `clientJs` puts a client bundle at `clientPath`; `app()`
-    // no longer auto-synthesizes one (islands-only model). `clientPath`
-    // '/' then collides with the route '/' — serve() validates this and
-    // rejects. Confirms we got into the serve() flow.
-    const a = app([home], { clientJs: 'export {}', clientPath: '/' })
+    // `clientPath` '/' collides with the route '/' — serve() validates
+    // this at startup and rejects. Confirms `.serve()` reached the
+    // serve() flow rather than throwing the browser guard.
+    const a = app([home], { clientPath: '/' })
     await expect(a.serve()).rejects.toThrow(/collides with clientPath/)
   })
 })

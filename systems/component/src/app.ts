@@ -36,8 +36,8 @@ import { serve } from './index.ts'
 /**
  * Options accepted by `app(pages, opts)` (the legacy positional form).
  * Everything `serve()` accepts except `routes` (which is derived from
- * the pages array). The `clientEntry` field stays optional — pass it
- * to enable client-side hydration; omit for static-only sites.
+ * the pages array). Interactive sub-trees are declared as islands
+ * (`islands` / `islandsDir`); a page with no island ships zero JS.
  */
 export type AppOptions = Omit<ServeOptions, 'routes'>
 
@@ -340,21 +340,11 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     }
   }
 
-  // No `clientEntry` auto-default. The framework's hydration model is
-  // islands-only — ADR 0020 retired full-page hydration. Every
+  // The framework's hydration model is islands-only — ADR 0020 retired
+  // full-page hydration, and the legacy single-bundle `clientEntry` /
+  // `clientJs` path was removed in the Tier 20 entrypoint split. Every
   // interactive sub-tree is an island, bundled on its own; a page with
   // no island ships zero framework JavaScript.
-  //
-  // The old behaviour auto-defaulted `clientEntry` to `Bun.main` unless
-  // `islands`/`islandsDir` was set. That regressed every app that
-  // simply had no islands yet (or declared its islands a different
-  // way): `Bun.main` is the isomorphic `app.ts`, so bundling it for the
-  // client dragged the ENTIRE framework onto a plain content page —
-  // ~19 KB gzipped — the exact opposite of the islands thesis.
-  //
-  // `clientEntry` / `clientJs` are still honored when passed explicitly
-  // (a legacy / gradual-migration escape hatch); `app()` never
-  // synthesizes one.
   const resolveServeOpts = (): ServeOptions => {
     const opts: Partial<ServeOptions> = { ...serveOpts, port: resolvePort(), routes }
     // Auto-defaults — the framework principle is "secure by default."

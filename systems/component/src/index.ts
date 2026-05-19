@@ -4399,7 +4399,7 @@ function escapeForJsonScript(json: string): string {
 }
 
 /** Options for `renderPage` — primarily the bootstrap script src that
- *  serve() injects (so individual pages don't repeat `/client.js`). */
+ *  serve() injects (the route's per-route bundle URL, when one exists). */
 export interface RenderPageOptions {
   /** URL of the hydration bootstrap module. Emitted as
    *  `<script type="module" src="…">` at the bottom of <body>. */
@@ -5998,13 +5998,13 @@ export async function renderToHtml(p: AnyPage, opts: RenderToHtmlOptions = {}): 
   return res.text()
 }
 
-// ===== serve — Bun.serve wrapper that bundles client + dispatches routes =====
+// ===== serve — Bun.serve wrapper that bundles islands + dispatches routes =====
 //
-// One call to stand up an SSR-with-hydration server:
+// One call to stand up an SSR-with-islands server:
 //
 //   await serve({
 //     port: 5180,
-//     clientEntry: './client.tsx',
+//     islandsDir: './src/islands',
 //     routes: {
 //       '/':            home,                          // a Page
 //       'GET /kv/:key': (_req, p) => json(...),        // a raw handler
@@ -6013,10 +6013,10 @@ export async function renderToHtml(p: AnyPage, opts: RenderToHtmlOptions = {}): 
 //   })
 //
 // What it does:
-//   1. Bun.build's the `clientEntry` once at startup, serves the bundle
-//      at `/client.js` (configurable via `clientPath`)
-//   2. Auto-injects `bootstrap: '/client.js'` into every Page's shell
-//      (so each Page hydrates without restating the script src)
+//   1. Bundles each registered island once at startup (per ADR 0019 /
+//      0023) and serves the bundles at content-hashed `/islands/*` URLs
+//   2. Emits one `<script>` per island a page actually uses — a page
+//      with no island ships zero framework JavaScript
 //   3. Dispatches each request: pages render via `renderPage()`, raw
 //      handlers run as `(req, params) => Response`
 //   4. WebSocket / pre-router hooks via `fetch` and `websocket` options
@@ -6149,9 +6149,8 @@ export function resolveTailwindFromTheme(
 export interface ServeTailwindOptions {
   /**
    * Glob patterns to scan for class candidates. **Optional.** When
-   * omitted, defaults to scanning the directory of `clientEntry` (or
-   * `cwd` if `clientEntry` is unset) for `.{ts,tsx,js,jsx,html}`. That
-   * covers the typical case: app source lives next to its `server.tsx`.
+   * omitted, defaults to scanning the project working directory for
+   * `.{ts,tsx,js,jsx,html}`.
    *
    * Pass an explicit list when scanning needs to span extra trees
    * (component libraries, content directories, etc.).
@@ -6331,20 +6330,11 @@ export interface ServeOptions {
   port?: number
   routes: ServeRoutes
   /**
-   * Path to the client entry module. Bundled via Bun.build at startup,
-   * served at `clientPath`. Omit for static-only sites (no hydration).
-   */
-  clientEntry?: string
-  /**
    * Per-route bundle splitting (T5-B-1, ADR 0018). Maps route path →
    * source file. When set, `serve()` runs ONE `Bun.build` with
-   * `splitting: true` over all entries (+ `clientEntry` as the shared
-   * seed) so Bun extracts shared chunks. Each route's HTML emits a
-   * `<script src>` pointing to its own bundle, not the shared one.
-   *
-   * Routes NOT in this map fall back to `clientEntry` — so this is
-   * additive / opt-in. Apps that previously had `clientEntry` work
-   * unchanged.
+   * `splitting: true` over all entries so Bun extracts shared chunks.
+   * Each route's HTML emits a `<script src>` pointing to its own
+   * bundle.
    *
    * Example:
    *
@@ -6357,6 +6347,9 @@ export interface ServeOptions {
    * page's source?" from a `Page` object. Apps already type the path
    * once when importing the page module; declaring it again here is
    * mechanical. See ADR 0018.
+   *
+   * The islands model (`islands` / `islandsDir`) is the recommended
+   * client-bundling path — a page with no island ships zero JS.
    */
   clientEntries?: Readonly<Record<string, string>>
   /**
@@ -6447,15 +6440,8 @@ export interface ServeOptions {
    * the function.
    */
   clientCaps?: readonly ClientCapInstall[]
-  /**
-   * Pre-built client bundle as a string, served verbatim at `clientPath`.
-   * Use this on non-Bun runtimes (Node, Cloudflare Workers, etc.) where
-   * `Bun.build` isn't available — pre-build with esbuild/Vite/Rollup and
-   * pass the result here. Takes priority over `clientEntry` if both are
-   * set.
-   */
-  clientJs?: string
-  /** URL path to serve the client bundle at. Default: `/client.js`. */
+  /** URL-path base for the route splitter's default bundle. Default:
+   *  `/client.js`. Only relevant when `clientEntries` is set. */
   clientPath?: string
   /** Default headers applied to all responses (CORS, CSP, etc.). */
   headers?: HeadersInit
@@ -6792,8 +6778,7 @@ function compileServeRoutes(routes: ServeRoutes, clientPath: string): CompiledRo
 
 /**
  * Modules to mark `external` for every browser-targeted `Bun.build`
- * the framework runs (legacy single `clientEntry`, the route splitter,
- * and the per-island bundler).
+ * the framework runs (the route splitter and the per-island bundler).
  *
  * Two categories rolled into one list:
  *
@@ -6809,13 +6794,12 @@ function compileServeRoutes(routes: ServeRoutes, clientPath: string): CompiledRo
  *     gzipped). Per-island wrappers don't reach this file anymore
  *     (they import from `./_client-mount.ts` after the leaf
  *     extraction) — so for the islands path this is dead defense.
- *     But the **legacy `clientEntry` and the `clientEntries`
- *     route-splitter paths** still reach `_serveImpl`'s dynamic
- *     imports of `./build/*` through the framework barrel; without
- *     this entry, those paths would ship the full TS compiler in every
- *     visitor's bundle. Keep until the split-entry refactor lands
- *     (`@place/component/server` subpath), at which point this is
- *     redundant.
+ *     But the `clientEntries` route-splitter path still reaches
+ *     `_serveImpl`'s dynamic imports of `./build/*` through the
+ *     framework barrel; without this entry, that path would ship the
+ *     full TS compiler in every visitor's bundle. Keep until the
+ *     split-entry refactor lands (`@place/component/server` subpath),
+ *     at which point this is redundant.
  */
 const BROWSER_BUILD_EXTERNAL: readonly string[] = [
   '@tailwindcss/node',
@@ -7075,17 +7059,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           `package.json. Underlying error: ${msg}`,
       )
     }
-    // Default content: the directory containing `clientEntry`, since
-    // app source typically lives next to its server entry. Falls back
-    // to cwd for static-only sites with no clientEntry.
-    let defaultContent: string
-    if (options.clientEntry) {
-      const lastSlash = options.clientEntry.lastIndexOf('/')
-      const dir = lastSlash >= 0 ? options.clientEntry.slice(0, lastSlash) : options.clientEntry
-      defaultContent = `${dir}/**/*.{tsx,jsx,ts,js,html}`
-    } else {
-      defaultContent = `${process.cwd()}/**/*.{tsx,jsx,ts,js,html}`
-    }
+    // Default content: the project working directory. Apps that keep
+    // source elsewhere pass an explicit `tailwind.content` glob.
+    const defaultContent = `${process.cwd()}/**/*.{tsx,jsx,ts,js,html}`
     // `base` accepts the bare CSS string or a `themeTokens()` result
     // (object with `.base`) directly — the latter saves the
     // `base: tokens.base` boilerplate.
@@ -7101,73 +7077,10 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     timings.tailwindBytes = tailwindCss.length
   }
 
-  // Client bundle: three sources, in priority order.
-  //   1. `options.clientJs` — caller passes pre-built bundle as a string.
-  //      This is what non-Bun runtimes (Node, Cloudflare Workers via
-  //      adapters) use, since Bun.build isn't available there.
-  //   2. `options.clientEntry` + Bun runtime — Bun.build at startup.
-  //   3. `options.clientEntry` + non-Bun runtime — error: tell the caller
-  //      to pre-build with esbuild/Vite/etc. and pass `clientJs`.
-  let clientJs: string | null = null
-  if (options.clientJs !== undefined) {
-    clientJs = options.clientJs
-  } else if (options.clientEntry) {
-    if (typeof Bun === 'undefined' || typeof Bun.build !== 'function') {
-      throw new Error(
-        'serve: clientEntry requires Bun.build, which is not available in this runtime. ' +
-          'Pre-build the client bundle with esbuild/Vite/Rollup and pass `clientJs: <string>` ' +
-          'instead. Or run under Bun.',
-      )
-    }
-    const bundleStart = performance.now()
-    // Legacy single-bundle path: `clientEntry: 'src/client.ts'`. One
-    // entrypoint, no `splitting: true`, no per-route emission. The
-    // route-splitter + island-bundler paths below replace this for
-    // every modern config — `clientEntry` survives for migration and
-    // for non-Bun adapters that need a single pre-built JS string.
-    // Shared options come from `BROWSER_BUILD_EXTERNAL` +
-    // `browserMinify` + `browserSourcemap`; see their definitions for
-    // the rationale on each value.
-    //
-    // **`__PLACE_BROWSER__: 'true'`** is a build-time constant the
-    // bundler folds into a literal `true`, so `if (typeof
-    // __PLACE_BROWSER__ !== 'undefined' && __PLACE_BROWSER__) { … }
-    // else { …server… }` branches DCE on browser builds. The server
-    // runtime (Bun loading the entry directly) leaves the define
-    // unset; `typeof` returns `'undefined'`, the server branch runs.
-    const build = await Bun.build({
-      entrypoints: [options.clientEntry],
-      target: 'browser',
-      format: 'esm',
-      // **Minify off** in the legacy path: source maps are inline (see
-      // the comment on `browserSourcemap` for why we use `'linked'`
-      // elsewhere), and the legacy path predates the
-      // sourcemap-stripping observation; users on this path get raw
-      // dev output. Modernized paths use `browserMinify(isProduction)`.
-      minify: false,
-      plugins: [placeAutoImport()],
-      sourcemap: browserSourcemap(isProduction),
-      // `__PLACE_DEV__` (ADR 0028): inverse of production. Gates the
-      // HMR runtime + the `island()` accept wrapper so prod ships zero
-      // bytes of HMR code via Bun's dead-branch elimination.
-      define: { __PLACE_BROWSER__: 'true', __PLACE_DEV__: isProduction ? 'false' : 'true' },
-      external: [...BROWSER_BUILD_EXTERNAL],
-    })
-    if (!build.success) {
-      throw new Error(`serve: client bundle failed:\n${build.logs.join('\n')}`)
-    }
-    const out = build.outputs[0]
-    if (!out) throw new Error('serve: client bundle produced no outputs')
-    clientJs = await out.text()
-    timings.bundleMs = performance.now() - bundleStart
-    timings.bundleBytes = clientJs.length
-  }
-
   // T5-B-1 (ADR 0018): per-route bundle splitting. When `clientEntries`
   // is provided, build per-route bundles via Bun's `splitting: true` so
   // each route ships only its own view code + shared chunks (framework
-  // runtime + layout). The fallback `clientEntry` bundle above stays
-  // available for routes NOT in `clientEntries` (gradual adoption).
+  // runtime + layout).
   //
   // `splitterBundles` holds bundleUrl → raw UTF-8 bytes
   // (`Uint8Array<ArrayBuffer>`). The route serving pass below returns
@@ -7194,7 +7107,8 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   if (options.clientEntries && Object.keys(options.clientEntries).length > 0) {
     if (typeof Bun === 'undefined' || typeof Bun.build !== 'function') {
       throw new Error(
-        'serve: clientEntries requires Bun.build. Use a single clientEntry on non-Bun runtimes.',
+        'serve: clientEntries (per-route bundle splitting) requires Bun.build, ' +
+          'which is not available in this runtime. Run under Bun.',
       )
     }
     const splitStart = performance.now()
@@ -7209,7 +7123,6 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     }
     const splitResult = await buildRouteSplitBundles({
       clientEntries: options.clientEntries,
-      ...(options.clientEntry ? { clientEntry: options.clientEntry } : {}),
       clientPath,
       plugins: [placeAutoImport()],
       define: { __PLACE_BROWSER__: 'true', __PLACE_DEV__: isProduction ? 'false' : 'true' },
@@ -7294,7 +7207,8 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     _setIslandRegistry(islandRegistry)
     if (typeof Bun === 'undefined' || typeof Bun.build !== 'function') {
       throw new Error(
-        'serve: `islands` requires Bun.build. Use a single clientEntry on non-Bun runtimes.',
+        'serve: `islands` requires Bun.build, which is not available in this runtime. ' +
+          'Run under Bun.',
       )
     }
     // Specifier opacity via `_serverDynImport`.
@@ -7446,51 +7360,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     _setIslandBundleUrls(undefined)
   }
 
-  // Content-hash the bundle in prod so it can be served with
-  // `immutable, max-age=31536000`. Browsers cache forever; deploys with
-  // a new bundle get a new path. The original `clientPath` becomes a
-  // 308 redirect for back-compat (any hardcoded `<script src="/client.js">`
-  // anywhere keeps working).
-  //
-  // Dev keeps `clientPath` as the served path (no hash) — bundles change
-  // on every server restart; long max-age would just stale-bomb edits.
-  let clientHash: string | null = null
-  if (clientJs !== null && isProduction) {
-    const data = new TextEncoder().encode(clientJs)
-    const digest = await crypto.subtle.digest('SHA-256', data)
-    const bytes = new Uint8Array(digest)
-    let hex = ''
-    for (let i = 0; i < 4; i++) {
-      const b = bytes[i] ?? 0
-      hex += b.toString(16).padStart(2, '0')
-    }
-    clientHash = hex // 8 hex chars = 32 bits, ample for collision avoidance
-  }
-  const effectiveClientPath =
-    clientHash !== null ? clientPath.replace(/\.js$/, `.${clientHash}.js`) : clientPath
-  const isHashedClientPath = effectiveClientPath !== clientPath
+  // Cache-Control for content-hashed bundles (the route splitter +
+  // island bundler emit content-hashed URLs). Hashed URLs are
+  // immutable: a new build changes the URL, so browsers can cache
+  // forever.
   const hashedBundleCacheControl = 'public, max-age=31536000, immutable'
-
-  // T5-D-phase-2 (ADR 0025) SRI: hash the legacy single-bundle clientJs
-  // so the bootstrap `<script>` tag emits `integrity="sha384-…"`.
-  //
-  // T6-A: encode once into a stable `Uint8Array` and serve the SAME
-  // bytes from the `/client.js` handler. Same rationale as the
-  // splitterBundles map — guarantees the bytes hashed match the bytes
-  // the browser receives.
-  let clientJsBytes: Uint8Array<ArrayBuffer> | null = null
-  if (clientJs !== null) {
-    clientJsBytes = new TextEncoder().encode(clientJs) as Uint8Array<ArrayBuffer>
-    const sriDigest = await crypto.subtle.digest('SHA-384', clientJsBytes)
-    const sriB64 = btoa(String.fromCharCode(...new Uint8Array(sriDigest)))
-    scriptIntegrity[effectiveClientPath] = sriB64
-    if (isHashedClientPath) {
-      // Legacy `clientPath` returns 308 → effectiveClientPath in prod;
-      // tagging it too means the framework keeps integrity working if
-      // an app hardcodes the legacy URL.
-      scriptIntegrity[clientPath] = sriB64
-    }
-  }
 
   const compiled = compileServeRoutes(options.routes, clientPath)
 
@@ -7741,15 +7615,13 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     const existing = inflight.get(cacheKey)
     if (existing) return existing
     const promise = (async (): Promise<CacheEntry> => {
-      // Per-route bootstrap (T5-B-1): if the route has a dedicated bundle
-      // via `clientEntries`, use that URL. Else fall back to the shared
-      // `effectiveClientPath` (legacy single-bundle behavior).
-      const perRouteBootstrap =
+      // Per-route bootstrap (T5-B-1): the route's own split bundle URL
+      // if `clientEntries` was set, else the splitter's shared default
+      // bundle, else nothing (pure-islands or static page).
+      const bootstrap =
         (page.path !== undefined ? routeToBundle.get(page.path) : undefined) ??
         splitterDefaultBundleUrl ??
         null
-      const bootstrap =
-        perRouteBootstrap ?? (clientJs !== null ? effectiveClientPath : null)
       const enableSpaNav = Object.keys(islandRegistry).length > 0
       const spaNavVT = options.viewTransitions === true
       // Production-only SRI — see explanation at the other call site below.
@@ -7881,27 +7753,6 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       ...userHeaders,
     }
 
-    // Built-in: client bundle. Served only if clientEntry was given.
-    // GET + HEAD both accepted (HEAD strip happens in innerFetch).
-    //
-    // In prod the canonical asset path is the content-hashed
-    // `effectiveClientPath` (e.g. `/client.<sha8>.js`) served with
-    // `immutable, max-age=31536000`. The legacy `clientPath`
-    // (e.g. `/client.js`) returns 308 to the hashed path so any
-    // hardcoded references still resolve.
-    if (
-      clientJsBytes !== null &&
-      (req.method === 'GET' || req.method === 'HEAD') &&
-      url.pathname === effectiveClientPath
-    ) {
-      return new Response(clientJsBytes, {
-        headers: {
-          ...baseHeaders,
-          'Content-Type': 'application/javascript; charset=utf-8',
-          'Cache-Control': isHashedClientPath ? hashedBundleCacheControl : bundleCacheControl,
-        },
-      })
-    }
     // T5-B-1: per-route bundle URLs (ADR 0018). Every entry produced
     // by the route splitter (per-route chunks + shared chunks Bun
     // extracted) lives in `splitterBundles`. We serve any URL the map
@@ -7929,24 +7780,6 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
             ? 'application/json; charset=utf-8'
             : 'application/javascript; charset=utf-8',
           'Cache-Control': isProduction ? hashedBundleCacheControl : bundleCacheControl,
-        },
-      })
-    }
-    // Legacy `clientPath` redirect → effective hashed path. Only fires
-    // in prod (when the two paths differ); dev's effectiveClientPath
-    // === clientPath, so the GET above handles it directly.
-    if (
-      clientJs !== null &&
-      isHashedClientPath &&
-      (req.method === 'GET' || req.method === 'HEAD') &&
-      url.pathname === clientPath
-    ) {
-      return new Response(null, {
-        status: 308,
-        headers: {
-          ...baseHeaders,
-          Location: effectiveClientPath,
-          'Cache-Control': bundleCacheControl,
         },
       })
     }
@@ -8075,14 +7908,13 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           )
         }
         // Non-ISR path: render fresh every request.
-        // Per-route bootstrap (T5-B-1): the route's per-route bundle URL
-        // if `clientEntries` was set; else the shared `effectiveClientPath`.
-        const perRouteBootstrap =
+        // Per-route bootstrap (T5-B-1): the route's own split bundle
+        // URL if `clientEntries` was set, else the splitter's shared
+        // default, else nothing.
+        const bootstrap =
           (r.page.path !== undefined ? routeToBundle.get(r.page.path) : undefined) ??
           splitterDefaultBundleUrl ??
           null
-        const bootstrap =
-          perRouteBootstrap ?? (clientJs !== null ? effectiveClientPath : null)
         const enableSpaNav = Object.keys(islandRegistry).length > 0
         const spaNavVT = options.viewTransitions === true
         // **SRI in dev = friction without security gain.**
@@ -8392,11 +8224,10 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       params: Record<string, string>,
     ): Promise<{ html: string; styleHashes: string[] }> => {
       const req = new Request(`http://localhost${pathStr}`)
-      const perRouteBootstrap =
+      const bootstrap =
         (page.path !== undefined ? routeToBundle.get(page.path) : undefined) ??
         splitterDefaultBundleUrl ??
         null
-      const bootstrap = perRouteBootstrap ?? (clientJs !== null ? effectiveClientPath : null)
       // No `scriptNonce` and no `enableHmr` — a static document carries
       // no per-request nonce (the strict CSP is delivered via `_headers`
       // — T19-B) and is a production artefact.
@@ -8427,12 +8258,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         : []
       return { html, styleHashes }
     }
-    // Merge the legacy single-client bundle (non-islands apps) into the
-    // bundle map so it's written verbatim alongside the island bundles.
+    // Every emitted bundle (per-route split chunks + island bundles)
+    // is written verbatim alongside the rendered HTML.
     const allBundles = new Map(splitterBundles)
-    if (clientJs !== null && clientJsBytes !== null) {
-      allBundles.set(effectiveClientPath, clientJsBytes)
-    }
     const staticResult = await writeStaticSite({
       outDir: options.staticExport.outDir,
       routes: staticRoutes,
@@ -8472,7 +8300,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           pattern: r.matcher.pattern,
           isPage: r.page !== null,
         })),
-        clientPath: clientJs !== null ? clientPath : null,
+        // Islands ship per-island bundles + per-route split chunks at
+        // content-hashed URLs — there is no single client-bundle path.
+        clientPath: null,
         timings,
         startupMs: performance.now() - startupStart,
         hasTheme: options.theme !== undefined,

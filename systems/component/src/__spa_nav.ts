@@ -1,10 +1,9 @@
 // Inline SPA-navigation runtime for islands-only apps.
 //
-// Background: when an app uses `islands` (T5-D phase 2) and skips
-// `clientEntry` (no full-page hydration), no JavaScript intercepts
-// link clicks by default. Every `<Link>` falls through to native
-// anchor-follow → full page reload. This runtime restores SPA-style
-// navigation:
+// Background: in the islands model (no full-page hydration), no
+// JavaScript intercepts link clicks by default. Every `<Link>` falls
+// through to native anchor-follow → full page reload. This runtime
+// restores SPA-style navigation:
 //
 //   1. Intercept `<a data-place-link>` clicks
 //   2. Fetch the destination HTML

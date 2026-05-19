@@ -441,7 +441,7 @@ export function renderDocument(body: string, parts: DocumentParts): string {
   //   - Entries are tiny (~2-3 KB) — their fetch finishes fast once
   //     it starts; the dominant cost is the chunks they import.
   //
-  // Bootstrap (legacy clientJs path) also gets preloaded for the
+  // The per-route bootstrap bundle also gets preloaded for the
   // same reason — it's the entry that everything else hangs off.
   const preloadFor = (src: string): string => {
     const integ = integrityFor(src)

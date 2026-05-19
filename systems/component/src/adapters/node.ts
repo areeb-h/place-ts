@@ -10,14 +10,14 @@
 //
 //   await serve({
 //     adapter: nodeAdapter({ port: 3000 }),
-//     clientJs: '/* … pre-built bundle … */',  // or omit for SSR-only
 //     routes: { '/': home },
 //   })
 //
-// Pre-build constraint: Node has no `Bun.build`. Pre-build your client
-// entry with esbuild/Vite/Rollup and pass the result via `clientJs`.
-// Without it, hydration is impossible (the SSR HTML references a
-// `/client.js` that doesn't exist).
+// Build constraint: Node has no `Bun.build`, so the island bundler +
+// route splitter (which need it) don't run under this adapter — the
+// Node adapter serves SSR HTML. Client interactivity (islands) needs
+// a Bun build step; run the build under Bun and serve the static
+// export, or run the live server under Bun.
 //
 // What this adapter does NOT do:
 //   - WebSocket upgrade (the framework's WebSocket support is Bun-only

@@ -100,19 +100,6 @@ describe('nodeAdapter — Node http server integration', () => {
     expect(await res.text()).toBe('echo me back')
   })
 
-  test('serves the pre-built clientJs at clientPath', async () => {
-    serverInstance = await serve({
-      adapter: nodeAdapter({ port, hostname: '127.0.0.1' }),
-      clientJs: 'console.log("pre-built bundle")',
-      routes: { 'GET /': () => new Response('home') },
-    })
-
-    const res = await fetch(`http://127.0.0.1:${port}/client.js`)
-    expect(res.status).toBe(200)
-    expect(res.headers.get('content-type')).toBe('application/javascript; charset=utf-8')
-    expect(await res.text()).toBe('console.log("pre-built bundle")')
-  })
-
   test('static assets via fs fallback (no Bun.file)', async () => {
     // Create a temp dir with a file, mount it as a static prefix.
     const dir = await mkdtemp(join(tmpdir(), 'place-static-'))
@@ -194,16 +181,6 @@ describe('nodeAdapter — Node http server integration', () => {
     expect(nonce1).toBeTruthy()
     expect(nonce2).toBeTruthy()
     expect(nonce1).not.toBe(nonce2)
-  })
-
-  test('clientEntry without clientJs throws on Node (clear error)', async () => {
-    await expect(
-      serve({
-        adapter: nodeAdapter({ port, hostname: '127.0.0.1' }),
-        clientEntry: '/some/file.tsx',
-        routes: {},
-      }),
-    ).rejects.toThrow(/Bun\.build, which is not available/)
   })
 
   test('preserves request method on dispatch (PUT routes through correctly)', async () => {
