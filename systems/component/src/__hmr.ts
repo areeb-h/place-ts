@@ -1,32 +1,30 @@
 // Dev-mode HMR runtime — typed-envelope WebSocket client.
 //
-// Connects to `/__place_hmr` on every dev page load. Two protocols:
+// Connects to `/__place_hmr` on every dev page load. Protocols:
 //
-//   - **Per-island swap** (the new path, ADR 0028 phase 2). Server
-//     pushes `{ t: 'swap', updates }` after rebuilding island bundles
-//     in place. For each update the client (a) disposes the existing
-//     instances on the page via the island's `window.__placeIslandRegistry[name]`
-//     entry, (b) injects a fresh `<script type="module">` pointing at
-//     the new content-hashed bundle URL — its module-init re-mounts
-//     the markers with the new render fn. No page reload; parent-scope
-//     signal state is preserved.
+//   - **Hello** (`{ t: 'hello', boot }`). Sent by the server the
+//     moment the socket opens. `boot` is unique per server process.
+//     The client stores it in `sessionStorage`; on a later connect it
+//     reloads ONLY if `boot` differs from the stored value — i.e. the
+//     server genuinely restarted. A bare reconnect to the same server
+//     (flaky socket, proxied dev env, sleep/wake) carries the same
+//     `boot` and is a no-op. This is what keeps a flapping WebSocket
+//     from turning into a reload loop.
 //
-//   - **Full reload** (legacy + fallback). Server pushes the bare
-//     string `'reload'` (slow-path: page/layout/framework edits triggered
-//     a child-process restart) OR `{ t: 'reload' }` envelope. Client
-//     calls `location.reload()`. Also the fallback for any swap that
-//     can't apply cleanly — better a reload than a wedged page.
+//   - **Per-island swap** (`{ t: 'swap', updates }`, ADR 0028 phase 2).
+//     The server rebuilt island bundles in place. For each update the
+//     client disposes the live instances via
+//     `window.__placeIslandRegistry[name]` and injects a fresh
+//     `<script type="module">` at the new content-hashed URL. No page
+//     reload; parent-scope signal state is preserved.
+//
+//   - **Full reload** (`'reload'` bare string, or `{ t: 'reload' }`).
+//     Explicit reload signal. Also the fallback for a swap that can't
+//     apply cleanly.
 //
 // **Reconnect behaviour.** On any `onclose`, retry with exponential
-// backoff (100 → 200 → 400 → 800 → 1500 ms cap). The supervisor
-// respawn cycle is typically ~700 ms, so the second or third retry
-// usually wins. Once a connection has been seen and then dropped, the
-// next successful `onopen` reloads — the server is fresh and any
-// in-memory state may be incompatible with the new build.
-//
-// **Why not a server-sent events stream?** WS is already wired for
-// future bidirectional traffic (client acks per ADR 0028 phase 3).
-// Symmetry > minimal-bytes-this-cut.
+// backoff (100 → 200 → 400 → 800 → 1500 ms cap). Reconnecting never
+// reloads on its own — only a changed `boot` does.
 
 /** Path of the WebSocket endpoint. Reserved + framework-internal. */
 export const HMR_WS_PATH = '/__place_hmr'
@@ -35,7 +33,7 @@ export const HMR_WS_PATH = '/__place_hmr'
  * Inline JS source for the HMR client. Returned as a string so
  * `renderPage` can wrap it in `<script>` with the per-response nonce.
  * ES5-flavoured, no template literals — runs everywhere without
- * compilation. ~1.3 kB raw.
+ * compilation. ~1.4 kB raw.
  */
 export function placeHmr(): string {
   // The runtime is one IIFE. We keep ES5 dialect to avoid Bun-side
@@ -46,7 +44,6 @@ export function placeHmr(): string {
     '(function(){' +
     'if(window.__placeHmr===1)return;' +
     'window.__placeHmr=1;' +
-    'var seenOpen=false;' +
     'var retry=100;' +
     'function bump(){retry=Math.min(retry*2,1500);}' +
     // Apply a single island swap. Returns true on success, false on
@@ -79,16 +76,23 @@ export function placeHmr(): string {
     'for(var i=0;i<updates.length;i++){if(!applyOne(updates[i]))return false;}' +
     'return true;' +
     '}' +
+    // Compare the server's boot id against the last one we saw. A
+    // changed id means the server restarted → reload once. Same id
+    // (or first ever) → just remember it; do NOT reload.
+    'function onHello(boot){' +
+    'if(typeof boot!=="string")return;' +
+    'var prev=null;' +
+    'try{prev=sessionStorage.getItem("__place_boot");}catch(_){}' +
+    'try{sessionStorage.setItem("__place_boot",boot);}catch(_){}' +
+    'if(prev!==null&&prev!==boot){location.reload();}' +
+    '}' +
     'function handle(data){' +
-    // Legacy bare-string shape — slow-path reload signal from the
-    // child-process supervisor restart cycle.
+    // Legacy bare-string reload signal.
     'if(data==="reload"){location.reload();return;}' +
     'var msg;try{msg=JSON.parse(data);}catch(_){return;}' +
     'if(!msg||typeof msg.t!=="string")return;' +
-    'if(msg.t==="swap"){' +
-    'if(!applySwap(msg.updates))location.reload();' +
-    'return;' +
-    '}' +
+    'if(msg.t==="hello"){onHello(msg.boot);return;}' +
+    'if(msg.t==="swap"){if(!applySwap(msg.updates))location.reload();return;}' +
     'if(msg.t==="reload"){location.reload();return;}' +
     '}' +
     'function connect(){' +
@@ -98,11 +102,10 @@ export function placeHmr(): string {
     HMR_WS_PATH +
     '");}' +
     'catch(e){bump();setTimeout(connect,retry);return;}' +
-    'ws.onopen=function(){' +
-    'if(seenOpen){location.reload();return;}' +
-    'seenOpen=true;' +
-    'retry=100;' +
-    '};' +
+    // Opening the socket is NOT a reload trigger — only a changed
+    // boot id (handled in `onHello`) is. Reset the backoff on a
+    // clean open.
+    'ws.onopen=function(){retry=100;};' +
     'ws.onmessage=function(e){handle(e.data);};' +
     'ws.onclose=function(){bump();setTimeout(connect,retry);};' +
     'ws.onerror=function(){try{ws.close();}catch(_){}};' +

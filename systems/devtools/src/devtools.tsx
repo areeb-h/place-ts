@@ -306,6 +306,24 @@ function perfPane(perf: State<PerfInfo | null>) {
  * then render `<Devtools />` once in a root layout (behind a dev gate).
  */
 export const devtoolsView = () => {
+  // **Client-only surface.** The devtools has no server-side
+  // rendering — it observes a *running* app. Touching `document` here
+  // throws a `ReferenceError` on the server, which the island runtime
+  // recovers from by emitting an empty marker and mounting the view
+  // fresh on the client. Two bugs that buys us:
+  //   - No flash of unstyled content — nothing devtools-shaped is in
+  //     the SSR'd HTML, so there is nothing to show before the
+  //     stylesheet is adopted.
+  //   - No SSR/client hydration mismatch — the panels render
+  //     differently on server vs client (RouterCap is client-only;
+  //     the graph is empty until hydrate), and an empty SSR marker
+  //     sidesteps the mismatch entirely.
+  if (typeof document === 'undefined') {
+    throw new ReferenceError('document is not defined')
+  }
+  // Adopt the stylesheet before the panel's first paint — no FOUC.
+  adoptStyles()
+
   const open = state(false)
   const tab = state<TabId>('graph')
   const graph = state<GraphSnapshot>({ nodes: [], capturedAt: 0 })
@@ -315,8 +333,6 @@ export const devtoolsView = () => {
   const router = RouterCap.tryUse()
 
   onMount(() => {
-    adoptStyles()
-
     // Graph — snapshot now, then re-snapshot on every settled tick.
     graph.set(inspectGraph())
     const offTick = onGraphTick(() => graph.set(inspectGraph()))

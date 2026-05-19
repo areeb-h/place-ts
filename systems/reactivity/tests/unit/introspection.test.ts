@@ -121,6 +121,29 @@ describe('onGraphTick', () => {
     await Promise.resolve()
     expect(ticks).toBe(1)
   })
+
+  test('a tick listener that writes state does not feed back into a loop', async () => {
+    // The devtools re-snapshots into its own state cell from inside
+    // the tick callback — that write must NOT schedule another tick,
+    // or it loops forever. The re-entrancy guard breaks the feedback.
+    const trigger = state(900100)
+    const sink = state(0)
+    let runs = 0
+    const off = onGraphTick(() => {
+      runs++
+      sink.set(sink.peek() + 1)
+    })
+    trigger.set(900101)
+    await Promise.resolve()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(runs).toBe(1) // exactly one tick — no feedback loop
+    trigger.set(900102)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(runs).toBe(2) // a fresh app-originated write still ticks
+    off()
+  })
 })
 
 describe('graph lifecycle', () => {

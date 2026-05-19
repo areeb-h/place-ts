@@ -224,11 +224,27 @@ describe('placeHmr() — typed-envelope HMR client', () => {
     expect(reloadCount).toBe(1)
   })
 
-  test('first onopen does NOT reload; second onopen (reconnect) DOES', () => {
+  test('onopen never reloads; reload happens only on a changed server boot id', () => {
+    // The HMR client reloads on a genuine server restart — detected by
+    // a changed `boot` id in the `hello` envelope — never on a bare
+    // reconnect. A flaky socket can reconnect freely without looping.
+    try {
+      sessionStorage.removeItem('__place_boot')
+    } catch {
+      // sessionStorage unavailable — the runtime degrades; test n/a.
+    }
     const ws = boot()
+    // Opening the socket is not a reload trigger.
     ws.onopen?.(new Event('open'))
     expect(reloadCount).toBe(0)
-    ws.onopen?.(new Event('open'))
+    // First `hello`: record the boot id, no reload.
+    ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-A' }) })
+    expect(reloadCount).toBe(0)
+    // Reconnect to the SAME server (same boot id): no reload.
+    ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-A' }) })
+    expect(reloadCount).toBe(0)
+    // A CHANGED boot id means the server restarted → reload once.
+    ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-B' }) })
     expect(reloadCount).toBe(1)
   })
 

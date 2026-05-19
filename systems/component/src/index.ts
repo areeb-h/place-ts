@@ -7382,9 +7382,27 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // an island edit vs. ~1500 ms for a full `bun --watch` restart.
   type HmrWS = Bun.ServerWebSocket<{ kind?: string }>
   const hmrClients = new Set<HmrWS>()
+  // **Boot id** — unique per server process. Sent to every HMR client
+  // on connect as a `hello` envelope. The client reloads only when
+  // this value CHANGES across connects (a genuine server restart),
+  // never on a bare reconnect — so a flaky WebSocket (proxied dev
+  // environments, sleep/wake, transient drops) can reconnect freely
+  // without triggering a reload loop. Replaces the old "reload on the
+  // second onopen" heuristic, which looped whenever the socket flapped.
+  const hmrBootId =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
   const hmrHandler: Bun.WebSocketHandler<{ kind?: string }> = {
     open(ws) {
-      if (ws.data?.kind === 'hmr') hmrClients.add(ws)
+      if (ws.data?.kind === 'hmr') {
+        hmrClients.add(ws)
+        try {
+          ws.send(JSON.stringify({ t: 'hello', boot: hmrBootId }))
+        } catch (_) {
+          // Raced closed before the greeting — nothing to do.
+        }
+      }
     },
     message(_ws, _msg) {
       // Reserved for future T11 patch streaming. Today: ignore.

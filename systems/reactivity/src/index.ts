@@ -1127,6 +1127,7 @@ let devIdSeq = 0
 const devNodes = new Set<BaseNode>()
 const devTickListeners = new Set<() => void>()
 let devTickQueued = false
+let devTickRunning = false
 
 /** Tag a node with a stable id and add it to the live registry. */
 function devRegister(node: BaseNode): void {
@@ -1138,13 +1139,25 @@ function devRegister(node: BaseNode): void {
  * Signal "the graph changed" to subscribers, coalesced to one
  * notification per microtask so a `batch()` of N writes wakes the
  * devtools once, not N times.
+ *
+ * **Re-entrancy guard.** A tick listener almost always writes state
+ * itself — the devtools re-snapshots the graph into its own `state`
+ * cell. That write would schedule another tick, whose listener writes
+ * again… an infinite feedback loop. While listeners run, `devTickRunning`
+ * suppresses any tick their own writes would trigger; the next
+ * *genuine* (app-originated) write resumes normal notification.
  */
 function devNotifyTick(): void {
-  if (devTickListeners.size === 0 || devTickQueued) return
+  if (devTickListeners.size === 0 || devTickQueued || devTickRunning) return
   devTickQueued = true
   queueMicrotask(() => {
     devTickQueued = false
-    for (const l of devTickListeners) l()
+    devTickRunning = true
+    try {
+      for (const l of devTickListeners) l()
+    } finally {
+      devTickRunning = false
+    }
   })
 }
 
