@@ -336,9 +336,18 @@ function scheduleForStrategy(el: HTMLElement, strategy: string): void {
     return
   }
   if (strategy === 'idle') {
-    const ric = (window as Window & { requestIdleCallback?: (cb: () => void) => number })
-      .requestIdleCallback
-    if (ric) ric(() => hydrateOne(el))
+    // requestIdleCallback WITHOUT a timeout can be deferred
+    // indefinitely on a continuously-busy page (an animation loop, a
+    // long task stream) — the island would simply never hydrate. The
+    // timeout guarantees the callback runs by 2s at the latest: still
+    // "at idle" in the common case, but bounded so a busy page can't
+    // starve an idle-strategy island forever.
+    const ric = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+      }
+    ).requestIdleCallback
+    if (ric) ric(() => hydrateOne(el), { timeout: 2000 })
     else setTimeout(() => hydrateOne(el), 200)
     return
   }
