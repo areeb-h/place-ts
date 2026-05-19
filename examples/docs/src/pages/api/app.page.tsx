@@ -21,7 +21,6 @@ export default app({
   tailwind: true,
   security: 'standard',
   viewTransitions: true,
-  clientEntry: \`\${import.meta.dir}/app.ts\`,
   caps: [[RouterCap, pathRouter]],
 }).run()`
 
@@ -81,8 +80,10 @@ export default page('/app', {
         <code>app()</code>
       </h1>
       <p>
-        Declares the application. Same module on server and client; <code>.run()</code> dispatches —
-        on the server it starts <code>Bun.serve</code>, on the client it installs caps and hydrates.
+        Declares the application. <code>app()</code> runs only on the server — <code>.run()</code>{' '}
+        installs server-side capabilities and starts <code>Bun.serve</code>. In the islands
+        hydration model each interactive island ships and mounts its own client bundle, so there is
+        no client-side <code>app</code> entry.
       </p>
 
       <h2 id="signature">Signature</h2>
@@ -156,15 +157,6 @@ export default page('/app', {
         cross-document VT navigate normally.
       </p>
 
-      <h3 id="client-entry">
-        <code>clientEntry</code>
-      </h3>
-      <p>
-        Absolute path to the file whose bundle ships to the browser. Almost always{' '}
-        <code>{`\${import.meta.dir}/app.ts`}</code> — the same file that exports the app config. On
-        the server, this is what <code>Bun.build</code> targets.
-      </p>
-
       <h3 id="port">
         <code>port</code>
       </h3>
@@ -176,22 +168,19 @@ export default page('/app', {
       <h2 id="run">
         <code>.run()</code>
       </h2>
-      <p>Dispatches:</p>
-      <ul>
-        <li>
-          <strong>Server</strong> (no <code>window</code>): installs server caps, calls{' '}
-          <code>serve()</code>, returns the <code>Bun.Server</code> promise.
-        </li>
-        <li>
-          <strong>Client</strong>: installs client caps, calls <code>boot()</code>, returns{' '}
-          <code>undefined</code>.
-        </li>
-      </ul>
+      <p>
+        The app entry point. Installs server-side capabilities (the <code>server</code> factories
+        from <code>caps</code>), then starts <code>Bun.serve</code> and returns the{' '}
+        <code>Bun.Server</code> promise. <code>.serve()</code> is the same call, one level lower —
+        both run server-side only and throw if invoked in a browser.
+      </p>
 
-      <Callout kind="tip" title="One file, both runtimes">
-        Your <code>app.ts</code> is the entry on both sides. Bun runs it as the server; the
-        framework's bundler builds the same file for the browser, dropping server-only code via the
-        per-runtime cap factory split.
+      <Callout kind="tip" title="The server entry — islands are the client entries">
+        Your <code>app.ts</code> runs only on the server. There is no client-side <code>app</code>{' '}
+        runtime: each interactive island ships and mounts its own bundle, so a page with no island
+        ships zero framework JavaScript. Client-side capability factories (from{' '}
+        <code>router</code> / <code>caps</code>) are forwarded to the island bundler, which wires
+        them into the island bundles automatically.
       </Callout>
 
       <h2 id="build">
