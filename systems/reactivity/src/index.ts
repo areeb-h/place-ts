@@ -9,6 +9,7 @@
 // the build-time view classifier reads them off inferred return types
 // to pick the hydration runtime. Zero runtime cost.
 import type { EffectBranded } from './effects.ts'
+
 //
 // Three primitives total:
 //   - state(value | () => value, options?)
@@ -44,6 +45,13 @@ type NodeKind = 'state' | 'watch'
 interface BaseNode {
   kind: NodeKind
   state: NodeState
+  /**
+   * Dev-only stable id, assigned by `devRegister` when graph
+   * introspection is live (see the "Dev-only reactive-graph
+   * introspection" section). Never set in a production build — the
+   * registration call sites are DCE'd. `@place/devtools` reads it.
+   */
+  devId?: number
   // **`Set<BaseNode>`, not `BaseNode[]`** — `track()` had been doing
   // `sources.includes(source)` (O(N)) and `clearSources` was doing
   // `dependents.indexOf(node)` (also O(N)), both inside the per-write
@@ -265,6 +273,7 @@ function writeState<T>(node: StateNode<T>, next: T | ((prev: T) => T)): void {
   node.state = CLEAN
   propagateChange(node)
   maybeFlushSync()
+  if (GRAPH_DEV) devNotifyTick()
 }
 
 // ===== Watch + Scheduler =====
@@ -295,6 +304,7 @@ function runWatch(node: WatchNode): void {
         node.state = CLEAN
       }
     }
+    if (GRAPH_DEV) devNotifyTick()
   }
 }
 
@@ -530,6 +540,7 @@ export function state<T>(initial: T | (() => T), options?: StateOptions<T>): Sta
     hasLocalWrite: false,
     equals: options?.equals ?? defaultEquals,
   }
+  if (GRAPH_DEV) devRegister(node)
   const read = (): T => readState(node)
   // Build the function-with-methods. The function IS the read; methods
   // are attached as own properties. At runtime ALL methods are present;
@@ -563,6 +574,7 @@ export function state<T>(initial: T | (() => T), options?: StateOptions<T>): Sta
       hasLocalWrite: false,
       equals: defaultEquals,
     }
+    if (GRAPH_DEV) devRegister(dNode)
     return () => readState(dNode)
   }
   // BooleanState.toggle
@@ -610,6 +622,7 @@ export function watch(fn: () => void, options?: WatchOptions): Disposer {
     deferred: options?.defer === true,
     needsRerun: false,
   }
+  if (GRAPH_DEV) devRegister(node)
   runWatch(node)
   // If the initial run wrote to a state the watch observes, runWatch's
   // finally re-queued the watch via needsRerun. Drain so the re-runs
@@ -623,6 +636,7 @@ export function watch(fn: () => void, options?: WatchOptions): Disposer {
     clearSources(node)
     syncQueue.delete(node)
     deferredQueue.delete(node)
+    if (GRAPH_DEV) devNodes.delete(node)
   }
 }
 
@@ -654,6 +668,7 @@ export function derived<T>(fn: () => T, options?: StateOptions<T>): Derived<T> {
     hasLocalWrite: false,
     equals: options?.equals ?? defaultEquals,
   }
+  if (GRAPH_DEV) devRegister(node)
   const read = (): T => readState(node)
   const d = read as Derived<T>
   d.peek = () => untrack(() => readState(node))
@@ -669,6 +684,7 @@ export function derived<T>(fn: () => T, options?: StateOptions<T>): Derived<T> {
       hasLocalWrite: false,
       equals: defaultEquals,
     }
+    if (GRAPH_DEV) devRegister(dNode)
     return () => readState(dNode)
   }
   return d
@@ -1073,6 +1089,170 @@ export function history<T>(s: State<T>, options?: HistoryOptions<T>): History {
       snapshot(s.peek())
     },
     dispose: watchStop,
+  }
+}
+
+// ===== Dev-only reactive-graph introspection =====
+//
+// Powers `@place/devtools`' graph panel — a live view of every
+// `state` / `derived` / `watch` node, its current value, and the
+// dependency edges between them. The charter's clause 3 ("the graph
+// is observable") made literal.
+//
+// **Cost discipline.** Registration (the hot path — one call per
+// primitive creation) is gated on `GRAPH_DEV`:
+//   - Production browser build (`__PLACE_DEV__` defined `false`):
+//     `GRAPH_DEV` folds to `false`, every `if (GRAPH_DEV)` registration
+//     branch is dropped by Bun's dead-code elimination, and the
+//     registry below tree-shakes out.
+//   - Server / SSR (no `window`): `GRAPH_DEV` is `false`, so a
+//     long-running server never accumulates nodes in `devNodes`.
+//   - Dev browser build + the test runtime (happy-dom): `GRAPH_DEV`
+//     is `true` — the graph is observable.
+// The read side (`inspectGraph` / `onGraphTick`) is exported; an app
+// that never imports `@place/devtools` leaves them unreferenced and
+// the bundler shakes them away.
+
+declare const __PLACE_DEV__: boolean | undefined
+
+/**
+ * True when the reactive graph should be observable: a browser
+ * context that is not an explicit production build. Evaluated once
+ * at module load — folds to a literal under a production define.
+ */
+const GRAPH_DEV: boolean =
+  typeof window !== 'undefined' && (typeof __PLACE_DEV__ === 'undefined' || __PLACE_DEV__ !== false)
+
+let devIdSeq = 0
+const devNodes = new Set<BaseNode>()
+const devTickListeners = new Set<() => void>()
+let devTickQueued = false
+
+/** Tag a node with a stable id and add it to the live registry. */
+function devRegister(node: BaseNode): void {
+  node.devId = ++devIdSeq
+  devNodes.add(node)
+}
+
+/**
+ * Signal "the graph changed" to subscribers, coalesced to one
+ * notification per microtask so a `batch()` of N writes wakes the
+ * devtools once, not N times.
+ */
+function devNotifyTick(): void {
+  if (devTickListeners.size === 0 || devTickQueued) return
+  devTickQueued = true
+  queueMicrotask(() => {
+    devTickQueued = false
+    for (const l of devTickListeners) l()
+  })
+}
+
+/** Node-state code → human label, for the snapshot. */
+function devStatusLabel(s: NodeState): GraphNodeSnapshot['status'] {
+  return s === CLEAN ? 'clean' : s === CHECK ? 'check' : s === DIRTY ? 'dirty' : 'computing'
+}
+
+/**
+ * Defensive one-line preview of a node's value. Never throws, never
+ * recurses into a cycle, always short — the devtools renders this
+ * string directly rather than the raw value (which could be circular,
+ * huge, or a live DOM node).
+ */
+function devPreviewValue(v: unknown): string {
+  try {
+    if (v === undefined) return 'undefined'
+    if (v === null) return 'null'
+    const t = typeof v
+    if (t === 'string') {
+      const s = v as string
+      return s.length > 64 ? `"${s.slice(0, 61)}…"` : `"${s}"`
+    }
+    if (t === 'number' || t === 'boolean' || t === 'bigint') return String(v)
+    if (t === 'function') {
+      const name = (v as { name?: string }).name
+      return name ? `ƒ ${name}()` : 'ƒ ()'
+    }
+    if (t === 'symbol') return String(v)
+    if (Array.isArray(v)) return `Array(${v.length})`
+    const ctor = (v as object).constructor?.name
+    return ctor && ctor !== 'Object' ? `${ctor} {…}` : '{…}'
+  } catch {
+    return '<unreadable>'
+  }
+}
+
+/** One node in a {@link GraphSnapshot}. */
+export interface GraphNodeSnapshot {
+  /** Stable id — the same node keeps its id for its whole lifetime. */
+  readonly id: number
+  /** `state` (writable cell), `derived` (memoized fn), or `watch`. */
+  readonly kind: 'state' | 'derived' | 'watch'
+  /** Defensive one-line preview of the current value. Absent for watches. */
+  readonly value?: string
+  /** Scheduler state of the node right now. */
+  readonly status: 'clean' | 'check' | 'dirty' | 'computing'
+  /** ids of the nodes this node reads (its dependencies). */
+  readonly sources: readonly number[]
+  /** ids of the nodes that read this node (its subscribers). */
+  readonly dependents: readonly number[]
+}
+
+/** A point-in-time picture of the whole reactive graph. */
+export interface GraphSnapshot {
+  /** Every live node, in creation order. */
+  readonly nodes: readonly GraphNodeSnapshot[]
+  /** `Date.now()` when the snapshot was taken. */
+  readonly capturedAt: number
+}
+
+/**
+ * Snapshot the live reactive graph — every `state` / `derived` /
+ * `watch` node, its value, and its edges. Dev-only: returns an empty
+ * snapshot in a production build (registration is DCE'd there).
+ *
+ * Reading a node's value here never forces a recompute — a `dirty`
+ * derived shows its last-computed value plus the `dirty` status, so
+ * inspection has zero effect on the graph it observes.
+ */
+export function inspectGraph(): GraphSnapshot {
+  const nodes: GraphNodeSnapshot[] = []
+  for (const node of devNodes) {
+    const isWatch = node.kind === 'watch'
+    const isDerived = node.kind === 'state' && (node as StateNode<unknown>).fn !== null
+    const sources: number[] = []
+    if (node.sources) for (const s of node.sources) if (s.devId !== undefined) sources.push(s.devId)
+    const dependents: number[] = []
+    if (node.dependents)
+      for (const d of node.dependents) if (d.devId !== undefined) dependents.push(d.devId)
+    nodes.push({
+      id: node.devId ?? 0,
+      kind: isWatch ? 'watch' : isDerived ? 'derived' : 'state',
+      status: devStatusLabel(node.state),
+      sources,
+      dependents,
+      ...(isWatch
+        ? {}
+        : {
+            value: (node as StateNode<unknown>).hasValue
+              ? devPreviewValue((node as StateNode<unknown>).value)
+              : '<uncomputed>',
+          }),
+    })
+  }
+  return { nodes, capturedAt: Date.now() }
+}
+
+/**
+ * Subscribe to graph-change ticks — fired (coalesced to one per
+ * microtask) whenever a write settles or a watch runs. The devtools
+ * re-snapshots on each tick. Returns an unsubscribe function.
+ * Dev-only; in production the callback is simply never invoked.
+ */
+export function onGraphTick(cb: () => void): () => void {
+  devTickListeners.add(cb)
+  return () => {
+    devTickListeners.delete(cb)
   }
 }
 
