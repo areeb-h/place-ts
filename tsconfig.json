@@ -46,7 +46,8 @@
       "@place/persistence": ["./systems/persistence/src/index.ts"],
       "@place/search": ["./systems/search/src/index.ts"],
       "@place/security": ["./systems/security/src/index.ts"],
-      "@place/design": ["./systems/design/src/index.ts"]
+      "@place/design": ["./systems/design/src/index.ts"],
+      "@place/devtools": ["./systems/devtools/src/index.ts"]
     }
   },
   "include": ["systems/**/*.ts", "tests/**/*.ts", "benchmarks/**/*.ts", "*.ts"],
@@ -57,6 +58,7 @@
     "examples/**",
     "systems/component/**",
     "systems/design/**",
+    "systems/devtools/**",
     "systems/persistence/**",
     "systems/routing/**",
     "systems/security/**"

@@ -79,6 +79,15 @@
         "@place/reactivity": "workspace:*",
       },
     },
+    "systems/devtools": {
+      "name": "@place/devtools",
+      "version": "0.1.0",
+      "dependencies": {
+        "@place/component": "workspace:*",
+        "@place/reactivity": "workspace:*",
+        "@place/routing": "workspace:*",
+      },
+    },
     "systems/persistence": {
       "name": "@place/persistence",
       "version": "0.1.0",
@@ -175,6 +184,8 @@
     "@place/data": ["@place/data@workspace:systems/data"],
 
     "@place/design": ["@place/design@workspace:systems/design"],
+
+    "@place/devtools": ["@place/devtools@workspace:systems/devtools"],
 
     "@place/docs": ["@place/docs@workspace:examples/docs"],
 

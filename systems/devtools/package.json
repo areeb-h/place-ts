@@ -1,0 +1,24 @@
+{
+  "name": "@place/devtools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "In-app developer tools — a dev-only island that observes the reactive graph, islands, routing, and load performance. NOT a platform system; a curated dev package.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "docs"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@place/component": "workspace:*",
+    "@place/reactivity": "workspace:*",
+    "@place/routing": "workspace:*"
+  }
+}
