@@ -16,11 +16,12 @@
 
 import type { ParamsOf } from '@place/routing'
 import { action } from './action.ts'
-// `component`, `mergeMeta`, `resolveMeta` still live in index.ts;
-// touched only inside runtime functions, so the page ⇄ index cycle
-// stays benign.
-import { component, mergeMeta, resolveMeta } from './index.ts'
+// `component` still lives in index.ts; `mergeMeta` / `resolveMeta`
+// moved to ./render-page.ts with `renderPage`. Both are touched only
+// inside runtime functions, so the cycles stay benign.
+import { component } from './index.ts'
 import { type PageMeta, renderDocument, type StyleSrc } from './meta.ts'
+import { mergeMeta, resolveMeta } from './render-page.ts'
 import type { RouteHandler } from './server-router.ts'
 import { renderToStream, renderToString } from './ssr.ts'
 import type { Child, View } from './types.ts'

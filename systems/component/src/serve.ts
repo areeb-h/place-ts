@@ -38,10 +38,7 @@ import type { CacheEntry, CacheStore } from './cache.ts'
 import { _registeredCaches } from './component.ts'
 import { maybeCompress } from './compress.ts'
 import { isProductionRuntime } from './error-overlay.ts'
-// `renderPage` + the private inline-style-hashes header constant still
-// live in index.ts; touched only inside runtime functions, so the
-// serve ⇄ index cycle stays benign.
-import { INLINE_STYLE_HASHES_HEADER, renderPage } from './index.ts'
+import { INLINE_STYLE_HASHES_HEADER } from './index.ts'
 import {
   _setIslandBundleUrls,
   _setIslandRegistry,
@@ -53,6 +50,10 @@ import {
 import { formatRequestLogLine, formatStartupBanner } from './logging.ts'
 import type { StyleSrc } from './meta.ts'
 import { type AnyLayout, type AnyPage, isPage, type Page } from './page.ts'
+// `renderPage` lives in ./render-page.ts; the private inline-style-
+// hashes header constant lives in index.ts. Both touched only inside
+// runtime functions, so the serve cycles stay benign.
+import { renderPage } from './render-page.ts'
 import type { RouteHandler } from './server-router.ts'
 import { readThemeFromRequest, themeEarlyScript } from './theme.ts'
 
