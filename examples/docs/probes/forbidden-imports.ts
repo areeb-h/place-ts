@@ -18,9 +18,9 @@
 //
 // Writes `docs/probes/forbidden-imports.md`.
 
-import { readdir, readFile, writeFile } from 'fs/promises'
-import { join, resolve } from 'path'
-import { gzipSync } from 'zlib'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { gzipSync } from 'node:zlib'
 
 const FORBIDDEN: ReadonlyArray<{ token: string; why: string }> = [
   { token: 'node:', why: 'a node: builtin import — server/build only' },
@@ -92,7 +92,7 @@ async function main(): Promise<number> {
     '> Builds the docs production output and scans every emitted client',
     '> `.js` for server/build-only tokens that must never reach a browser.',
     '> This is the Tier 20 entrypoint-split enforcement: client safety is',
-    "> an impossible import graph, not define-based dead-code elimination.",
+    '> an impossible import graph, not define-based dead-code elimination.',
     '',
     hits.length === 0
       ? `## CLEAN — ${files.length} client bundles, zero forbidden tokens`
@@ -110,7 +110,7 @@ async function main(): Promise<number> {
 
   await writeFile(
     resolve(docsDir, '..', '..', 'docs', 'probes', 'forbidden-imports.md'),
-    lines.join('\n') + '\n',
+    `${lines.join('\n')}\n`,
   )
 
   for (const r of rows) {
