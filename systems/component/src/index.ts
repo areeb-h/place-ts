@@ -579,34 +579,14 @@ function _addIslandWithStrategy(name: string, strategy: ClientStrategy): void {
  */
 const INLINE_STYLE_HASHES_HEADER = 'x-place-inline-style-hashes'
 
-// T6-B: per-render collection of inline `style="…"` attribute VALUES.
-// Each unique value is hashed (SHA-256) and added to the response's
-// CSP `style-src` directive along with `'unsafe-hashes'`, so strict
-// CSP allows the specific inline styles SSR emitted without resorting
-// to `'unsafe-inline'`. This preserves the ADR 0014 contract for the
-// client path (style:* directives still write via `setProperty` at
-// runtime) while letting the SSR pass keep emitting first-paint inline
-// styles that the CSP authoritatively whitelists.
-//
-// Why a per-request collector, not a build-time list: the values are
-// reactive — `style={() => …}` resolves per-render. The hash set is
-// per-response.
-// Exported for ./element.ts (the SSR emitter collects style hashes
-// into it). A live binding — `_begin/_endInlineStyleCollection` below
-// reassign it; element.ts only reads + `.add()`s, never reassigns.
-export let currentInlineStyleSet: Set<string> | null = null
+// T6-B inline-style-attr hash collector — extracted to
+// `./_internal/inline-style.ts` (Tier 20 decomposition, cut 5b).
+// `index.ts`'s dispatch path uses the begin/end helpers + re-exports
+// them for the test-internal barrel; `element.ts` imports the live
+// `currentInlineStyleSet` binding from the `_internal/` module directly.
+import { _beginInlineStyleCollection, _endInlineStyleCollection } from './_internal/inline-style.ts'
 
-/** Internal: start a fresh inline-style-attr collection scope. */
-export function _beginInlineStyleCollection(): Set<string> {
-  const set = new Set<string>()
-  currentInlineStyleSet = set
-  return set
-}
-
-/** Internal: end the inline-style-attr collection scope. */
-export function _endInlineStyleCollection(): void {
-  currentInlineStyleSet = null
-}
+export { _beginInlineStyleCollection, _endInlineStyleCollection }
 
 /** Per-app registry — populated from `ServeOptions.islands`. */
 let _islandRegistry: Readonly<Record<string, IslandRegistration>> = {}

@@ -94,11 +94,15 @@ import { disposeAll, withCleanups } from './_internal/cleanup.ts'
 import { _auditHydrationFrame } from './_internal/hydration.ts'
 // Hydration-id counter — shared with the SSR renderers.
 import { nextHydrationId } from './_internal/hydrationSeq.ts'
+// `currentInlineStyleSet` — the live per-request inline-style-attr
+// hash collector. The SSR emitter `.add()`s every emitted `style="…"`
+// value into it so the dispatcher can whitelist them in the CSP.
+import { currentInlineStyleSet } from './_internal/inline-style.ts'
 import { makeSlot } from './_internal/slot.ts'
-// `ErrorBoundaryCap` + the `currentInlineStyleSet` collector still
-// live in index.ts; touched only inside runtime functions, so the
-// element ⇄ index cycle stays benign. Re-homed in later cuts.
-import { currentInlineStyleSet, ErrorBoundaryCap } from './index.ts'
+// `ErrorBoundaryCap` still lives in index.ts; touched only inside
+// runtime functions, so the element ⇄ index cycle stays benign.
+// Re-homed in a later cut.
+import { ErrorBoundaryCap } from './index.ts'
 // `mountChildren` (the reactive-children DOM mounter) lives in
 // ./mount.ts. element.ts ⇄ mount.ts is a function-level cycle —
 // `makeView`'s `.mount()` calls `mountChildren`, which mounts child
