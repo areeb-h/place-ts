@@ -167,6 +167,45 @@ export const devtoolsCss = `
 .place-dt-status[data-s="dirty"] { color: var(--dt-warn); }
 .place-dt-status[data-s="computing"] { color: var(--dt-ac); }
 
+/* ----- graph clusters (Graph panel) ----- */
+.place-dt-cluster {
+  margin-bottom: 8px;
+  background: var(--dt-raise);
+  border: 1px solid var(--dt-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.place-dt-cluster[data-loose="1"] { border-style: dashed; }
+.place-dt-cluster-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 5px 9px;
+  background: oklch(1 0 0 / 0.025);
+  border-bottom: 1px solid var(--dt-line);
+}
+.place-dt-cluster-shape {
+  font: 600 10px/1.3 var(--dt-mono); color: var(--dt-mut);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.place-dt-glist {
+  list-style: none; margin: 0; padding: 4px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.place-dt-gnode {
+  padding: 5px 7px; border-radius: 6px;
+  background: var(--dt-bg-solid);
+}
+.place-dt-gnode-head { display: flex; align-items: center; gap: 6px; }
+.place-dt-gnode-val {
+  flex: 1; min-width: 0;
+  font: 12px var(--dt-mono); color: var(--dt-fg);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.place-dt-gnode-edges {
+  margin-top: 3px; padding-left: 1px;
+  font: 10px/1.3 var(--dt-mono); color: var(--dt-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
 /* ----- key/value grid ----- */
 .place-dt-kv { margin: 0; display: grid; grid-template-columns: 84px 1fr; gap: 1px; }
 .place-dt-kv > div {

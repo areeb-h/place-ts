@@ -14,7 +14,7 @@
 //     off `data-open` / `data-tab` on the root — no conditional
 //     mounting, so panel subscriptions stay alive across tab switches.
 
-import { onCleanup, onMount } from '@place/component'
+import { onCleanup, onMount, type View } from '@place/component'
 import {
   _beginDevtoolsNodes,
   _endDevtoolsNodes,
@@ -165,38 +165,141 @@ function countKind(snap: GraphSnapshot, kind: GraphNodeSnapshot['kind']): number
 }
 
 // ===== panel: Graph =====
+//
+// A reactive graph's meaning is its *structure* — what feeds what.
+// The panel renders that, not a flat value list:
+//
+//   1. Nodes are grouped into CONNECTED COMPONENTS ("clusters") —
+//      union-find over every edge. Each cluster is one independent
+//      reactive sub-graph; on an islands page that maps cleanly to
+//      "one cluster per island", which is the developer's mental
+//      model.
+//   2. Within a cluster, nodes read top-to-bottom in flow order
+//      (state → derived → watch) and each shows its real edges
+//      (`← #3` sources, `→ #7` dependents) so a chain is traceable.
+//   3. `watch` nodes are shown, not collapsed to a count — they are
+//      the leaves of every cluster (the actual effects); hiding them
+//      hid the whole point of a graph.
 
-function nodeRow(n: GraphNodeSnapshot) {
-  const main = n.kind === 'watch' ? 'watch effect' : (n.value ?? '—')
-  const edges =
-    n.kind === 'watch'
-      ? `reads ${n.sources.length}`
-      : `${n.dependents.length} dep${n.dependents.length === 1 ? '' : 's'}`
+/** One connected component of the reactive graph. */
+interface GraphCluster {
+  readonly nodes: readonly GraphNodeSnapshot[]
+}
+
+const KIND_RANK: Record<GraphNodeSnapshot['kind'], number> = { state: 0, derived: 1, watch: 2 }
+
+/**
+ * Partition a snapshot into connected components (clusters) via
+ * union-find over the undirected edge set. Single-node components are
+ * split out as `loose` — isolated cells nobody reads yet — so they
+ * don't each become a one-row card.
+ */
+function clusterGraph(snap: GraphSnapshot): {
+  clusters: GraphCluster[]
+  loose: GraphNodeSnapshot[]
+} {
+  const present = new Set<number>()
+  for (const n of snap.nodes) present.add(n.id)
+  const parent = new Map<number, number>()
+  for (const n of snap.nodes) parent.set(n.id, n.id)
+  const find = (x: number): number => {
+    let r = x
+    while (parent.get(r) !== r) r = parent.get(r) as number
+    let c = x
+    while (c !== r) {
+      const next = parent.get(c) as number
+      parent.set(c, r)
+      c = next
+    }
+    return r
+  }
+  const union = (a: number, b: number): void => {
+    const ra = find(a)
+    const rb = find(b)
+    if (ra !== rb) parent.set(ra, rb)
+  }
+  for (const n of snap.nodes) {
+    for (const s of n.sources) if (present.has(s)) union(n.id, s)
+    for (const d of n.dependents) if (present.has(d)) union(n.id, d)
+  }
+  const groups = new Map<number, GraphNodeSnapshot[]>()
+  for (const n of snap.nodes) {
+    const root = find(n.id)
+    const g = groups.get(root)
+    if (g) g.push(n)
+    else groups.set(root, [n])
+  }
+  const byFlow = (a: GraphNodeSnapshot, b: GraphNodeSnapshot): number =>
+    KIND_RANK[a.kind] - KIND_RANK[b.kind] || a.id - b.id
+  const clusters: GraphCluster[] = []
+  const loose: GraphNodeSnapshot[] = []
+  for (const g of groups.values()) {
+    if (g.length === 1) loose.push(g[0] as GraphNodeSnapshot)
+    else clusters.push({ nodes: [...g].sort(byFlow) })
+  }
+  clusters.sort((a, b) => b.nodes.length - a.nodes.length)
+  loose.sort(byFlow)
+  return { clusters, loose }
+}
+
+/** One-line shape of a cluster, e.g. `2 state → 1 derived → 3 watch`. */
+function clusterShape(nodes: readonly GraphNodeSnapshot[]): string {
+  let s = 0
+  let d = 0
+  let w = 0
+  for (const n of nodes) {
+    if (n.kind === 'state') s++
+    else if (n.kind === 'derived') d++
+    else w++
+  }
+  const parts: string[] = []
+  if (s > 0) parts.push(`${s} state`)
+  if (d > 0) parts.push(`${d} derived`)
+  if (w > 0) parts.push(`${w} watch`)
+  return parts.join(' → ')
+}
+
+/** Compact edge line for a node — its sources and dependents by id. */
+function edgeText(n: GraphNodeSnapshot): string {
+  const parts: string[] = []
+  if (n.sources.length > 0) parts.push(`← ${n.sources.map((i) => `#${i}`).join(' ')}`)
+  if (n.dependents.length > 0) parts.push(`→ ${n.dependents.map((i) => `#${i}`).join(' ')}`)
+  return parts.length > 0 ? parts.join('     ') : 'no edges'
+}
+
+function nodeRow(n: GraphNodeSnapshot): View {
   return (
-    <li class="place-dt-row">
-      <span class="place-dt-badge" data-kind={n.kind}>
-        {n.kind}
-      </span>
-      <span class="place-dt-row-main">
-        <div class="place-dt-row-val">{main}</div>
-        <div class="place-dt-row-sub">
-          <span class="place-dt-status" data-s={n.status}>
-            {n.status}
-          </span>
-          {` · ${edges}`}
-        </div>
-      </span>
-      <span class="place-dt-id">#{String(n.id)}</span>
+    <li class="place-dt-gnode">
+      <div class="place-dt-gnode-head">
+        <span class="place-dt-badge" data-kind={n.kind}>
+          {n.kind}
+        </span>
+        <span class="place-dt-gnode-val">{n.kind === 'watch' ? 'effect' : (n.value ?? '—')}</span>
+        <span class="place-dt-status" data-s={n.status}>
+          {n.status}
+        </span>
+        <span class="place-dt-id">#{String(n.id)}</span>
+      </div>
+      <div class="place-dt-gnode-edges">{edgeText(n)}</div>
     </li>
   )
 }
 
+function clusterCard(nodes: readonly GraphNodeSnapshot[], loose: boolean): View {
+  return (
+    <section class="place-dt-cluster" data-loose={loose ? '1' : '0'}>
+      <header class="place-dt-cluster-head">
+        <span class="place-dt-cluster-shape">
+          {loose ? 'unconnected cells' : clusterShape(nodes)}
+        </span>
+        <span class="place-dt-id">{`${nodes.length} node${nodes.length === 1 ? '' : 's'}`}</span>
+      </header>
+      <ul class="place-dt-glist">{nodes.map(nodeRow)}</ul>
+    </section>
+  )
+}
+
 function graphPane(graph: State<GraphSnapshot>) {
-  // The panel lists `state` + `derived` — the nodes that carry a
-  // value and are worth scanning. `watch` nodes are the framework's
-  // own reactive-binding effects (one per `class={() => …}` etc.);
-  // there are dozens, all anonymous, so they collapse into a single
-  // count rather than dozens of indistinguishable rows.
   return (
     <div>
       <div class="place-dt-summary">
@@ -207,17 +310,19 @@ function graphPane(graph: State<GraphSnapshot>) {
           <b>{() => String(countKind(graph(), 'derived'))}</b> derived
         </span>
         <span>
-          <b>{() => String(countKind(graph(), 'watch'))}</b> watch effects
+          <b>{() => String(countKind(graph(), 'watch'))}</b> watch
         </span>
       </div>
-      <ul class="place-dt-list">
-        {() => {
-          const cells = graph().nodes.filter((n) => n.kind !== 'watch')
-          return cells.length === 0
-            ? [<li class="place-dt-empty">No state or derived cells on this page.</li>]
-            : cells.map(nodeRow)
-        }}
-      </ul>
+      {() => {
+        const snap = graph()
+        if (snap.nodes.length === 0) {
+          return [<div class="place-dt-empty">No reactive nodes on this page.</div>]
+        }
+        const { clusters, loose } = clusterGraph(snap)
+        const out: View[] = clusters.map((c) => clusterCard(c.nodes, false))
+        if (loose.length > 0) out.push(clusterCard(loose, true))
+        return out
+      }}
     </div>
   )
 }

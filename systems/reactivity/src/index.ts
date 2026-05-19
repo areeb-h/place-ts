@@ -1249,8 +1249,10 @@ export interface GraphSnapshot {
  * `watch` node, its value, and its edges. Dev-only: returns an empty
  * snapshot in a production build (registration is DCE'd there).
  *
- * Nodes flagged `devInternal` (the devtools' own panel-state cells)
- * are excluded — the snapshot describes the app, not the inspector.
+ * Inspector nodes are excluded — the snapshot describes the app, not
+ * the devtools observing it. That means both the flagged `devInternal`
+ * panel-state cells AND the panel's own reactive bindings (watches
+ * whose every source is a flagged cell). See the body for the rule.
  *
  * **Derived values are computed for display.** A `derived` that has
  * never been read would otherwise show no value; `inspectGraph` reads
@@ -1264,15 +1266,45 @@ export function inspectGraph(): GraphSnapshot {
   // Snapshot the registry first — computing a derived below could
   // create new nodes (its `fn` may call `state()`), and mutating the
   // set mid-iteration is something we'd rather not reason about.
-  for (const node of [...devNodes]) {
-    if (node.devInternal === true) continue
+  const snapshot = [...devNodes]
+  // Compute the "internal" set — nodes that are the inspector, not the
+  // app. A node is internal if it is explicitly flagged, OR it is a
+  // `watch` whose every source is a flagged node. The devtools panel's
+  // own reactive bindings — one `watch` per `{() => …}` in its JSX —
+  // read only its flagged panel-state cells; they exist solely to
+  // render the inspector, so they are excluded too. A `watch` is a
+  // sink (nothing reads it), so excluding one can never hide a node
+  // the app genuinely depends on.
+  const internal = new Set<BaseNode>()
+  for (const node of snapshot) if (node.devInternal === true) internal.add(node)
+  for (const node of snapshot) {
+    if (internal.has(node) || node.kind !== 'watch') continue
+    const srcs = node.sources
+    if (srcs === null || srcs.size === 0) continue
+    let allInternal = true
+    for (const s of srcs) {
+      if (s.devInternal !== true) {
+        allInternal = false
+        break
+      }
+    }
+    if (allInternal) internal.add(node)
+  }
+  for (const node of snapshot) {
+    if (internal.has(node)) continue
     const isWatch = node.kind === 'watch'
     const isDerived = node.kind === 'state' && (node as StateNode<unknown>).fn !== null
+    // Edge arrays reference only non-internal nodes — an edge to an
+    // excluded inspector node would dangle (point at an id absent
+    // from `nodes`).
     const sources: number[] = []
-    if (node.sources) for (const s of node.sources) if (s.devId !== undefined) sources.push(s.devId)
+    if (node.sources)
+      for (const s of node.sources)
+        if (s.devId !== undefined && !internal.has(s)) sources.push(s.devId)
     const dependents: number[] = []
     if (node.dependents)
-      for (const d of node.dependents) if (d.devId !== undefined) dependents.push(d.devId)
+      for (const d of node.dependents)
+        if (d.devId !== undefined && !internal.has(d)) dependents.push(d.devId)
     let value: string | undefined
     if (!isWatch) {
       const sn = node as StateNode<unknown>
