@@ -10,6 +10,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
+    "./server": "./src/server.ts",
+    "./islands": "./src/islands.ts",
+    "./internal": "./src/internal.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./jsx-dev-runtime": "./src/jsx-runtime.ts",
     "./tailwind": "./src/tailwind.ts",
