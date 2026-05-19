@@ -95,13 +95,16 @@ import { _auditHydrationFrame } from './_internal/hydration.ts'
 // Hydration-id counter — shared with the SSR renderers.
 import { nextHydrationId } from './_internal/hydrationSeq.ts'
 import { makeSlot } from './_internal/slot.ts'
-// **Function-level cycle with index.ts.** `mountChildren` (the
-// reactive-children mounter, cut 4's territory), `ErrorBoundaryCap`,
-// and the `currentInlineStyleSet` collector still live in index.ts.
-// element.ts only touches them inside functions called at runtime —
-// never at module-eval — so the import cycle resolves cleanly. They
-// get re-homed to their own modules in later decomposition cuts.
-import { currentInlineStyleSet, ErrorBoundaryCap, mountChildren } from './index.ts'
+// `ErrorBoundaryCap` + the `currentInlineStyleSet` collector still
+// live in index.ts; touched only inside runtime functions, so the
+// element ⇄ index cycle stays benign. Re-homed in later cuts.
+import { currentInlineStyleSet, ErrorBoundaryCap } from './index.ts'
+// `mountChildren` (the reactive-children DOM mounter) lives in
+// ./mount.ts. element.ts ⇄ mount.ts is a function-level cycle —
+// `makeView`'s `.mount()` calls `mountChildren`, which mounts child
+// Views built by `el` — resolved fine since neither touches the
+// other at module-eval.
+import { mountChildren } from './mount.ts'
 import type { Child, ElementProps, View } from './types.ts'
 // HTML escaping for the SSR string emitter.
 import { escapeHtmlAttr, escapeHtmlText } from './utils/escape.ts'

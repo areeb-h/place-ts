@@ -26,11 +26,7 @@
 //   - Animations / transitions
 //   - Error boundaries
 
-import {
-  ClientOnlyAbort,
-  defineCapability,
-  runWithCapabilityScope,
-} from '@place/capability'
+import { ClientOnlyAbort, defineCapability, runWithCapabilityScope } from '@place/capability'
 import {
   type Disposer,
   type EffectBranded,
@@ -39,14 +35,10 @@ import {
   untrack,
   watch,
 } from '@place/reactivity'
-import {
-  type ParamsOf,
-  RouterCap,
-  route,
-  serverRouter as createServerRouter,
-} from '@place/routing'
+import { serverRouter as createServerRouter, type ParamsOf, RouterCap, route } from '@place/routing'
 import { action } from './action.ts'
 import { placeAutoImport } from './auto-import-plugin.ts'
+
 // `validateIslandName` is inlined here (instead of imported from
 // `./island-validation.ts`) so Bun's chunk-splitter doesn't hoist
 // this small utility into its own ~1.4 KB shared chunk. Pre-inline:
@@ -71,6 +63,7 @@ function validateIslandName(name: string): void {
     throw new Error(`island: name '${name}' is reserved.`)
   }
 }
+
 // `buildIslandBundles` + `buildRouteSplitBundles` are dynamic-imported
 // inside `_serveImpl` (the server-gated body) so the static import
 // graph never pulls them — and their `node:path` dep — into per-route
@@ -79,14 +72,13 @@ function validateIslandName(name: string): void {
 // because the framework barrel statically imported the bundler.
 import type {
   buildIslandBundles as BuildIslandBundlesFn,
-  ClientCapInstall,
   renderViewManifestReport as BuildRenderViewManifestReportFn,
+  ClientCapInstall,
 } from './build/island-bundler.ts'
 import type { buildRouteSplitBundles as BuildRouteSplitBundlesFn } from './build/route-splitter.ts'
 
 export type { ClientCapInstall }
-import { _invalidateCachesByTag, type CacheEntry, type CacheStore } from './cache.ts'
-import { _CookieJarCap, parseCookieHeader } from './cookies.ts'
+
 import { disposeAll, onCleanup, withCleanups } from './_internal/cleanup.ts'
 import {
   _auditHydrationFrame,
@@ -94,6 +86,8 @@ import {
   _isHydratedSignal as _isHydratedState,
   _setHydrated,
 } from './_internal/hydration.ts'
+import { _invalidateCachesByTag, type CacheEntry, type CacheStore } from './cache.ts'
+import { _CookieJarCap, parseCookieHeader } from './cookies.ts'
 import { readThemeFromRequest, themeEarlyScript } from './theme.ts'
 
 // Build-time define injected by Bun.build's `define` option in the
@@ -109,8 +103,6 @@ declare const __PLACE_BROWSER__: boolean | undefined
 // bytes of HMR-related code. ADR 0028 phase 4 surface.
 declare const __PLACE_DEV__: boolean | undefined
 
-import { cookieState } from './cookies.ts'
-export { cookie, type CookieStateOptions, cookieState, parseCookieHeader } from './cookies.ts'
 // Hydration internals + flag state, re-exported from `_internal/hydration.ts`.
 // Underscore-prefixed names mark them as internal-but-test-accessible.
 export {
@@ -122,6 +114,7 @@ export {
   _setHydrated,
   type HydrationDelta,
 } from './_internal/hydration.ts'
+export { type CookieStateOptions, cookie, cookieState, parseCookieHeader } from './cookies.ts'
 // SSR post-render helpers: heading extraction + island marker patching.
 // The first-paint ToC story uses `extractMainHeadings` to scan h2/h3 in
 // the rendered `<main>`, inject ids, and surface the list — and
@@ -134,6 +127,7 @@ export {
   rerenderIsland,
   slugifyHeading,
 } from './ssr-toc.ts'
+
 // `SsrHeading` is declared canonically right above the heading
 // collector (search for `interface SsrHeading`); `ssr-toc.ts`
 // re-exports it for back-compat.
@@ -141,6 +135,7 @@ export {
 // `renderPage` — auto-invoking per-island `ssrProps` resolvers
 // during the SSR pass.
 import { rerenderIsland } from './ssr-toc.ts'
+
 // Input + keyboard bindings (`wire`, `onKey`, `globalKey`, `urlState`)
 // extracted to a focused leaf module.
 export {
@@ -150,10 +145,10 @@ export {
   onKey,
   type UrlStateOptions,
   urlState,
-  wire,
   type WiredBoolean,
   type WiredNumber,
   type WiredText,
+  wire,
 } from './input-bindings.ts'
 // Tabs primitive — headless, no default classes; caller styles via `classes`.
 // `Activity` keeps every panel mounted; the active one's `hidden` flips off.
@@ -316,706 +311,53 @@ import {
   _beginHeadingCollection,
   _endHeadingCollection,
   _getFirstH1Text,
-  childToHtml,
   el,
   type SsrHeading,
 } from './element.ts'
+
+export type { SsrHeading } from './element.ts'
 // Re-export the public element surface so `@place/component` and every
 // in-package importer keep seeing these names on the barrel.
-export { el, _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text } from './element.ts'
-export type { SsrHeading } from './element.ts'
-// Escape helper used by meta + island serialization (the SSR emitter's
-// own escaping moved to element.ts).
-import { escapeHtmlAttrFull } from './utils/escape.ts'
-// Dev error overlay + terminal output (used by serve / handler).
-import { isProductionRuntime, renderRouteError } from './error-overlay.ts'
-import { formatRequestLogLine, formatStartupBanner } from './logging.ts'
+export { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text, el } from './element.ts'
+
 // Hydration-id counter — `resetHydrationSeq` for the SSR renderers,
 // `nextHydrationId` for the component HOC's placeholder emitter.
 import { nextHydrationId, resetHydrationSeq } from './_internal/hydrationSeq.ts'
+// Dev error overlay + terminal output (used by serve / handler).
+import { isProductionRuntime, renderRouteError } from './error-overlay.ts'
+import { formatRequestLogLine, formatStartupBanner } from './logging.ts'
+// `ErrorBoundaryCap` / `currentInlineStyleSet` are exported from this
+// barrel for ./element.ts + ./mount.ts during the decomposition
+// (function-level cycles — see those files). Later cuts re-home them
+// to their own modules; the exports become internal then.
+// ===== Client mount machinery + Fragment + Tabs =====
+// Extracted to ./mount.ts (Tier 20 decomposition, cut 4). `index.ts`
+// imports the symbols it uses (`Fragment`, `ClientOnly`,
+// `_consumeTabsUsedFlag`) + re-exports the public surface so every
+// consumer of `@place/component` keeps seeing these names on the barrel.
+import { _consumeTabsUsedFlag, ClientOnly, Fragment } from './mount.ts'
+// Escape helper used by meta + island serialization (the SSR emitter's
+// own escaping moved to element.ts).
+import { escapeHtmlAttrFull } from './utils/escape.ts'
 
-// `mountChildren` / `ErrorBoundaryCap` / `currentInlineStyleSet` are
-// exported for ./element.ts during the decomposition (function-level
-// cycle — see element.ts). Later cuts re-home them to their own
-// modules; the exports become internal then.
-export function mountChildren(
-  parent: ParentNode,
-  children: Children,
-  anchor: Node | null,
-  cleanups: Disposer[],
-): void {
-  const list = Array.isArray(children) ? children : [children]
-  for (const child of list) {
-    cleanups.push(mountChild(parent, child, anchor))
-  }
-}
-
-function mountChild(parent: ParentNode, child: Child, anchor: Node | null): Disposer {
-  if (child == null || child === false || child === true) {
-    return () => {}
-  }
-
-  if (typeof child === 'string' || typeof child === 'number') {
-    const node = document.createTextNode(String(child))
-    parent.insertBefore(node, anchor)
-    return () => node.remove()
-  }
-
-  if (typeof child === 'function') {
-    return mountReactiveChild(parent, child as () => Child, anchor)
-  }
-
-  // Arrays of children: mount each in order, return a composite
-  // disposer. Required because `Child` is recursive (`Child[]` is
-  // itself a Child), so JSX like `<Frag>{items.map(…)}{conditional}</Frag>`
-  // produces an array child at this position. The runtime mirrors what
-  // `childToHtml` already does for SSR.
-  if (Array.isArray(child)) {
-    const disposers: Disposer[] = []
-    for (const c of child) {
-      disposers.push(mountChild(parent, c as Child, anchor))
-    }
-    return () => {
-      for (const d of disposers) d()
-    }
-  }
-
-  // It's a View
-  return (child as View).mount(parent, anchor)
-}
-
-// Reactive child binding: function returns text/number/View. We use a
-// comment node as a stable anchor and keep track of whatever was last mounted.
-//
-// Critical: the descendant `mountChild` call is wrapped in `untrack` so that
-// component bodies / nested watches mounted inside this child do not subscribe
-// THIS watch to their inner state reads. Without it, a `<NoteEditor>` mounted
-// here would have its `live().title` reads (etc.) tracked against the outer
-// watch — causing the entire subtree to unmount and remount on every keystroke
-// the inner editor handled. That manifests as input focus loss and characters
-// being dropped. fn() itself remains tracked because its reactivity is the
-// whole point — it tells us when to re-mount.
-function mountReactiveChild(parent: ParentNode, fn: () => Child, anchor: Node | null): Disposer {
-  const slot = document.createComment('')
-  parent.insertBefore(slot, anchor)
-  let current: Disposer = () => {}
-
-  const watchDispose = watch(() => {
-    try {
-      current()
-      const resolved = fn()
-      current = untrack(() => mountChild(parent, resolved, slot))
-    } catch (e) {
-      // Failed mount: no cleanup to run. Bubble the throw to the
-      // nearest error boundary; if none, re-throw so the page surfaces
-      // the error loudly instead of silently swallowing.
-      current = () => {}
-      const handler = ErrorBoundaryCap.tryUse()
-      if (handler === null) throw e
-      handler(e)
-    }
-  })
-
-  return () => {
-    watchDispose()
-    current()
-    slot.remove()
-  }
-}
-
-// ===== Fragment =====
-//
-// Groups siblings without adding a wrapping DOM element.
-
-// `_isHydratedState` lives in `./_internal/hydration.ts`; imported at
-// the top of this file. It backs `onMount`, the hydration auditor,
-// and the internal `ClientOnly` helper below.
-//
-// The public `<ClientOnly>` / `<Deferred>` full-page-hydration
-// corrector components were removed with the islands migration —
-// interactive browser-only content belongs in an `island()`. The
-// `ClientOnly` helper survives as an INTERNAL primitive only: it
-// backs the auto-placeholder `component()` emits when a `clientOnly`
-// capability is touched during SSR. Not exported, not auto-imported.
-
-interface ClientOnlyProps {
-  children: () => Child
-}
-
-function ClientOnly(props: ClientOnlyProps): View {
-  return el('span', { 'data-place-client-only': '', 'data-place-contents': '' }, () =>
-    _isHydratedState.read() ? props.children() : null,
-  )
-}
-
-export interface ActivityProps {
-  /**
-   * Reactive (or static) predicate. Truthy → children visible.
-   * Falsy → children stay in the DOM but are hidden (`display:none`).
-   */
-  when: boolean | (() => boolean)
-  children?: Child | Child[]
-}
-
-/**
- * Render content that's sometimes hidden — without unmounting it.
- *
- * `<Activity>` is the "render everything, toggle visibility" pattern.
- * Same shape as React 19's `<Activity>`, but powered by the platform:
- * the wrapper uses the browser's `hidden` HTML attribute, which is a
- * UA-stylesheet rule (`display: none`) that strict CSP can't block —
- * no inline style, no nonce, no opt-in. The subtree stays mounted
- * across visibility changes, so any reactive state inside survives
- * — no remount cost, no input focus lost, no scroll reset.
- *
- * Typical use is for tab panels, accordions, wizards — anywhere the
- * UI cycles through alternative views and the work to render them
- * is non-trivial or the state needs to persist.
- *
- * ```tsx
- * {tabs.map(t => (
- *   <Activity when={() => active() === t.label}>
- *     {t.content()}
- *   </Activity>
- * ))}
- * ```
- *
- * Trade-off vs `<Show>`: Activity ships ALL branches in the SSR HTML
- * (so search engines see them; first paint of an inactive tab is
- * instant), whereas Show emits only the active branch. Use Show when
- * the inactive branch is expensive to render or contains side-effects
- * that shouldn't fire when hidden.
- */
-export function Activity(props: ActivityProps): View {
-  const hidden =
-    typeof props.when === 'function'
-      ? () => !(props.when as () => boolean)()
-      : !props.when
-  return el(
-    'span',
-    {
-      'data-place-activity': '',
-      hidden,
-    },
-    props.children as Child,
-  )
-}
-
-// ===== Tabs =====
-//
-// Compose-with-`<Tab>` tabs primitive. Author shape:
-//
-// ```tsx
-// <Tabs group="hello">
-//   <Tab label="place">    <CodeBlock code={PLACE} /></Tab>
-//   <Tab label="Next.js">  <CodeBlock code={NEXT}  /></Tab>
-//   <Tab label="Remix">    <CodeBlock code={REMIX} /></Tab>
-// </Tabs>
-// ```
-//
-// Why this shape:
-//   - Label travels with its panel — no parallel-array bookkeeping,
-//     no off-by-one mistakes when adding / reordering tabs.
-//   - Active-tab persistence is automatic: when `group` is set, the
-//     framework wires a `place-tab-${group}` cookie under the hood.
-//     Authors don't write `cookieState(...)` themselves.
-//   - The framework owns the trigger row, the panel divs, the active
-//     state, and the click delegation — author writes content only.
-//
-// **Hydration model.** Tabs is a server-rendered component. The
-// trigger click handling rides on ONE inline document-level
-// delegated listener (`__tabs.ts`), included via `<script nonce>`
-// once per page when any Tabs renders. No island bundle ships;
-// no per-instance JS runs at load. The runtime toggles `hidden` on
-// `[data-tabs-panel]` siblings + writes the cookie on click.
-
-const TAB_BRAND_NAME = '__placeTabBrand'
-/** Symbol carried on `<Tab>`'s return so `<Tabs>` can introspect children. */
-export const TAB_BRAND: symbol = Symbol.for(TAB_BRAND_NAME)
-
-/**
- * Descriptor returned by `<Tab>`. Implements the `View` interface with
- * no-op methods (Tabs renders the panel itself, reading `children`
- * off this descriptor — Tab never appears in the rendered tree).
- */
-interface TabDescriptor extends View {
-  readonly __tabBrand: symbol
-  readonly label: Child
-  readonly value: string
-  readonly panelChildren: Child
-}
-
-export interface TabProps {
-  /** Visible trigger label. If a string, doubles as the stable `value`. */
-  readonly label: Child
-  /**
-   * Stable id for this tab. Used as the DOM marker AND the cookie
-   * value. Required when `label` isn't a string (e.g. JSX label).
-   * Optional otherwise; defaults to the string label.
-   */
-  readonly value?: string
-  /** Panel content. Renders into `<div role="tabpanel">` server-side. */
-  readonly children?: Children
-}
-
-/**
- * Tab marker for use as a direct child of `<Tabs>`. Returns a
- * descriptor `<Tabs>` reads — never rendered in place.
- *
- * The function value itself carries the `__tabBrand` so the JSX
- * runtime can detect it via `(type as {...}).__tabBrand === TAB_BRAND`
- * and skip the `component()` auto-wrap. Without the brand on the
- * function, the runtime would wrap Tab in component(), strip the
- * descriptor's metadata, and Tabs's child introspection would fail
- * with "at least one <Tab> child required" at every call site.
- */
-function _Tab(props: TabProps): View {
-  const value =
-    props.value ?? (typeof props.label === 'string' ? props.label : undefined)
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(
-      '<Tab>: pass `value` explicitly when `label` is not a plain string. ' +
-        '`value` is the stable id used for the active-tab cookie + DOM markers.',
-    )
-  }
-  const descriptor: TabDescriptor = {
-    toHtml: () => '',
-    mount: () => () => {},
-    hydrate: () => () => {},
-    __tabBrand: TAB_BRAND,
-    label: props.label,
-    value,
-    panelChildren: props.children ?? null,
-  }
-  return descriptor
-}
-export const Tab: typeof _Tab & { __tabBrand: symbol } = Object.assign(_Tab, {
-  __tabBrand: TAB_BRAND,
-})
-
-function flattenChildren(children: Child | Children | undefined): Child[] {
-  if (children === undefined || children === null) return []
-  if (Array.isArray(children)) {
-    return children.flatMap((c) => flattenChildren(c as Child))
-  }
-  return [children as Child]
-}
-
-function collectTabs(children: Child | Children | undefined): TabDescriptor[] {
-  const flat = flattenChildren(children)
-  const out: TabDescriptor[] = []
-  for (const c of flat) {
-    if (c === null || c === undefined || typeof c !== 'object') continue
-    const maybe = c as Partial<TabDescriptor>
-    if (maybe.__tabBrand === TAB_BRAND) {
-      out.push(maybe as TabDescriptor)
-    }
-  }
-  return out
-}
-
-export interface TabsClassNames {
-  /** Outer wrapper. */
-  readonly root?: string
-  /** Trigger list (`role="tablist"`). */
-  readonly list?: string
-  /** Each trigger button (`role="tab"`). Always applied. */
-  readonly trigger?: string
-  /** Class added to the active trigger. Concatenated with `trigger`. */
-  readonly triggerActive?: string
-  /** Each panel wrapper (`role="tabpanel"`). */
-  readonly panel?: string
-}
-
-/**
- * Quick visual variants. Each picks a different default for the
- * outer chrome + trigger row. `classes` still overrides everything
- * — use `variant` for a one-line theme pick, `classes` for full
- * control.
- *
- *   `'card'`       — bordered rounded box; underline-active triggers (default)
- *   `'underline'`  — no outer border; triggers sit above a bottom rule
- *   `'pill'`       — rounded pill triggers; no outer border
- *   `'ghost'`      — minimal triggers, no chrome
- */
-export type TabsVariant = 'card' | 'underline' | 'pill' | 'ghost'
-
-export interface TabsProps {
-  /**
-   * Stable group id. When set, the framework wires a
-   * `place-tab-${group}` cookie for active-tab persistence across
-   * reloads. Omit for in-memory (ephemeral) tabs.
-   */
-  readonly group?: string
-  /**
-   * `<Tab>` children, in order. The first tab is the default active.
-   * Children that aren't `<Tab>` are filtered out with a dev warning.
-   */
-  readonly children?: Children
-  /** Quick visual variant. Default: `'card'`. */
-  readonly variant?: TabsVariant
-  /** Optional class overrides. Wins over `variant` defaults. */
-  readonly classes?: TabsClassNames
-}
-
-const TABS_VARIANTS: Readonly<Record<TabsVariant, Required<TabsClassNames>>> = {
-  card: {
-    root: 'my-4 mb-6 border border-border rounded-[10px] overflow-hidden',
-    list: 'flex gap-0 bg-bg/60 border-b border-border/60',
-    trigger:
-      'bg-transparent border-0 py-2 px-4 text-muted text-[13px] cursor-pointer border-b-2 border-b-transparent transition-colors duration-150 hover:text-fg focus-visible:outline-none focus-visible:text-fg',
-    triggerActive: 'text-accent border-b-accent',
-    panel: '',
-  },
-  underline: {
-    root: 'my-4 mb-6',
-    list: 'flex gap-2 border-b border-border/60 mb-3',
-    trigger:
-      'bg-transparent border-0 py-2 px-1 text-muted text-[13px] cursor-pointer border-b-2 border-b-transparent transition-colors duration-150 hover:text-fg focus-visible:outline-none focus-visible:text-fg',
-    triggerActive: 'text-fg border-b-accent',
-    panel: '',
-  },
-  pill: {
-    root: 'my-4 mb-6',
-    list: 'inline-flex gap-1 p-1 rounded-lg bg-card/60 border border-border/60 mb-3',
-    trigger:
-      'bg-transparent border-0 py-1 px-3 text-muted text-[13px] rounded-md cursor-pointer transition-colors duration-150 hover:text-fg focus-visible:outline-none',
-    triggerActive: 'text-fg bg-bg/80 shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-border)_70%,transparent)]',
-    panel: '',
-  },
-  ghost: {
-    root: 'my-4 mb-6',
-    list: 'flex gap-3 mb-3',
-    trigger:
-      'bg-transparent border-0 py-1 px-0 text-muted text-[13px] cursor-pointer transition-colors duration-150 hover:text-fg focus-visible:outline-none',
-    triggerActive: 'text-accent',
-    panel: '',
-  },
-}
-
-// Per-process anonymous-group counter for `<Tabs>` without a `group`
-// prop. Used only as a stable DOM id so the inline runtime can scope
-// queries. Resets per renderToString cycle.
-let anonTabsGroupCounter = 0
-
-/**
- * Render a tabs widget. Triggers + panels SSR; clicks handled by the
- * page's inlined tabs runtime (`__tabs.ts`).
- *
- * **Active state.** Per-request:
- *   - If `group` is set: read `place-tab-${group}` cookie; fall back
- *     to the first tab's `value` when absent. Cookie writes happen
- *     on click via the inline runtime.
- *   - Otherwise (no group): first tab is active for this render.
- */
-export function Tabs(props: TabsProps): View {
-  const tabs = collectTabs(props.children)
-  if (tabs.length === 0) {
-    throw new Error(
-      '<Tabs>: at least one <Tab> child is required. ' +
-        'Use: <Tabs group="…"><Tab label="A">…</Tab><Tab label="B">…</Tab></Tabs>',
-    )
-  }
-  const groupId = props.group ?? `tabs-${++anonTabsGroupCounter}`
-  const fallback = tabs[0]!.value
-  // SSR-correct active resolution. cookieState reads request cookies
-  // on the server, document.cookie on the client.
-  const cookieKey = props.group ? `place-tab-${props.group}` : ''
-  const active = cookieKey ? cookieState(cookieKey, fallback) : null
-  const initial = active ? active() : fallback
-
-  // Signal renderPage that this page needs the tabs runtime. Idempotent
-  // across multiple Tabs on the same page.
-  if (typeof window === 'undefined') {
-    markTabsUsedOnThisRequest()
-  }
-
-  const variant = TABS_VARIANTS[props.variant ?? 'card']
-  const cls = props.classes ?? {}
-  const rootClass = cls.root ?? variant.root
-  const listClass = cls.list ?? variant.list
-  const triggerBase = cls.trigger ?? variant.trigger
-  const triggerActive = cls.triggerActive ?? variant.triggerActive
-  const panelClass = cls.panel ?? variant.panel
-
-  return el(
-    'div',
-    {
-      class: rootClass,
-      'data-tabs-group': groupId,
-      'data-tabs-cookie': cookieKey,
-    },
-    el(
-      'div',
-      { class: listClass, role: 'tablist' },
-      tabs.map((t) =>
-        el(
-          'button',
-          {
-            type: 'button',
-            role: 'tab',
-            'data-tabs-trigger': t.value,
-            'data-tabs-active': t.value === initial ? '' : undefined,
-            'aria-selected': t.value === initial ? 'true' : 'false',
-            tabindex: t.value === initial ? 0 : -1,
-            class: `${triggerBase}${t.value === initial ? ` ${triggerActive}` : ''}`,
-          },
-          t.label,
-        ),
-      ),
-    ),
-    ...tabs.map((t) =>
-      el(
-        'div',
-        {
-          role: 'tabpanel',
-          'data-tabs-panel': t.value,
-          class: panelClass,
-          hidden: t.value === initial ? undefined : ('' as unknown as boolean),
-        },
-        t.panelChildren,
-      ),
-    ),
-  )
-}
-
-// Per-request bookkeeping: which pages used <Tabs>? renderPage reads
-// the flag and conditionally inlines the tabs runtime. Server-only.
-let _tabsUsedFlag = false
-export function markTabsUsedOnThisRequest(): void {
-  _tabsUsedFlag = true
-}
-export function _consumeTabsUsedFlag(): boolean {
-  const v = _tabsUsedFlag
-  _tabsUsedFlag = false
-  return v
-}
-
-/**
- * Reactive binding to a `<Tabs group="…">` group's active value.
- *
- * Returns a `State<string>` that:
- *   - **On the server**: reads the `place-tab-${group}` cookie (or
- *     falls back to `initial`). Same shape as `cookieState`, so SSR
- *     can use it to render conditional content for the active tab.
- *   - **On the client**: subscribes to the framework's `place:tabs`
- *     CustomEvent (fired by the tabs runtime on every trigger click)
- *     and writes the new value into the State when the event's
- *     `detail.group` matches. Disposer cleans up on unmount.
- *
- * Use case: Tabs as a filter trigger. Author writes ONE LINE in an
- * island instead of a manual `addEventListener` + cast + remove.
- *
- * ```tsx
- * const TodoList = island(() => {
- *   const filter = tabsState('todo-filter', 'all')
- *   return <ul>{() => items.filter(matchesFilter(filter())).map(renderRow)}</ul>
- * })
- * ```
- *
- * The cookie persists the choice across reloads; the State integrates
- * with the rest of the reactivity graph (derived, watch, JSX function
- * children) like any other signal.
- */
-export function tabsState(group: string, initial = ''): State<string> {
-  const key = `place-tab-${group}`
-  const s = cookieState(key, initial)
-  // Server: no event subscription possible — just return the cookie-
-  // backed state. SSR reads s() and produces the right initial paint.
-  if (typeof window === 'undefined') return s
-  // Client: bind to the runtime's CustomEvent. The listener fires on
-  // every trigger click; we only update when the event's group matches
-  // ours so multiple `tabsState` calls on the same page stay isolated.
-  // The handler installs via onMount + cleans up via onCleanup so the
-  // binding follows the surrounding component's lifecycle (and works
-  // both during SSR-pre-hydration and post-hydration mounts).
-  onMount(() => {
-    const handler = (e: Event): void => {
-      const detail = (e as CustomEvent).detail as
-        | { group?: unknown; value?: unknown }
-        | undefined
-      if (
-        detail &&
-        detail.group === group &&
-        typeof detail.value === 'string'
-      ) {
-        s.set(detail.value)
-      }
-    }
-    document.addEventListener('place:tabs', handler)
-    return () => document.removeEventListener('place:tabs', handler)
-  })
-  return s
-}
-
-export interface ShowProps {
-  /**
-   * Reactive predicate. Truthy → render `children`; falsy → render
-   * `fallback` (or nothing if absent).
-   */
-  when: () => unknown
-  /** Function returning the content shown when `when()` is truthy. */
-  children: () => Child
-  /** Optional content shown when `when()` is falsy. */
-  fallback?: Child
-}
-
-/**
- * Conditional render primitive. Replaces the common `{() => cond ? <X /> : null}`
- * shape with a named component so the intent reads:
- *
- * ```tsx
- * <Show when={() => open.read()} fallback={null}>
- *   {() => <Modal />}
- * </Show>
- * ```
- *
- * Both branches are lazy — only the active branch runs. The `when`
- * function tracks reactively; flipping it toggles which branch mounts
- * without re-running the inactive one. No wrapper element; the children
- * are emitted directly inline.
- */
-export function Show(props: ShowProps): View {
-  return Fragment({
-    children: () => (props.when() ? props.children() : (props.fallback ?? null)),
-  })
-}
-
-export const Fragment = (props: { children?: Children }): View => ({
-  // No wrapping element — emit children directly. No hydration marker
-  // either: hydration walks elements, not Fragment boundaries.
-  toHtml: () => (props.children === undefined ? '' : childToHtml(props.children as Child)),
-  // Hydrate by passing the slot through to each child.
-  //
-  // Three child shapes need different treatment:
-  //   - Static text/number/boolean/null: nothing to walk, nothing to wire.
-  //   - View: hand the slot to its hydrate; one element consumed.
-  //   - **Reactive function child**: SSR emitted the function's CURRENT
-  //     output at this position. On the client we adopt those nodes via
-  //     the normal hydrate path AND set up a watch so future changes to
-  //     the function's result replace the rendered range in place — same
-  //     reactivity contract as `mountReactiveChild` on a fresh mount.
-  //
-  // The third case is what makes `<Show when={…}>{() => …}</Show>` work
-  // across hydration. Without it, the SSR-emitted branch would be
-  // adopted once and never re-render when `when()` flipped — every
-  // reactive function child inside a Fragment would silently freeze.
-  hydrate(slot) {
-    const cleanups: Disposer[] = []
-    if (props.children !== undefined) {
-      const list: Child[] = Array.isArray(props.children) ? props.children : [props.children]
-      const hydrateInto = (sink: Disposer[], child: Child): void => {
-        if (child == null || typeof child === 'boolean') return
-        if (typeof child === 'string' || typeof child === 'number') return
-        if (typeof child === 'function') {
-          hydrateFunctionChild(sink, child as () => Child)
-          return
-        }
-        if (Array.isArray(child)) {
-          for (const c of child) hydrateInto(sink, c as Child)
-          return
-        }
-        if (child.hydrate) sink.push(child.hydrate(slot))
-      }
-      const hydrateFunctionChild = (sink: Disposer[], fn: () => Child): void => {
-        const parent = slot.parent()
-        // Bound the function's range with two comment anchors. We insert
-        // `startAnchor` BEFORE hydrating fn's output (at the cursor's
-        // current element position, which is the next sibling after
-        // whatever the previous child consumed); `endAnchor` AFTER
-        // hydration walked the cursor past fn's output. The two anchors
-        // delimit a region we can clear + re-fill on every state change.
-        //
-        // Why two anchors and not one: when fn rendered nothing on SSR
-        // (empty branch), there's no SSR-emitted node between them to
-        // capture — so a single end-anchor + "previous sibling" walk
-        // would happily walk into the NEXT Fragment child's region.
-        // Two anchors make the range unambiguous even when empty.
-        const startAnchor = document.createComment('')
-        const endAnchor = document.createComment('')
-        const cursorEl = slot.peekElement()
-        if (cursorEl !== null) parent.insertBefore(startAnchor, cursorEl)
-        else parent.appendChild(startAnchor)
-        // Adopt the SSR-rendered initial output. `subCleanups` holds the
-        // listeners for THIS render so the watch can dispose the right
-        // subtree when fn() changes — separate from the outer Fragment's
-        // cleanups which would survive across re-renders.
-        let subCleanups: Disposer[] = []
-        const initial = untrack(fn)
-        hydrateInto(subCleanups, initial)
-        const cursorEnd = slot.peekElement()
-        if (cursorEnd !== null) parent.insertBefore(endAnchor, cursorEnd)
-        else parent.appendChild(endAnchor)
-        // Snapshot the DOM nodes that belong to the initial render —
-        // everything STRICTLY between the two anchors.
-        let currentNodes: Node[] = []
-        let cursor: Node | null = startAnchor.nextSibling
-        while (cursor !== null && cursor !== endAnchor) {
-          currentNodes.push(cursor)
-          cursor = cursor.nextSibling
-        }
-        let firstRun = true
-        const watchDispose = watch(() => {
-          let resolved: Child
-          try {
-            resolved = fn()
-          } catch (e) {
-            const handler = ErrorBoundaryCap.tryUse()
-            if (handler === null) throw e
-            handler(e)
-            return
-          }
-          if (firstRun) {
-            firstRun = false
-            return
-          }
-          // Subsequent fires: tear down the previous render (listeners
-          // + DOM) and mount the new value into the bounded region.
-          disposeAll(subCleanups)
-          subCleanups = []
-          for (const n of currentNodes) n.parentNode?.removeChild(n)
-          currentNodes = []
-          let dispose: Disposer
-          try {
-            dispose = untrack(() => mountChild(parent, resolved, endAnchor))
-          } catch (e) {
-            const handler = ErrorBoundaryCap.tryUse()
-            if (handler === null) throw e
-            handler(e)
-            return
-          }
-          subCleanups.push(dispose)
-          // Re-snapshot the freshly-mounted range from startAnchor to
-          // endAnchor — same shape as the initial capture.
-          let c: Node | null = startAnchor.nextSibling
-          while (c !== null && c !== endAnchor) {
-            currentNodes.push(c)
-            c = c.nextSibling
-          }
-        })
-        sink.push(watchDispose)
-        sink.push(() => disposeAll(subCleanups))
-      }
-      for (const child of list) hydrateInto(cleanups, child)
-    }
-    return () => disposeAll(cleanups)
-  },
-  mount(parent, anchor) {
-    const cleanups: Disposer[] = []
-    try {
-      if (props.children !== undefined) {
-        mountChildren(parent, props.children, anchor ?? null, cleanups)
-      }
-    } catch (e) {
-      disposeAll(cleanups)
-      const handler = ErrorBoundaryCap.tryUse()
-      if (handler === null) throw e
-      handler(e)
-      return () => {}
-    }
-    return () => disposeAll(cleanups)
-  },
-})
+export {
+  _consumeTabsUsedFlag,
+  Activity,
+  type ActivityProps,
+  Fragment,
+  markTabsUsedOnThisRequest,
+  mountChildren,
+  Show,
+  type ShowProps,
+  TAB_BRAND,
+  Tab,
+  type TabProps,
+  Tabs,
+  type TabsClassNames,
+  type TabsProps,
+  type TabsVariant,
+  tabsState,
+} from './mount.ts'
 
 // ===== Top-level mount + capability scoping =====
 
@@ -1027,8 +369,9 @@ export const Fragment = (props: { children?: Children }): View => ({
 // lower-level rendering primitives. (The route-walking `boot()`
 // full-page client entry was removed with the islands migration —
 // islands self-mount via their own bundles.)
-import { hydrate, mount, withCapability, withCapabilities } from './_client-mount.ts'
-export { hydrate, mount, withCapability, withCapabilities }
+import { hydrate, mount, withCapabilities, withCapability } from './_client-mount.ts'
+
+export { hydrate, mount, withCapabilities, withCapability }
 
 // ===== renderToString — server-side render =====
 //
@@ -1151,13 +494,13 @@ export function renderToString(view: View): string {
 // bundle), and round-trips loudly on unsupported input. Picked over
 // seroval (which requires `eval` and would break our `security: 'strict'`).
 
-import { stringify as devalueStringify } from 'devalue'
 import type { Resource } from '@place/reactivity'
-import { PLACE_RUNTIME } from './__place_runtime.ts'
+import { stringify as devalueStringify } from 'devalue'
+import { _consumeCopyUsedFlag, placeCopyRuntime } from './__copy-runtime.ts'
 import { placeDeferredIslands } from './__deferred-islands.ts'
 import { placeEarly } from './__early.ts'
 import { HMR_WS_PATH, placeHmr } from './__hmr.ts'
-import { _consumeCopyUsedFlag, placeCopyRuntime } from './__copy-runtime.ts'
+import { PLACE_RUNTIME } from './__place_runtime.ts'
 import { placeSpaNav } from './__spa_nav.ts'
 import { placeTabs } from './__tabs.ts'
 import { placeViewport } from './__viewport-runtime.ts'
@@ -1916,9 +1259,7 @@ export function _getIslandRegistry(): Readonly<Record<string, IslandRegistration
 }
 
 /** Internal: set the bundle URL map. Called by `serve()` after building. */
-export function _setIslandBundleUrls(
-  urls: Readonly<Record<string, string>> | undefined,
-): void {
+export function _setIslandBundleUrls(urls: Readonly<Record<string, string>> | undefined): void {
   _islandBundleUrls = urls ?? {}
 }
 
@@ -2163,7 +1504,9 @@ export function island<P extends Record<string, unknown>>(
     fn = maybeFnOrOptions
     options = maybeOptions
   } else {
-    throw new TypeError('island: invalid arguments. Pass `island(fn)` or `island(import.meta.url, fn)`.')
+    throw new TypeError(
+      'island: invalid arguments. Pass `island(fn)` or `island(import.meta.url, fn)`.',
+    )
   }
   // Derive a stable name from the source URL's basename. Strip the
   // extension AND any common island suffix (`.island`). Slugify so it
@@ -2198,9 +1541,7 @@ export function island<P extends Record<string, unknown>>(
   // can call `island()` again with the same URL safely. The
   // `ssrProps` resolver (if any) flows into the registry too so
   // `renderPage` can discover it without app-level wiring.
-  const ssrProps = options?.ssrProps as
-    | IslandSsrPropsResolver<Record<string, unknown>>
-    | undefined
+  const ssrProps = options?.ssrProps as IslandSsrPropsResolver<Record<string, unknown>> | undefined
   _registerIslandDef(name, {
     component: fn as never,
     src,
@@ -2225,8 +1566,7 @@ export function island<P extends Record<string, unknown>>(
       userKeys.length > 0
         ? ` data-view-props="${escapeHtmlAttrFull(safeStringifyIslandProps(userProps))}"`
         : ''
-    const strategyAttr =
-      strategy !== 'load' ? ` data-view-strategy="${strategy}"` : ''
+    const strategyAttr = strategy !== 'load' ? ` data-view-strategy="${strategy}"` : ''
     const openTag = `<div data-view="island" data-view-id="${escapeHtmlAttrFull(name)}"${propsAttr}${strategyAttr}>`
 
     // **Defer running the impl until toHtml/mount/hydrate time** so the
@@ -2392,8 +1732,7 @@ export const Island = (props: IslandProps): View => {
         props.props !== undefined
           ? ` data-view-props="${escapeHtmlAttrFull(safeStringifyIslandProps(props.props))}"`
           : ''
-      const strategyAttr =
-        strategy !== 'load' ? ` data-view-strategy="${strategy}"` : ''
+      const strategyAttr = strategy !== 'load' ? ` data-view-strategy="${strategy}"` : ''
       return (
         `<div data-view="island" data-view-id="${escapeHtmlAttrFull(props.name)}"${propsAttr}${strategyAttr}>` +
         innerHtml +
@@ -2687,10 +2026,7 @@ export interface PageDef<U extends object = object, L extends object = object, S
    * `meta` entirely — `<h1>Why place</h1>` produces a final
    * `<title>Why place · place docs</title>`.
    */
-  meta?:
-    | PageMeta
-    | string
-    | ((props: PageViewProps<U, L, S>) => PageMeta | string)
+  meta?: PageMeta | string | ((props: PageViewProps<U, L, S>) => PageMeta | string)
   /**
    * Stylesheets. URL strings emit `<link rel="stylesheet">`, `{ inline }`
    * emits `<style>`. Pass an array to combine. The `tailwind()` helper
@@ -2952,10 +2288,7 @@ function makeSlots<S extends string>(fills: SlotFills | undefined): LayoutSlots<
   return fn as LayoutSlots<S>
 }
 
-export interface LayoutDef<
-  L extends object = Record<string, never>,
-  S extends string = string,
-> {
+export interface LayoutDef<L extends object = Record<string, never>, S extends string = string> {
   /**
    * Server-only data load. The result merges into the props passed to
    * `view`, `meta`, and the inner page. Run BEFORE the page's `load()`
@@ -3002,10 +2335,8 @@ export interface LayoutDef<
 }
 
 /** Layout object — opaque, branded so isLayout() can detect it. */
-export interface Layout<
-  L extends object = Record<string, never>,
-  S extends string = string,
-> extends LayoutDef<L, S> {
+export interface Layout<L extends object = Record<string, never>, S extends string = string>
+  extends LayoutDef<L, S> {
   readonly [PLACE_LAYOUT_BRAND]: true
   /** Phantom — layout's declared slot key union, used by Page.slots typing. */
   readonly __slotKeys?: S
@@ -3064,10 +2395,9 @@ export interface AnyLayout {
  * })
  * ```
  */
-export function layout<
-  L extends object = Record<string, never>,
-  S extends string = string,
->(def: LayoutDef<L, S>): Layout<L, S> {
+export function layout<L extends object = Record<string, never>, S extends string = string>(
+  def: LayoutDef<L, S>,
+): Layout<L, S> {
   return { ...def, [PLACE_LAYOUT_BRAND]: true } as Layout<L, S>
 }
 
@@ -3197,11 +2527,7 @@ export function page<
     : never
 }
 // (1b) Inferred params, no on:.
-export function page<
-  Path extends string,
-  L extends object = Record<string, never>,
-  S = unknown,
->(
+export function page<Path extends string, L extends object = Record<string, never>, S = unknown>(
   path: Path,
   def: Omit<PageDef<ParamsOf<Path>, L, S>, 'load'> & {
     load?: (ctx: LoadCtx & { params: ParamsOf<Path> }) => L | Promise<L>
@@ -3213,10 +2539,7 @@ export function page<
 //      function-form path — important because letting TS explore (0)
 //      before (1a) triggers a TS2615 inference cycle on the on: mapped
 //      type when handlers have malformed signatures.
-export function page<Path extends string>(
-  path: Path,
-  viewFn: () => View,
-): AnyPageResult
+export function page<Path extends string>(path: Path, viewFn: () => View): AnyPageResult
 // (2) Explicit-generic path + def with on: → typed actions intersected
 //     with caller. Kept for back-compat with callers that pre-specify U
 //     (e.g. `page<{ id: number }>` when params need parsing into a
@@ -3269,9 +2592,7 @@ export function page(pathOrDef: any, maybeDef?: any): AnyPageResult {
     // View-fn shorthand: wrap into `{ view: fn }` and delegate to the
     // standard buildPage path. The runtime shape stays identical.
     const def: AnyPageDef =
-      typeof maybeDef === 'function'
-        ? ({ view: maybeDef } as AnyPageDef)
-        : (maybeDef as AnyPageDef)
+      typeof maybeDef === 'function' ? ({ view: maybeDef } as AnyPageDef) : (maybeDef as AnyPageDef)
     return buildPage(pathOrDef, def)
   }
   if (pathOrDef.on !== undefined && Object.keys(pathOrDef.on).length > 0) {
@@ -3653,498 +2974,495 @@ export async function renderPage(
     _routerDispose()
   }
   try {
-  let view: View
-  try {
-    // Round 7 auto-ClientOnly is now per-component: `component()`'s
-    // `toHtml` catches `ClientOnlyAbort` from any nested
-    // `cap.use()` and emits a placeholder span. Pages don't need any
-    // flag; client-only behavior originates structurally at the cap
-    // boundary. The page's `view()` runs normally here — if a child
-    // component throws ClientOnlyAbort it's caught at the component
-    // boundary, not here.
-    view = p.view(props)
-    // Wrap in layouts inside-out: the LAST layout in the array is the
-    // INNERMOST wrapper (closest to the page). So we iterate from end
-    // to start, each layout receiving the previously-wrapped view as
-    // its `children`.
-    //
-    // Slot fills declared on the page reach EVERY layout in the chain —
-    // a slot named `headerActions` filled by the page works whether
-    // the layout consuming it is the innermost or outermost wrapper.
-    // Layouts read slots they care about; unknown slots resolve to
-    // null. No file convention, no parallel-route magic.
-    const pageSlots = makeSlots<string>(p.slots)
-    for (let i = layouts.length - 1; i >= 0; i--) {
-      const l = layouts[i] as AnyLayout
-      view = l.view({
-        ...props,
-        children: view,
-        slots: pageSlots,
-      } as Parameters<typeof l.view>[0])
-    }
-  } catch (e) {
-    return renderRouteError(e, req, 'render')
-  }
-  let meta: PageMeta | undefined
-  try {
-    // Collect metas: layouts first (in chain order), page last. Last-
-    // write-wins on scalar fields. `htmlClass` and `bodyClass` get
-    // CONCATENATED so a root layout can set `h-full` and a page can add
-    // `bg-bg text-fg` without losing the parent's classes.
-    const metas: PageMeta[] = []
-    for (const l of layouts) {
-      const lMeta = resolveMeta(l.meta, props)
-      if (lMeta) metas.push(lMeta)
-    }
-    const pageMeta = resolveMeta(p.meta, props)
-    if (pageMeta) metas.push(pageMeta)
-    meta = metas.length === 0 ? undefined : mergeMeta(metas)
-  } catch (e) {
-    return renderRouteError(e, req, 'render')
-  }
-  // Auto-CSRF meta tag injection: when load() returns a `csrf` field,
-  // emit `<meta name="csrf-token" content="...">` so action.call() and
-  // <Form> can pick it up automatically (no per-page wiring of headers
-  // or hidden inputs). The convention is: page mints the token in
-  // load(), framework distributes it to the head, client reads from
-  // there. Dev never sees the transmission, just the mint.
-  const csrfFromLoad = (loadData as { csrf?: unknown }).csrf
-  if (typeof csrfFromLoad === 'string' && csrfFromLoad.length > 0) {
-    const csrfEntry: HeadEntry = {
-      tag: 'meta',
-      name: 'csrf-token',
-      content: csrfFromLoad,
-    }
-    const existingExtra = meta?.extra ?? []
-    meta = { ...(meta ?? {}), extra: [...existingExtra, csrfEntry] }
-  }
-  // Concatenate styles: layouts' styles emit BEFORE the page's so the
-  // page can override the layout. Layouts in chain order, then page.
-  const allStyles: StyleSrc[] = []
-  for (const l of layouts) {
-    if (l.styles) {
-      if (Array.isArray(l.styles)) allStyles.push(...l.styles)
-      else allStyles.push(l.styles)
-    }
-  }
-  if (p.styles) {
-    if (Array.isArray(p.styles)) allStyles.push(...p.styles)
-    else allStyles.push(p.styles)
-  }
-  const stylesForDoc: StyleSrc | StyleSrc[] | undefined =
-    allStyles.length === 0 ? undefined : allStyles.length === 1 ? allStyles[0] : allStyles
-  // Merge serve()-level htmlClass prefix (e.g. the active theme class).
-  // Prefix wins over user-supplied `meta.htmlClass`'s last-write because
-  // it goes first; the page's own classes follow.
-  if (options?.htmlClassPrefix) {
-    const userClass = meta?.htmlClass ?? ''
-    const merged = userClass ? `${options.htmlClassPrefix} ${userClass}` : options.htmlClassPrefix
-    meta = { ...(meta ?? {}), htmlClass: merged }
-  }
-  // Pre-build the nonce attribute fragment once. Empty when no nonce —
-  // those deployments rely on `'unsafe-inline'` in the CSP.
-  const nonceAttr = options?.scriptNonce
-    ? ` nonce="${escapeHtmlAttrFull(options.scriptNonce)}"`
-    : ''
-  const dataScript = p.load
-    ? `<script type="application/json"${nonceAttr} id="${PLACE_LOAD_SCRIPT_ID}">${escapeForJsonScript(JSON.stringify(loadData))}</script>`
-    : ''
-  // Streaming pages route through renderToStream (handles suspense
-  // boundaries and pushes swap chunks as resources resolve). Non-
-  // streaming pages render synchronously for the simpler fast path.
-  if (p.streaming) {
-    const wrapDoc = (body: string): string => {
-      // Always-emit (same reason as the sync path): SPA-nav to a page
-      // with Tabs needs the runtime pre-attached.
-      _consumeTabsUsedFlag()
-      const tabsScript = options?.enableSpaNav
-        ? `<script${nonceAttr}>${placeTabs()}</script>`
-        : ''
-      // `placeEarly()` rides with SPA-nav; `extraEarlyHead` (theme
-      // early script + app earlyHead entries) ships whenever present,
-      // independent of SPA-nav.
-      const streamEarlyHead = [
-        ...(options?.enableSpaNav ? [placeEarly()] : []),
-        ...(options?.extraEarlyHead ?? []),
-      ]
-      const streamChunks = options?.enableSpaNav ? _getSharedChunkUrls() : []
-      return renderDocument(body + tabsScript + dataScript, {
-        ...(meta ? { meta } : {}),
-        ...(stylesForDoc ? { styles: stylesForDoc } : {}),
-        ...(streamEarlyHead.length > 0 ? { earlyHead: streamEarlyHead } : {}),
-        ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
-        ...(streamChunks.length > 0 ? { chunkPreloads: streamChunks } : {}),
-      })
-    }
-    // Streaming-mode synchronous errors (caught at stream construction)
-    // route to the dev overlay. Errors that fire mid-stream after the
-    // headers + first chunk have flushed can't be recovered into a 500
-    // — they surface in the partial body or terminate the stream.
-    let stream: ReadableStream<Uint8Array>
+    let view: View
     try {
-      stream = renderToStream(view, {
-        document: wrapDoc,
-        ...(options?.scriptNonce ? { scriptNonce: options.scriptNonce } : {}),
-      })
-    } catch (e) {
-      return renderRouteError(e, req, 'render')
-    }
-    // Stream consumption happens asynchronously after we return — the
-    // outer try/finally would fire too early and dispose the server
-    // caps before lazy view children evaluate. Take over disposal here:
-    // capture the dispose closure, neutralize the outer finally, and
-    // run it when the stream completes/cancels instead.
-    const disposeOnStreamEnd = _disposeServerCaps
-    _disposeServerCaps = () => {}
-    const wrapped = new ReadableStream<Uint8Array>({
-      async start(controller) {
-        const reader = stream.getReader()
-        try {
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            controller.enqueue(value)
-          }
-          controller.close()
-        } catch (err) {
-          controller.error(err)
-        } finally {
-          disposeOnStreamEnd()
-        }
-      },
-      cancel() {
-        disposeOnStreamEnd()
-      },
-    })
-    return new Response(wrapped, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        // Disable downstream buffering so the browser sees chunks as
-        // they're emitted, not after the whole response is done.
-        'Cache-Control': 'no-store',
-        'X-Accel-Buffering': 'no',
-        ...p.headers,
-      },
-    })
-  }
-  let body: string
-  // T5-C + T6-B (race-safe scoping):
-  //
-  // BOTH the island collector AND the inline-style-attr collector are
-  // module-level globals that get filled during `renderToString`.
-  // `renderToString` is synchronous, so a single render reads + writes
-  // a single global instance without interleaving. But the *previous*
-  // architecture put `_beginInlineStyleCollection()` in the dispatch
-  // handler — BEFORE `await renderPage(...)`. That await is where
-  // concurrent requests interleave: request B can call its own
-  // `_beginInlineStyleCollection()` between request A's begin and A's
-  // synchronous render, silently overwriting A's collector. When
-  // A's render then writes style hashes, they go into B's set; A's
-  // response ships with B's CSP hashes (and vice versa).
-  //
-  // Pull both begin/end pairs HERE, *immediately* around
-  // `renderToString` (which doesn't await), so the window between
-  // begin and end can never see another request. The inline-style
-  // hashes are computed in this function and shipped to the
-  // dispatcher via a private response header (stripped before the
-  // response leaves the framework boundary) — see the
-  // `X-Place-Inline-Style-Hashes` handling in `_serveImpl`.
-  const islandSet = _beginIslandCollection()
-  const inlineStyles = _beginInlineStyleCollection()
-  const collectedHeadings = _beginHeadingCollection()
-  try {
-    body = renderToString(view)
-  } catch (e) {
-    _endIslandCollection()
-    _endInlineStyleCollection()
-    _endHeadingCollection()
-    return renderRouteError(e, req, 'render')
-  }
-  _endIslandCollection()
-  _endInlineStyleCollection()
-  _endHeadingCollection()
-  // **Auto-title from first `<h1>`.** Content pages without an
-  // explicit `meta.title` get their rendered `<h1>` text promoted to
-  // the document title. The page author writes `<h1>Why place</h1>`
-  // once and the framework wires the `<title>` AND any layout-level
-  // `titleTemplate` substitution. This is the docs-shape happy path:
-  // an article that just contains prose, no `meta:` block at all.
-  //
-  // Skip rules:
-  //   - `meta.title` already set → respect the author's choice.
-  //   - `meta.titleAbsolute === true` → the page explicitly wants its
-  //     title used verbatim with no auto-derivation OR template
-  //     substitution; honor that intent.
-  //   - First-h1 text empty after trim → don't emit `<title></title>`.
-  //
-  // The auto-derived title still flows through `mergeMeta`'s template
-  // resolution: a layout's `titleTemplate: '%s · my site'` wraps the
-  // harvested h1 the same way it would wrap a hand-written title.
-  if (!meta?.titleAbsolute && !meta?.title) {
-    const harvested = _getFirstH1Text()
-    if (harvested && harvested.length > 0) {
-      meta = { ...(meta ?? {}), title: harvested }
-    }
-  }
-  // **Auto-invoke each registered island's `ssrProps` resolver.**
-  // Islands declare their own SSR-time contract (see
-  // `IslandOptions.ssrProps` JSDoc) — when a resolver is set, the
-  // framework calls it here with the rendered body, then merges the
-  // result back into the marker via `rerenderIsland`. Apps don't
-  // wire anything for this to fire: each island file owns its own
-  // dependency on page output, like a typical effect-typed system
-  // would. The toc island's heading-extraction is the motivating
-  // case; the same primitive handles any island whose initial state
-  // is derived from the rendered body (footnote backrefs, syntax-
-  // highlight post-processing, comment-count summaries, …).
-  //
-  // **Ordering**: resolvers run in registry-iteration order, which
-  // matches the order `island()` calls fire at module load. If one
-  // resolver returns a new `body`, subsequent resolvers see it.
-  // Per-island independence is the common case; cross-island body
-  // chaining is supported but uncommon.
-  //
-  // **Errors**: a thrown resolver routes through `renderRouteError`
-  // just like a render fault. Resolvers should stay synchronous and
-  // pure (no I/O) per the JSDoc contract; failures are bugs.
-  const islandRegistry = _getIslandRegistry()
-  for (const [name, reg] of Object.entries(islandRegistry)) {
-    if (!reg.ssrProps) continue
-    try {
-      const result = reg.ssrProps({
-        body,
-        headings: collectedHeadings,
-        req,
-        url,
-      })
-      if (result) {
-        if (typeof result.body === 'string') {
-          body = result.body
-        }
-        if (result.props && typeof result.props === 'object') {
-          body = rerenderIsland(body, name, result.props as Record<string, unknown>)
-        }
+      // Round 7 auto-ClientOnly is now per-component: `component()`'s
+      // `toHtml` catches `ClientOnlyAbort` from any nested
+      // `cap.use()` and emits a placeholder span. Pages don't need any
+      // flag; client-only behavior originates structurally at the cap
+      // boundary. The page's `view()` runs normally here — if a child
+      // component throws ClientOnlyAbort it's caught at the component
+      // boundary, not here.
+      view = p.view(props)
+      // Wrap in layouts inside-out: the LAST layout in the array is the
+      // INNERMOST wrapper (closest to the page). So we iterate from end
+      // to start, each layout receiving the previously-wrapped view as
+      // its `children`.
+      //
+      // Slot fills declared on the page reach EVERY layout in the chain —
+      // a slot named `headerActions` filled by the page works whether
+      // the layout consuming it is the innermost or outermost wrapper.
+      // Layouts read slots they care about; unknown slots resolve to
+      // null. No file convention, no parallel-route magic.
+      const pageSlots = makeSlots<string>(p.slots)
+      for (let i = layouts.length - 1; i >= 0; i--) {
+        const l = layouts[i] as AnyLayout
+        view = l.view({
+          ...props,
+          children: view,
+          slots: pageSlots,
+        } as Parameters<typeof l.view>[0])
       }
     } catch (e) {
       return renderRouteError(e, req, 'render')
     }
-  }
-  // App-level `transformBody` hook — the low-level escape hatch for
-  // post-render transforms that don't fit the per-island `ssrProps`
-  // primitive above. Runs AFTER the islands' resolvers so resolvers
-  // can be the structural primitive and `transformBody` the catch-
-  // all. Errors here route through `renderRouteError` like any
-  // render fault.
-  if (options?.transformBody) {
+    let meta: PageMeta | undefined
     try {
-      body = options.transformBody(body, { req, url })
+      // Collect metas: layouts first (in chain order), page last. Last-
+      // write-wins on scalar fields. `htmlClass` and `bodyClass` get
+      // CONCATENATED so a root layout can set `h-full` and a page can add
+      // `bg-bg text-fg` without losing the parent's classes.
+      const metas: PageMeta[] = []
+      for (const l of layouts) {
+        const lMeta = resolveMeta(l.meta, props)
+        if (lMeta) metas.push(lMeta)
+      }
+      const pageMeta = resolveMeta(p.meta, props)
+      if (pageMeta) metas.push(pageMeta)
+      meta = metas.length === 0 ? undefined : mergeMeta(metas)
     } catch (e) {
       return renderRouteError(e, req, 'render')
     }
-  }
-  // Resolve each used island's bundle URL via the registry. Per-
-  // island fetch strategy depends on which `client=` strategies the
-  // page's instances declared (see `_beginIslandCollection` JSDoc
-  // for the full rationale):
-  //
-  //   - ANY strategy != 'interaction' → emit `<script type="module">`
-  //     immediately, so the bundle is on the wire by first paint.
-  //     This covers `load` (the default), `idle`, and `visible`.
-  //
-  //   - ALL strategies == 'interaction' → emit `<link rel="modulepreload">`
-  //     (browser fetches at idle, doesn't execute) and add the bundle
-  //     URL to `deferredIslandUrls`. The inline `placeDeferredIslands`
-  //     runtime (emitted further below) attaches event listeners on
-  //     matching markers and promotes the modulepreload to an executing
-  //     `<script>` on first interaction. Since modulepreload already
-  //     populated the cache, the promotion is an instant cache hit —
-  //     zero added INP latency even on slow networks.
-  //
-  // Pages without any `interaction`-only islands behave identically
-  // to before this change: every used island ships as a `<script>`.
-  const islandScripts: string[] = []
-  /** Deferred islands: name → bundle URL pairs. Stored as a tuple so
-   *  the post-render marker patch can reference the name directly
-   *  rather than parsing it back out of the (hash-suffixed) URL. */
-  const deferredIslands: Array<{ readonly name: string; readonly url: string }> = []
-  for (const [name, strategies] of islandSet) {
-    const url = _getIslandBundleUrl(name)
-    if (!url) continue
-    const onlyInteraction =
-      strategies.size === 1 && strategies.has('interaction')
-    if (onlyInteraction) {
-      deferredIslands.push({ name, url })
-    } else {
-      islandScripts.push(url)
+    // Auto-CSRF meta tag injection: when load() returns a `csrf` field,
+    // emit `<meta name="csrf-token" content="...">` so action.call() and
+    // <Form> can pick it up automatically (no per-page wiring of headers
+    // or hidden inputs). The convention is: page mints the token in
+    // load(), framework distributes it to the head, client reads from
+    // there. Dev never sees the transmission, just the mint.
+    const csrfFromLoad = (loadData as { csrf?: unknown }).csrf
+    if (typeof csrfFromLoad === 'string' && csrfFromLoad.length > 0) {
+      const csrfEntry: HeadEntry = {
+        tag: 'meta',
+        name: 'csrf-token',
+        content: csrfFromLoad,
+      }
+      const existingExtra = meta?.extra ?? []
+      meta = { ...(meta ?? {}), extra: [...existingExtra, csrfEntry] }
     }
-  }
-  // T5-D phase 2: inline SPA-navigation runtime. Injected when the
-  // app has `islands:` configured (serve() passes `enableSpaNav: true`).
-  // The runtime intercepts <Link> clicks, fetches HTML, swaps <main>,
-  // and dispatches `place:nav` so the router + every island re-syncs.
-  // Adds ~600 B gzipped per page that's part of an islands app.
-  //
-  // Per-app `viewTransitions` flows in via `spaNavViewTransitions` so
-  // the inline runtime can be either instant (default) or view-
-  // transition-wrapped (~250 ms cross-fade) — baked into the bytes,
-  // no runtime globals to coordinate.
-  const spaNavScript = options?.enableSpaNav
-    ? `<script${nonceAttr}>${placeSpaNav({
-        viewTransitions: options?.spaNavViewTransitions === true,
-        ...(options?.spaNavThemeClassMap
-          ? { themeClassMap: options.spaNavThemeClassMap }
-          : {}),
-        ...(options?.spaNavPrefetch === false ? { prefetch: false } : {}),
-      })}</script>`
-    : ''
-  // Inline tabs runtime — single delegated click handler shared by
-  // every `<Tabs>` on the page.
-  //
-  // **Always-emit when SPA-nav is on.** The runtime MUST be attached
-  // before the user can land on a page with tabs, otherwise:
-  //   1. User loads page A (no Tabs) — tabs runtime not emitted
-  //   2. SPA-nav to page B (has Tabs) — destination HTML has the
-  //      tabs `<script>` inline, but DOMParser-parsed inline scripts
-  //      are INERT (browsers don't execute scripts brought in via
-  //      `innerHTML`/`replaceWith`/etc.). The tabs handler never
-  //      attaches → clicks do nothing.
-  //
-  // The clean fix is to attach the runtime on EVERY page-with-SPA-nav
-  // so it's available regardless of navigation path. The runtime itself
-  // is flag-guarded (`window.__placeTabs`) so per-page repetition is a
-  // no-op after the first attach. The flag-consume below (which fires
-  // for telemetry / future per-route opt-outs) is decoupled from the
-  // emit decision: we always emit while in islands-mode.
-  _consumeTabsUsedFlag() // drain the flag; emission no longer gated on it
-  const tabsScript = options?.enableSpaNav
-    ? `<script${nonceAttr}>${placeTabs()}</script>`
-    : ''
-  // **Deferred-island runtime.** When the page contains any island
-  // whose every instance uses `client="interaction"`, the bundle for
-  // that island isn't emitted as a `<script>`; we emit a
-  // `<link rel="modulepreload">` (cache-only, no execute) and let
-  // the inline runtime promote it to an executing script on first
-  // user trigger. This drops the critical-path fetch count without
-  // INP regression: the modulepreload populates the browser's module
-  // cache during idle network time, so the post-trigger script
-  // append is an instant cache hit.
-  //
-  // Patch each deferred island's markers in the rendered body to
-  // carry `data-place-deferred-url="<url>"` — that's what the inline
-  // runtime walks. Island names are validated against
-  // `[a-zA-Z0-9_-]+` by `validateIslandName`, so the name is safe to
-  // embed in the regex without escaping.
-  let deferredBody = body
-  for (const { name, url } of deferredIslands) {
-    const markerRe = new RegExp(
-      `<div data-view="island" data-view-id="${name}"`,
-      'g',
-    )
-    deferredBody = deferredBody.replace(
-      markerRe,
-      `<div data-view="island" data-view-id="${name}" data-place-deferred-url="${url}"`,
-    )
-  }
-  const deferredScript =
-    options?.enableSpaNav && deferredIslands.length > 0
-      ? `<script${nonceAttr}>${placeDeferredIslands()}</script>`
+    // Concatenate styles: layouts' styles emit BEFORE the page's so the
+    // page can override the layout. Layouts in chain order, then page.
+    const allStyles: StyleSrc[] = []
+    for (const l of layouts) {
+      if (l.styles) {
+        if (Array.isArray(l.styles)) allStyles.push(...l.styles)
+        else allStyles.push(l.styles)
+      }
+    }
+    if (p.styles) {
+      if (Array.isArray(p.styles)) allStyles.push(...p.styles)
+      else allStyles.push(p.styles)
+    }
+    const stylesForDoc: StyleSrc | StyleSrc[] | undefined =
+      allStyles.length === 0 ? undefined : allStyles.length === 1 ? allStyles[0] : allStyles
+    // Merge serve()-level htmlClass prefix (e.g. the active theme class).
+    // Prefix wins over user-supplied `meta.htmlClass`'s last-write because
+    // it goes first; the page's own classes follow.
+    if (options?.htmlClassPrefix) {
+      const userClass = meta?.htmlClass ?? ''
+      const merged = userClass ? `${options.htmlClassPrefix} ${userClass}` : options.htmlClassPrefix
+      meta = { ...(meta ?? {}), htmlClass: merged }
+    }
+    // Pre-build the nonce attribute fragment once. Empty when no nonce —
+    // those deployments rely on `'unsafe-inline'` in the CSP.
+    const nonceAttr = options?.scriptNonce
+      ? ` nonce="${escapeHtmlAttrFull(options.scriptNonce)}"`
       : ''
-  // Dev-mode live-reload client. Inlined when `enableHmr` is set
-  // (which `serve()` toggles based on NODE_ENV). The script opens a
-  // WebSocket back to `/__place_hmr`; on reconnect-after-disconnect
-  // it reloads the page so changes appear without manual refresh.
-  // See `__hmr.ts` for the JSDoc on contract + lifecycle.
-  const hmrScript = options?.enableHmr
-    ? `<script${nonceAttr}>${placeHmr()}</script>`
-    : ''
-  // **Viewport reactivity runtime.** Always-emit in islands mode so
-  // the `viewport.*` accessors get fresh width/height and prefers-*
-  // values into their state cells on hydration. Mirrors the always-
-  // emit reasoning for `placeTabs` — if a destination page is reached
-  // via SPA-nav, its inline script tag is inert; the runtime needs
-  // to be attached before navigation.
-  const viewportScript = options?.enableSpaNav
-    ? `<script${nonceAttr}>${placeViewport()}</script>`
-    : ''
-  // **Click-to-copy runtime.** Same always-emit reasoning as the
-  // tabs script: if a destination page reached via SPA-nav has copy
-  // buttons, its inline `<script>` tag is inert. The runtime is
-  // emitted unconditionally in islands mode (regardless of whether
-  // THIS render used copy buttons) so it's available on any
-  // post-SPA-nav destination. Browser-side `__placeCopy` guard
-  // makes per-render repetition a no-op after first install.
-  _consumeCopyUsedFlag() // drain; emission no longer gated on it
-  const copyScript = options?.enableSpaNav
-    ? `<script${nonceAttr}>${placeCopyRuntime()}</script>`
-    : ''
-  // Early-head inline runtime: always emit in islands mode. Sets
-  // `<html data-place-platform>` + `<html data-place-motion>` before
-  // paint so platform/motion-conditional UI resolves correctly on
-  // first paint without a post-hydration blip. App-supplied extras
-  // (analytics consent, feature flags, locale direction, etc.) come
-  // after the framework's built-ins so app code can read the
-  // framework hints if it wants.
-  // `placeEarly()` (platform / reduced-motion hints) rides with the
-  // SPA-nav runtime. `extraEarlyHead` — the theme early-paint script
-  // and any app `earlyHead` entries — must ship whenever it exists,
-  // independent of SPA-nav: theme persistence + the `data-place-theme`
-  // attribute a theme picker reads are needed on every page, including
-  // pure content pages with no islands.
-  const earlyHead = [
-    ...(options?.enableSpaNav ? [placeEarly()] : []),
-    ...(options?.extraEarlyHead ?? []),
-  ]
-  // Shared chunks → modulepreload in <head>. Lets the browser fetch
-  // them in parallel with the HTML doc + island entries; without
-  // this, chunks are discovered only after an island parses its
-  // imports (~20-30 ms LCP cost on slow networks). Deferred-island
-  // bundles ride the same channel — the browser fetches them at
-  // idle priority alongside the chunks. By the time a user hovers /
-  // focuses / clicks the matching marker, the bundle is in cache.
-  const chunkPreloads = options?.enableSpaNav
-    ? [..._getSharedChunkUrls(), ...deferredIslands.map((d) => d.url)]
-    : []
-  const html = renderDocument(
-    deferredBody + spaNavScript + tabsScript + viewportScript + copyScript + deferredScript + hmrScript + dataScript,
-    {
-      ...(meta ? { meta } : {}),
-      ...(stylesForDoc ? { styles: stylesForDoc } : {}),
-      ...(earlyHead.length > 0 ? { earlyHead } : {}),
-      ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
-      ...(chunkPreloads.length > 0 ? { chunkPreloads } : {}),
-      ...(islandScripts.length > 0 ? { extraScripts: islandScripts } : {}),
-      ...(options?.scriptNonce ? { scriptNonce: options.scriptNonce } : {}),
-      ...(options?.scriptIntegrity ? { scriptIntegrity: options.scriptIntegrity } : {}),
-    },
-  )
-  // Compute SHA-256 of each unique inline `style="…"` value and ship the
-  // hashes to the dispatcher via a *private* response header. The
-  // dispatcher folds them into the response's CSP `style-src` (with
-  // `'unsafe-hashes'`) and strips the header before the response
-  // leaves the framework boundary. Comma-separated for compactness;
-  // base64 strings don't contain `,` so the separator is unambiguous.
-  // See INLINE_STYLE_HASHES_HEADER below for the constant.
-  const inlineStyleHashList =
-    inlineStyles.size > 0 ? await Promise.all([...inlineStyles].map(sha256Base64)) : []
-  // Normalize `p.headers` (`HeadersInit`: `Headers | string[][] |
-  // Record<string,string>`) into a plain object so the private
-  // `X-Place-Inline-Style-Hashes` header can be appended uniformly.
-  const responseHeaders: Record<string, string> = {
-    'Content-Type': 'text/html; charset=utf-8',
-  }
-  if (p.headers) {
-    new Headers(p.headers).forEach((v, k) => {
-      responseHeaders[k] = v
+    const dataScript = p.load
+      ? `<script type="application/json"${nonceAttr} id="${PLACE_LOAD_SCRIPT_ID}">${escapeForJsonScript(JSON.stringify(loadData))}</script>`
+      : ''
+    // Streaming pages route through renderToStream (handles suspense
+    // boundaries and pushes swap chunks as resources resolve). Non-
+    // streaming pages render synchronously for the simpler fast path.
+    if (p.streaming) {
+      const wrapDoc = (body: string): string => {
+        // Always-emit (same reason as the sync path): SPA-nav to a page
+        // with Tabs needs the runtime pre-attached.
+        _consumeTabsUsedFlag()
+        const tabsScript = options?.enableSpaNav
+          ? `<script${nonceAttr}>${placeTabs()}</script>`
+          : ''
+        // `placeEarly()` rides with SPA-nav; `extraEarlyHead` (theme
+        // early script + app earlyHead entries) ships whenever present,
+        // independent of SPA-nav.
+        const streamEarlyHead = [
+          ...(options?.enableSpaNav ? [placeEarly()] : []),
+          ...(options?.extraEarlyHead ?? []),
+        ]
+        const streamChunks = options?.enableSpaNav ? _getSharedChunkUrls() : []
+        return renderDocument(body + tabsScript + dataScript, {
+          ...(meta ? { meta } : {}),
+          ...(stylesForDoc ? { styles: stylesForDoc } : {}),
+          ...(streamEarlyHead.length > 0 ? { earlyHead: streamEarlyHead } : {}),
+          ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
+          ...(streamChunks.length > 0 ? { chunkPreloads: streamChunks } : {}),
+        })
+      }
+      // Streaming-mode synchronous errors (caught at stream construction)
+      // route to the dev overlay. Errors that fire mid-stream after the
+      // headers + first chunk have flushed can't be recovered into a 500
+      // — they surface in the partial body or terminate the stream.
+      let stream: ReadableStream<Uint8Array>
+      try {
+        stream = renderToStream(view, {
+          document: wrapDoc,
+          ...(options?.scriptNonce ? { scriptNonce: options.scriptNonce } : {}),
+        })
+      } catch (e) {
+        return renderRouteError(e, req, 'render')
+      }
+      // Stream consumption happens asynchronously after we return — the
+      // outer try/finally would fire too early and dispose the server
+      // caps before lazy view children evaluate. Take over disposal here:
+      // capture the dispose closure, neutralize the outer finally, and
+      // run it when the stream completes/cancels instead.
+      const disposeOnStreamEnd = _disposeServerCaps
+      _disposeServerCaps = () => {}
+      const wrapped = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          const reader = stream.getReader()
+          try {
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              controller.enqueue(value)
+            }
+            controller.close()
+          } catch (err) {
+            controller.error(err)
+          } finally {
+            disposeOnStreamEnd()
+          }
+        },
+        cancel() {
+          disposeOnStreamEnd()
+        },
+      })
+      return new Response(wrapped, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          // Disable downstream buffering so the browser sees chunks as
+          // they're emitted, not after the whole response is done.
+          'Cache-Control': 'no-store',
+          'X-Accel-Buffering': 'no',
+          ...p.headers,
+        },
+      })
+    }
+    let body: string
+    // T5-C + T6-B (race-safe scoping):
+    //
+    // BOTH the island collector AND the inline-style-attr collector are
+    // module-level globals that get filled during `renderToString`.
+    // `renderToString` is synchronous, so a single render reads + writes
+    // a single global instance without interleaving. But the *previous*
+    // architecture put `_beginInlineStyleCollection()` in the dispatch
+    // handler — BEFORE `await renderPage(...)`. That await is where
+    // concurrent requests interleave: request B can call its own
+    // `_beginInlineStyleCollection()` between request A's begin and A's
+    // synchronous render, silently overwriting A's collector. When
+    // A's render then writes style hashes, they go into B's set; A's
+    // response ships with B's CSP hashes (and vice versa).
+    //
+    // Pull both begin/end pairs HERE, *immediately* around
+    // `renderToString` (which doesn't await), so the window between
+    // begin and end can never see another request. The inline-style
+    // hashes are computed in this function and shipped to the
+    // dispatcher via a private response header (stripped before the
+    // response leaves the framework boundary) — see the
+    // `X-Place-Inline-Style-Hashes` handling in `_serveImpl`.
+    const islandSet = _beginIslandCollection()
+    const inlineStyles = _beginInlineStyleCollection()
+    const collectedHeadings = _beginHeadingCollection()
+    try {
+      body = renderToString(view)
+    } catch (e) {
+      _endIslandCollection()
+      _endInlineStyleCollection()
+      _endHeadingCollection()
+      return renderRouteError(e, req, 'render')
+    }
+    _endIslandCollection()
+    _endInlineStyleCollection()
+    _endHeadingCollection()
+    // **Auto-title from first `<h1>`.** Content pages without an
+    // explicit `meta.title` get their rendered `<h1>` text promoted to
+    // the document title. The page author writes `<h1>Why place</h1>`
+    // once and the framework wires the `<title>` AND any layout-level
+    // `titleTemplate` substitution. This is the docs-shape happy path:
+    // an article that just contains prose, no `meta:` block at all.
+    //
+    // Skip rules:
+    //   - `meta.title` already set → respect the author's choice.
+    //   - `meta.titleAbsolute === true` → the page explicitly wants its
+    //     title used verbatim with no auto-derivation OR template
+    //     substitution; honor that intent.
+    //   - First-h1 text empty after trim → don't emit `<title></title>`.
+    //
+    // The auto-derived title still flows through `mergeMeta`'s template
+    // resolution: a layout's `titleTemplate: '%s · my site'` wraps the
+    // harvested h1 the same way it would wrap a hand-written title.
+    if (!meta?.titleAbsolute && !meta?.title) {
+      const harvested = _getFirstH1Text()
+      if (harvested && harvested.length > 0) {
+        meta = { ...(meta ?? {}), title: harvested }
+      }
+    }
+    // **Auto-invoke each registered island's `ssrProps` resolver.**
+    // Islands declare their own SSR-time contract (see
+    // `IslandOptions.ssrProps` JSDoc) — when a resolver is set, the
+    // framework calls it here with the rendered body, then merges the
+    // result back into the marker via `rerenderIsland`. Apps don't
+    // wire anything for this to fire: each island file owns its own
+    // dependency on page output, like a typical effect-typed system
+    // would. The toc island's heading-extraction is the motivating
+    // case; the same primitive handles any island whose initial state
+    // is derived from the rendered body (footnote backrefs, syntax-
+    // highlight post-processing, comment-count summaries, …).
+    //
+    // **Ordering**: resolvers run in registry-iteration order, which
+    // matches the order `island()` calls fire at module load. If one
+    // resolver returns a new `body`, subsequent resolvers see it.
+    // Per-island independence is the common case; cross-island body
+    // chaining is supported but uncommon.
+    //
+    // **Errors**: a thrown resolver routes through `renderRouteError`
+    // just like a render fault. Resolvers should stay synchronous and
+    // pure (no I/O) per the JSDoc contract; failures are bugs.
+    const islandRegistry = _getIslandRegistry()
+    for (const [name, reg] of Object.entries(islandRegistry)) {
+      if (!reg.ssrProps) continue
+      try {
+        const result = reg.ssrProps({
+          body,
+          headings: collectedHeadings,
+          req,
+          url,
+        })
+        if (result) {
+          if (typeof result.body === 'string') {
+            body = result.body
+          }
+          if (result.props && typeof result.props === 'object') {
+            body = rerenderIsland(body, name, result.props as Record<string, unknown>)
+          }
+        }
+      } catch (e) {
+        return renderRouteError(e, req, 'render')
+      }
+    }
+    // App-level `transformBody` hook — the low-level escape hatch for
+    // post-render transforms that don't fit the per-island `ssrProps`
+    // primitive above. Runs AFTER the islands' resolvers so resolvers
+    // can be the structural primitive and `transformBody` the catch-
+    // all. Errors here route through `renderRouteError` like any
+    // render fault.
+    if (options?.transformBody) {
+      try {
+        body = options.transformBody(body, { req, url })
+      } catch (e) {
+        return renderRouteError(e, req, 'render')
+      }
+    }
+    // Resolve each used island's bundle URL via the registry. Per-
+    // island fetch strategy depends on which `client=` strategies the
+    // page's instances declared (see `_beginIslandCollection` JSDoc
+    // for the full rationale):
+    //
+    //   - ANY strategy != 'interaction' → emit `<script type="module">`
+    //     immediately, so the bundle is on the wire by first paint.
+    //     This covers `load` (the default), `idle`, and `visible`.
+    //
+    //   - ALL strategies == 'interaction' → emit `<link rel="modulepreload">`
+    //     (browser fetches at idle, doesn't execute) and add the bundle
+    //     URL to `deferredIslandUrls`. The inline `placeDeferredIslands`
+    //     runtime (emitted further below) attaches event listeners on
+    //     matching markers and promotes the modulepreload to an executing
+    //     `<script>` on first interaction. Since modulepreload already
+    //     populated the cache, the promotion is an instant cache hit —
+    //     zero added INP latency even on slow networks.
+    //
+    // Pages without any `interaction`-only islands behave identically
+    // to before this change: every used island ships as a `<script>`.
+    const islandScripts: string[] = []
+    /** Deferred islands: name → bundle URL pairs. Stored as a tuple so
+     *  the post-render marker patch can reference the name directly
+     *  rather than parsing it back out of the (hash-suffixed) URL. */
+    const deferredIslands: Array<{ readonly name: string; readonly url: string }> = []
+    for (const [name, strategies] of islandSet) {
+      const url = _getIslandBundleUrl(name)
+      if (!url) continue
+      const onlyInteraction = strategies.size === 1 && strategies.has('interaction')
+      if (onlyInteraction) {
+        deferredIslands.push({ name, url })
+      } else {
+        islandScripts.push(url)
+      }
+    }
+    // T5-D phase 2: inline SPA-navigation runtime. Injected when the
+    // app has `islands:` configured (serve() passes `enableSpaNav: true`).
+    // The runtime intercepts <Link> clicks, fetches HTML, swaps <main>,
+    // and dispatches `place:nav` so the router + every island re-syncs.
+    // Adds ~600 B gzipped per page that's part of an islands app.
+    //
+    // Per-app `viewTransitions` flows in via `spaNavViewTransitions` so
+    // the inline runtime can be either instant (default) or view-
+    // transition-wrapped (~250 ms cross-fade) — baked into the bytes,
+    // no runtime globals to coordinate.
+    const spaNavScript = options?.enableSpaNav
+      ? `<script${nonceAttr}>${placeSpaNav({
+          viewTransitions: options?.spaNavViewTransitions === true,
+          ...(options?.spaNavThemeClassMap ? { themeClassMap: options.spaNavThemeClassMap } : {}),
+          ...(options?.spaNavPrefetch === false ? { prefetch: false } : {}),
+        })}</script>`
+      : ''
+    // Inline tabs runtime — single delegated click handler shared by
+    // every `<Tabs>` on the page.
+    //
+    // **Always-emit when SPA-nav is on.** The runtime MUST be attached
+    // before the user can land on a page with tabs, otherwise:
+    //   1. User loads page A (no Tabs) — tabs runtime not emitted
+    //   2. SPA-nav to page B (has Tabs) — destination HTML has the
+    //      tabs `<script>` inline, but DOMParser-parsed inline scripts
+    //      are INERT (browsers don't execute scripts brought in via
+    //      `innerHTML`/`replaceWith`/etc.). The tabs handler never
+    //      attaches → clicks do nothing.
+    //
+    // The clean fix is to attach the runtime on EVERY page-with-SPA-nav
+    // so it's available regardless of navigation path. The runtime itself
+    // is flag-guarded (`window.__placeTabs`) so per-page repetition is a
+    // no-op after the first attach. The flag-consume below (which fires
+    // for telemetry / future per-route opt-outs) is decoupled from the
+    // emit decision: we always emit while in islands-mode.
+    _consumeTabsUsedFlag() // drain the flag; emission no longer gated on it
+    const tabsScript = options?.enableSpaNav ? `<script${nonceAttr}>${placeTabs()}</script>` : ''
+    // **Deferred-island runtime.** When the page contains any island
+    // whose every instance uses `client="interaction"`, the bundle for
+    // that island isn't emitted as a `<script>`; we emit a
+    // `<link rel="modulepreload">` (cache-only, no execute) and let
+    // the inline runtime promote it to an executing script on first
+    // user trigger. This drops the critical-path fetch count without
+    // INP regression: the modulepreload populates the browser's module
+    // cache during idle network time, so the post-trigger script
+    // append is an instant cache hit.
+    //
+    // Patch each deferred island's markers in the rendered body to
+    // carry `data-place-deferred-url="<url>"` — that's what the inline
+    // runtime walks. Island names are validated against
+    // `[a-zA-Z0-9_-]+` by `validateIslandName`, so the name is safe to
+    // embed in the regex without escaping.
+    let deferredBody = body
+    for (const { name, url } of deferredIslands) {
+      const markerRe = new RegExp(`<div data-view="island" data-view-id="${name}"`, 'g')
+      deferredBody = deferredBody.replace(
+        markerRe,
+        `<div data-view="island" data-view-id="${name}" data-place-deferred-url="${url}"`,
+      )
+    }
+    const deferredScript =
+      options?.enableSpaNav && deferredIslands.length > 0
+        ? `<script${nonceAttr}>${placeDeferredIslands()}</script>`
+        : ''
+    // Dev-mode live-reload client. Inlined when `enableHmr` is set
+    // (which `serve()` toggles based on NODE_ENV). The script opens a
+    // WebSocket back to `/__place_hmr`; on reconnect-after-disconnect
+    // it reloads the page so changes appear without manual refresh.
+    // See `__hmr.ts` for the JSDoc on contract + lifecycle.
+    const hmrScript = options?.enableHmr ? `<script${nonceAttr}>${placeHmr()}</script>` : ''
+    // **Viewport reactivity runtime.** Always-emit in islands mode so
+    // the `viewport.*` accessors get fresh width/height and prefers-*
+    // values into their state cells on hydration. Mirrors the always-
+    // emit reasoning for `placeTabs` — if a destination page is reached
+    // via SPA-nav, its inline script tag is inert; the runtime needs
+    // to be attached before navigation.
+    const viewportScript = options?.enableSpaNav
+      ? `<script${nonceAttr}>${placeViewport()}</script>`
+      : ''
+    // **Click-to-copy runtime.** Same always-emit reasoning as the
+    // tabs script: if a destination page reached via SPA-nav has copy
+    // buttons, its inline `<script>` tag is inert. The runtime is
+    // emitted unconditionally in islands mode (regardless of whether
+    // THIS render used copy buttons) so it's available on any
+    // post-SPA-nav destination. Browser-side `__placeCopy` guard
+    // makes per-render repetition a no-op after first install.
+    _consumeCopyUsedFlag() // drain; emission no longer gated on it
+    const copyScript = options?.enableSpaNav
+      ? `<script${nonceAttr}>${placeCopyRuntime()}</script>`
+      : ''
+    // Early-head inline runtime: always emit in islands mode. Sets
+    // `<html data-place-platform>` + `<html data-place-motion>` before
+    // paint so platform/motion-conditional UI resolves correctly on
+    // first paint without a post-hydration blip. App-supplied extras
+    // (analytics consent, feature flags, locale direction, etc.) come
+    // after the framework's built-ins so app code can read the
+    // framework hints if it wants.
+    // `placeEarly()` (platform / reduced-motion hints) rides with the
+    // SPA-nav runtime. `extraEarlyHead` — the theme early-paint script
+    // and any app `earlyHead` entries — must ship whenever it exists,
+    // independent of SPA-nav: theme persistence + the `data-place-theme`
+    // attribute a theme picker reads are needed on every page, including
+    // pure content pages with no islands.
+    const earlyHead = [
+      ...(options?.enableSpaNav ? [placeEarly()] : []),
+      ...(options?.extraEarlyHead ?? []),
+    ]
+    // Shared chunks → modulepreload in <head>. Lets the browser fetch
+    // them in parallel with the HTML doc + island entries; without
+    // this, chunks are discovered only after an island parses its
+    // imports (~20-30 ms LCP cost on slow networks). Deferred-island
+    // bundles ride the same channel — the browser fetches them at
+    // idle priority alongside the chunks. By the time a user hovers /
+    // focuses / clicks the matching marker, the bundle is in cache.
+    const chunkPreloads = options?.enableSpaNav
+      ? [..._getSharedChunkUrls(), ...deferredIslands.map((d) => d.url)]
+      : []
+    const html = renderDocument(
+      deferredBody +
+        spaNavScript +
+        tabsScript +
+        viewportScript +
+        copyScript +
+        deferredScript +
+        hmrScript +
+        dataScript,
+      {
+        ...(meta ? { meta } : {}),
+        ...(stylesForDoc ? { styles: stylesForDoc } : {}),
+        ...(earlyHead.length > 0 ? { earlyHead } : {}),
+        ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
+        ...(chunkPreloads.length > 0 ? { chunkPreloads } : {}),
+        ...(islandScripts.length > 0 ? { extraScripts: islandScripts } : {}),
+        ...(options?.scriptNonce ? { scriptNonce: options.scriptNonce } : {}),
+        ...(options?.scriptIntegrity ? { scriptIntegrity: options.scriptIntegrity } : {}),
+      },
+    )
+    // Compute SHA-256 of each unique inline `style="…"` value and ship the
+    // hashes to the dispatcher via a *private* response header. The
+    // dispatcher folds them into the response's CSP `style-src` (with
+    // `'unsafe-hashes'`) and strips the header before the response
+    // leaves the framework boundary. Comma-separated for compactness;
+    // base64 strings don't contain `,` so the separator is unambiguous.
+    // See INLINE_STYLE_HASHES_HEADER below for the constant.
+    const inlineStyleHashList =
+      inlineStyles.size > 0 ? await Promise.all([...inlineStyles].map(sha256Base64)) : []
+    // Normalize `p.headers` (`HeadersInit`: `Headers | string[][] |
+    // Record<string,string>`) into a plain object so the private
+    // `X-Place-Inline-Style-Hashes` header can be appended uniformly.
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'text/html; charset=utf-8',
+    }
+    if (p.headers) {
+      new Headers(p.headers).forEach((v, k) => {
+        responseHeaders[k] = v
+      })
+    }
+    if (inlineStyleHashList.length > 0) {
+      responseHeaders[INLINE_STYLE_HASHES_HEADER] = inlineStyleHashList.join(',')
+    }
+    return new Response(html, {
+      status: 200,
+      headers: responseHeaders,
     })
-  }
-  if (inlineStyleHashList.length > 0) {
-    responseHeaders[INLINE_STYLE_HASHES_HEADER] = inlineStyleHashList.join(',')
-  }
-  return new Response(html, {
-    status: 200,
-    headers: responseHeaders,
-  })
   } finally {
     _disposeServerCaps()
   }
@@ -4220,7 +3538,6 @@ function mergeMeta(metas: PageMeta[]): PageMeta {
 // are imported above (used by handler / page / layout / serve); the
 // stack-frame parser surface is re-exported here for unit tests.
 export { frameEditorHref, parseStackFrames, type StackFrame } from './error-overlay.ts'
-
 
 // ===== Testing helpers =====
 //
@@ -4661,9 +3978,7 @@ export interface ServeOptions {
    * metadata (set by the `island()` factory), so there's no need to
    * repeat the path or name.
    */
-  islands?:
-    | Readonly<Record<string, IslandRegistration>>
-    | readonly IslandComponent<never>[]
+  islands?: Readonly<Record<string, IslandRegistration>> | readonly IslandComponent<never>[]
   /**
    * **T5-D phase 2 DX (2026-05-15).** Auto-discover islands by scanning
    * a directory. Each `.tsx` (or `.ts`/`.jsx`/`.js`) file's default
@@ -5088,9 +4403,7 @@ const BROWSER_BUILD_EXTERNAL: readonly string[] = [
 function browserMinify(
   isProduction: boolean,
 ): boolean | { whitespace?: boolean; syntax?: boolean; identifiers?: boolean } {
-  return isProduction
-    ? true
-    : { whitespace: true, syntax: true, identifiers: false }
+  return isProduction ? true : { whitespace: true, syntax: true, identifiers: false }
 }
 
 /**
@@ -5277,9 +4590,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           n,
           // `htmlClass` is typed `(theme: never) => string` on the
           // generic ThemeTokens; at runtime it takes any name string.
-          (options.theme as NonNullable<typeof options.theme>).htmlClass(
-            n as never,
-          ),
+          (options.theme as NonNullable<typeof options.theme>).htmlClass(n as never),
         ]),
       )
     : {}
@@ -5310,9 +4621,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     // (not a bare variable) is required.
     let tailwind: typeof import('./tailwind.ts')['tailwind']
     try {
-      ;({ tailwind } = (await _serverDynImport(
-        './tailwind.ts',
-      )) as typeof import('./tailwind.ts'))
+      ;({ tailwind } = (await _serverDynImport('./tailwind.ts')) as typeof import('./tailwind.ts'))
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       throw new Error(
@@ -5474,12 +4783,10 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       )
     }
     // Specifier opacity via `_serverDynImport`.
-    const { buildIslandBundles } = (await _serverDynImport(
-      './build/island-bundler.ts',
-    )) as { buildIslandBundles: typeof BuildIslandBundlesFn }
-    const runIslandBuild = async (
-      registry: Readonly<Record<string, IslandRegistration>>,
-    ) => {
+    const { buildIslandBundles } = (await _serverDynImport('./build/island-bundler.ts')) as {
+      buildIslandBundles: typeof BuildIslandBundlesFn
+    }
+    const runIslandBuild = async (registry: Readonly<Record<string, IslandRegistration>>) => {
       return buildIslandBundles({
         islands: registry,
         bundlePrefix: '/islands',
@@ -5571,9 +4878,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         previousIslandUrls = new Map(fresh.nameToBundleUrl)
         previousSignatures = new Map(fresh.signature)
         if (_registeredCaches.size > 0) {
-          await Promise.all(
-            Array.from(_registeredCaches, (c) => c.delete({}).catch(() => {})),
-          )
+          await Promise.all(Array.from(_registeredCaches, (c) => c.delete({}).catch(() => {})))
         }
         // **ADR 0028 phase 2 wire.** If at least one island actually
         // changed, push a typed `swap` envelope listing the changed
@@ -5671,11 +4976,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   for (const r of compiled) {
     if (!r.page) continue
     const existing = r.page.styles
-    const list: StyleSrc[] = existing
-      ? Array.isArray(existing)
-        ? [...existing]
-        : [existing]
-      : []
+    const list: StyleSrc[] = existing ? (Array.isArray(existing) ? [...existing] : [existing]) : []
     // Prepended so user styles override the framework's defaults if
     // they really want to (they almost never will — `display:contents`
     // is the only safe behavior for these wrappers).
@@ -5844,7 +5145,8 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
             (full) => `${full} ${styleToken}`,
           )
         } else {
-          headers['Content-Security-Policy'] = `${csp.trimEnd().replace(/;\s*$/, '')}; style-src 'self' ${styleToken}`
+          headers['Content-Security-Policy'] =
+            `${csp.trimEnd().replace(/;\s*$/, '')}; style-src 'self' ${styleToken}`
         }
       }
       return new Response(html, {
@@ -5902,9 +5204,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(enableSpaNav ? { enableSpaNav: true } : {}),
         ...(spaNavVT ? { spaNavViewTransitions: true } : {}),
         ...(isProduction ? {} : { enableHmr: true }),
-        ...(effectiveEarlyHead.length > 0
-          ? { extraEarlyHead: effectiveEarlyHead }
-          : {}),
+        ...(effectiveEarlyHead.length > 0 ? { extraEarlyHead: effectiveEarlyHead } : {}),
         ...(integrityForRender ? { scriptIntegrity: integrityForRender } : {}),
         scriptNonce,
         ...(htmlClassPrefix ? { htmlClassPrefix } : {}),
@@ -6164,10 +5464,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
             nonce,
             htmlClassPrefix,
           )
-          return mergeHeaders(
-            responseFromEntry(entry),
-            pageHeadersFor(entry.inlineStyleAttrHashes),
-          )
+          return mergeHeaders(responseFromEntry(entry), pageHeadersFor(entry.inlineStyleAttrHashes))
         }
         // Non-ISR path: render fresh every request.
         // Per-route bootstrap (T5-B-1): the route's own split bundle
@@ -6209,12 +5506,8 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           ...(bootstrap !== null ? { bootstrap } : {}),
           ...(enableSpaNav ? { enableSpaNav: true } : {}),
           ...(spaNavVT ? { spaNavViewTransitions: true } : {}),
-          ...(Object.keys(spaNavThemeClassMap).length > 0
-            ? { spaNavThemeClassMap }
-            : {}),
-          ...(effectiveEarlyHead.length > 0
-            ? { extraEarlyHead: effectiveEarlyHead }
-            : {}),
+          ...(Object.keys(spaNavThemeClassMap).length > 0 ? { spaNavThemeClassMap } : {}),
+          ...(effectiveEarlyHead.length > 0 ? { extraEarlyHead: effectiveEarlyHead } : {}),
           ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
           ...(isProduction ? {} : { enableHmr: true }),
           ...(integrityForRender ? { scriptIntegrity: integrityForRender } : {}),
@@ -6241,7 +5534,10 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     return notFoundFn(req, baseHeaders)
   }
 
-  const innerFetch = async (req: Request, srv: Bun.Server<unknown>): Promise<Response | undefined> => {
+  const innerFetch = async (
+    req: Request,
+    srv: Bun.Server<unknown>,
+  ): Promise<Response | undefined> => {
     // **Dev-mode HMR endpoint.** When NODE_ENV !== production, the
     // framework opens `/__place_hmr` as a WebSocket endpoint. Pages
     // include an inline client that connects to it on load; if the
@@ -6254,9 +5550,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     // time takes over from here. We return `undefined` to tell Bun
     // we've handled the request via upgrade.
     if (!isProduction && new URL(req.url).pathname === HMR_WS_PATH) {
-      const upgraded = (srv as Bun.Server<unknown> & {
-        upgrade: (r: Request, opts: { data: { kind: string } }) => boolean
-      }).upgrade(req, { data: { kind: 'hmr' } })
+      const upgraded = (
+        srv as Bun.Server<unknown> & {
+          upgrade: (r: Request, opts: { data: { kind: string } }) => boolean
+        }
+      ).upgrade(req, { data: { kind: 'hmr' } })
       if (upgraded) return undefined
       return new Response('upgrade required', { status: 426 })
     }
@@ -6297,10 +5595,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // — Bun's fetch handler accepts `undefined` to mean "WebSocket
   // upgrade complete, no Response needed."
   const fetch = wantsRequestLog
-    ? async (
-        req: Request,
-        srv: Bun.Server<unknown>,
-      ): Promise<Response | undefined> => {
+    ? async (req: Request, srv: Bun.Server<unknown>): Promise<Response | undefined> => {
         const reqStart = performance.now()
         const res = await innerFetch(req, srv)
         if (res === undefined) return undefined
@@ -6448,10 +5743,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
               ws.data?.kind === 'hmr' ? hmrHandler.open : (userWs as { open?: unknown }).open
             if (typeof fn === 'function') (fn as (w: typeof ws) => void)(ws)
           },
-          message(
-            ws: { data: { kind?: string } } & Record<string, unknown>,
-            msg: string | Buffer,
-          ) {
+          message(ws: { data: { kind?: string } } & Record<string, unknown>, msg: string | Buffer) {
             const fn =
               ws.data?.kind === 'hmr'
                 ? hmrHandler.message
@@ -6465,9 +5757,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
             reason: string,
           ) {
             const fn =
-              ws.data?.kind === 'hmr'
-                ? hmrHandler.close
-                : (userWs as { close?: unknown }).close
+              ws.data?.kind === 'hmr' ? hmrHandler.close : (userWs as { close?: unknown }).close
             if (typeof fn === 'function')
               (fn as (w: typeof ws, c: number, r: string) => void)(ws, code, reason)
           },
@@ -6515,9 +5805,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(bootstrap !== null ? { bootstrap } : {}),
         ...(staticSpaNav ? { enableSpaNav: true } : {}),
         ...(options.viewTransitions === true ? { spaNavViewTransitions: true } : {}),
-        ...(Object.keys(spaNavThemeClassMap).length > 0
-          ? { spaNavThemeClassMap }
-          : {}),
+        ...(Object.keys(spaNavThemeClassMap).length > 0 ? { spaNavThemeClassMap } : {}),
         ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
         ...(Object.keys(scriptIntegrity).length > 0 ? { scriptIntegrity } : {}),
         ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
@@ -6527,15 +5815,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         // the static render: on a static host there is no server to
         // read a cookie at SSR, so the early-paint script is the only
         // thing that applies the persisted theme.
-        ...(effectiveEarlyHead.length > 0
-          ? { extraEarlyHead: effectiveEarlyHead }
-          : {}),
+        ...(effectiveEarlyHead.length > 0 ? { extraEarlyHead: effectiveEarlyHead } : {}),
       })
       const html = await res.text()
       const styleHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)
-      const styleHashes = styleHeader
-        ? styleHeader.split(',').filter((h) => h.length > 0)
-        : []
+      const styleHashes = styleHeader ? styleHeader.split(',').filter((h) => h.length > 0) : []
       return { html, styleHashes }
     }
     // Every emitted bundle (per-route split chunks + island bundles)
@@ -6694,15 +5978,11 @@ async function startSrcWatcher(
 ): Promise<void> {
   // Dynamic-import to keep node:fs out of any non-server graph and
   // avoid module-init cost when the server starts in prod.
-  const { existsSync, statSync } = await _serverDynImport(
-    'node:fs',
-  ) as typeof import('node:fs')
-  const { watch } = await _serverDynImport(
+  const { existsSync, statSync } = (await _serverDynImport('node:fs')) as typeof import('node:fs')
+  const { watch } = (await _serverDynImport(
     'node:fs/promises',
-  ) as typeof import('node:fs/promises')
-  const { resolve } = await _serverDynImport(
-    'node:path',
-  ) as typeof import('node:path')
+  )) as typeof import('node:fs/promises')
+  const { resolve } = (await _serverDynImport('node:path')) as typeof import('node:path')
 
   // Pick the directory to watch: prefer `<cwd>/src` if it exists.
   const srcDir = resolve(cwd, 'src')
@@ -6795,7 +6075,6 @@ async function startSrcWatcher(
 // + `formatRequestLogLine` are imported above; both are server-internal,
 // not public API.
 
-
 // Stub server returned when an adapter takes over. Adapters typically
 // don't need to expose their own lifecycle to the caller (the host
 // runtime handles start/stop), but the framework's signature promises a
@@ -6847,8 +6126,8 @@ export const serve: (options: ServeOptions) => Promise<Bun.Server<unknown>> =
 // (e.g. `boot()`'s reactive list rendering) reference `keyed` directly.
 // See the extracted module for the implementation + design notes.
 import { keyed } from './keyed.ts'
-export { keyed }
 
+export { keyed }
 
 // ===== Component HOC =====
 //
@@ -7072,6 +6351,12 @@ export {
   type WatchOptions,
   watch,
 } from '@place/reactivity'
+// Copy-to-clipboard runtime — emitted by `renderPage` with the
+// per-request CSP nonce so strict-CSP pages get the script
+// executable. Components in `@place/design` (`<Copy>`, `<CodeBlock>`)
+// just render the button + call `markCopyUsedOnThisRequest()`;
+// emission is centralised here.
+export { markCopyUsedOnThisRequest } from './__copy-runtime.ts'
 export {
   type Action,
   type ActionDef,
@@ -7083,8 +6368,8 @@ export {
   resolveActionUrl,
   type ShapeField,
   type ShapeOf,
-  shape,
   type StandardSchemaV1,
+  shape,
   type ValidationFailure,
 } from './action.ts'
 export {
@@ -7096,6 +6381,16 @@ export {
   type RoutesOptions,
   routes,
 } from './app.ts'
+// `discoverPages(dir)` — async helper to import every `*.page.tsx`
+// (plus subdir `index.ts`) under a directory and return a flat list
+// of `Page` values. Use with top-level await in your app entry:
+//
+//   pages: await discoverPages('./src/pages')
+//
+// Does NOT derive route paths from file paths — each page's
+// `page('/path', def)` declaration is the source of truth. See
+// `discover-pages.ts` JSDoc for the full contract.
+export { discoverPages } from './build/discover-pages.ts'
 export {
   type BuildStaticOptions,
   type BuildStaticResult,
@@ -7147,43 +6442,18 @@ export {
   DEFAULT_THEME_COOKIE,
   readThemeFromRequest,
   setTheme,
-  theme,
   type ThemeMap,
   type ThemeOptions,
   type ThemeTokens,
   type ThemeTokensOptions,
-  themeCookieHeader,
-  themeEarlyScript,
-  themeTokens,
   type TypographyOptions,
   type TypographyRole,
   type TypographyScaleRatio,
+  theme,
+  themeCookieHeader,
+  themeEarlyScript,
+  themeTokens,
 } from './theme.ts'
-// Copy-to-clipboard runtime — emitted by `renderPage` with the
-// per-request CSP nonce so strict-CSP pages get the script
-// executable. Components in `@place/design` (`<Copy>`, `<CodeBlock>`)
-// just render the button + call `markCopyUsedOnThisRequest()`;
-// emission is centralised here.
-export { markCopyUsedOnThisRequest } from './__copy-runtime.ts'
-// `discoverPages(dir)` — async helper to import every `*.page.tsx`
-// (plus subdir `index.ts`) under a directory and return a flat list
-// of `Page` values. Use with top-level await in your app entry:
-//
-//   pages: await discoverPages('./src/pages')
-//
-// Does NOT derive route paths from file paths — each page's
-// `page('/path', def)` declaration is the source of truth. See
-// `discover-pages.ts` JSDoc for the full contract.
-export { discoverPages } from './build/discover-pages.ts'
-// `virtualList()` — windowed-render primitive for long lists (Round 6).
-// Reactive `totalSize()` + `visible()` + imperative scroll/measure
-// helpers. No hook-shape, no React baggage; ADR 0008.
-export {
-  type VirtualItem,
-  type VirtualList,
-  type VirtualListOptions,
-  virtualList,
-} from './virtual-list.ts'
 // Viewport reactivity primitive (ADR 0034). One inline runtime, one
 // reactive accessor namespace; consumers subscribe instead of each
 // component wiring its own matchMedia/ResizeObserver.
@@ -7193,6 +6463,15 @@ export {
   type ViewportConfig,
   viewport,
 } from './viewport.ts'
+// `virtualList()` — windowed-render primitive for long lists (Round 6).
+// Reactive `totalSize()` + `visible()` + imperative scroll/measure
+// helpers. No hook-shape, no React baggage; ADR 0008.
+export {
+  type VirtualItem,
+  type VirtualList,
+  type VirtualListOptions,
+  virtualList,
+} from './virtual-list.ts'
 
 // ===== ISR — `revalidate(path | tag)` global trigger =====
 //
@@ -7443,6 +6722,7 @@ export function component<P>(
   })
 }
 
+export type { HtmlFactory } from './html-factories.ts'
 // Tag-name typed factories live in `./html-factories.ts`; re-exported
 // here so the public surface stays unchanged.
 export {
@@ -7502,4 +6782,3 @@ export {
   ul,
   video,
 } from './html-factories.ts'
-export type { HtmlFactory } from './html-factories.ts'
