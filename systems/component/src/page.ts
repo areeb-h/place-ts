@@ -16,10 +16,10 @@
 
 import type { ParamsOf } from '@place/routing'
 import { action } from './action.ts'
-// `component`, `mergeMeta`, `resolveMeta` + the `AnyPage` shape still
-// live in index.ts; touched only inside runtime functions, so the
-// page ⇄ index cycle stays benign.
-import { type AnyPage, component, mergeMeta, resolveMeta } from './index.ts'
+// `component`, `mergeMeta`, `resolveMeta` still live in index.ts;
+// touched only inside runtime functions, so the page ⇄ index cycle
+// stays benign.
+import { component, mergeMeta, resolveMeta } from './index.ts'
 import { type PageMeta, renderDocument, type StyleSrc } from './meta.ts'
 import type { RouteHandler } from './server-router.ts'
 import { renderToStream, renderToString } from './ssr.ts'
@@ -941,6 +941,47 @@ function buildPage<U extends object, L extends object, S>(
  *  in the same routes map. Public so adapters / tooling can use it too. */
 export const isPage = (x: unknown): x is Page =>
   x != null && typeof x === 'object' && (x as Record<symbol, unknown>)[PLACE_PAGE_BRAND] === true
+
+// Type erasure for routes maps: each entry can have its own
+// `{ name }` / `{ id }` props, but the map type can't carry per-entry
+// generics. Using `any` in the function PARAM positions sidesteps
+// strict-function-types contravariance (a `(props: {}) => View`
+// doesn't assign to `(props: never) => View` and vice versa). This
+// type is only used at the boundary between specific Pages and
+// generic dispatchers — handlers always see their typed Page.
+export interface AnyPage {
+  /** Route path the page is mounted at. Set by `page(path, def)` (Round 5).
+   *  Optional because the legacy `page(def)` form leaves it undefined. */
+  path?: string
+  // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
+  url?: (url: URL, params: Record<string, string>) => any
+  // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
+  load?: (ctx: LoadCtx) => any
+  // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
+  view: (props: any) => View
+  // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
+  meta?: PageMeta | string | ((props: any) => PageMeta | string)
+  styles?: StyleSrc | StyleSrc[]
+  headers?: HeadersInit
+  streaming?: boolean
+  revalidate?: number | { ttl: number; tags?: string[] }
+  getStaticPaths?: () => Record<string, string>[] | Promise<Record<string, string>[]>
+  layout?: AnyLayout | AnyLayout[]
+  /** Slot fills consumed by the page's layout chain. */
+  slots?: SlotFills
+  /** Round 5 (5.3): server-only handlers for co-located actions. */
+  // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
+  on?: Record<string, (input: any, ctx: LoadCtx) => any>
+  /** Round 5 (5.5): search-param validator. */
+  search?: (raw: Record<string, string>) => unknown
+  /** Round 5 (5.3): internal — handlers extracted by `serve()`. */
+  _onHandlers?: Record<string, RouteHandler>
+  /** Round 5 (5.7): per-page error view (rendered on load() throw). */
+  onError?: (err: Error, ctx: LoadCtx) => View
+  /** Round 5 (5.7): per-page not-found view (rendered on notFound()). */
+  onNotFound?: (ctx: LoadCtx) => View
+  readonly [PLACE_PAGE_BRAND]: true
+}
 
 // Escape JSON for safe embedding inside a `<script>` tag. The standard
 // gotcha: a literal `</script>` in the JSON would close the tag. Also
