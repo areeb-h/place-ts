@@ -32,30 +32,29 @@ export const devtoolsCss = `
 }
 .place-dt *, .place-dt *::before, .place-dt *::after { box-sizing: border-box; }
 
-/* ----- launcher ----- */
+/* ----- launcher — a circular button, just the mark ----- */
 .place-dt-launch {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 12px 7px 9px;
-  font: 500 12px/1 var(--dt-sans);
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; padding: 0;
   color: var(--dt-fg);
   background: var(--dt-bg); border: 1px solid var(--dt-line);
-  border-radius: 999px; cursor: pointer;
+  border-radius: 50%; cursor: pointer;
   backdrop-filter: blur(12px);
   box-shadow: 0 6px 24px -10px oklch(0 0 0 / 0.7), 0 0 0 1px oklch(1 0 0 / 0.02) inset;
   transition: border-color .14s ease, transform .14s ease, box-shadow .14s ease;
 }
 .place-dt-launch:hover {
   border-color: var(--dt-ac);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 30px -10px oklch(0 0 0 / 0.8), 0 0 0 3px var(--dt-ac-soft);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -10px oklch(0 0 0 / 0.8), 0 0 0 3px var(--dt-ac-soft);
 }
+.place-dt-launch .place-dt-mark { width: 22px; height: 22px; border-radius: 7px; font-size: 12px; }
 .place-dt-mark {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; border-radius: 5px;
   background: var(--dt-ac-soft); color: var(--dt-ac);
   font-size: 9px;
 }
-.place-dt-launch-label { letter-spacing: .01em; }
 
 /* ----- panel ----- */
 .place-dt-panel {
@@ -83,7 +82,7 @@ export const devtoolsCss = `
 }
 .place-dt-tabs { display: flex; gap: 2px; margin-left: auto; }
 .place-dt-tab {
-  padding: 5px 9px; font: 500 11px/1 var(--dt-sans);
+  padding: 5px 7px; font: 500 11px/1 var(--dt-sans);
   color: var(--dt-mut); background: transparent;
   border: 0; border-radius: 7px; cursor: pointer;
   transition: color .12s ease, background .12s ease;
@@ -110,6 +109,7 @@ export const devtoolsCss = `
 .place-dt[data-tab="graph"] .place-dt-pane[data-pane="graph"],
 .place-dt[data-tab="islands"] .place-dt-pane[data-pane="islands"],
 .place-dt[data-tab="routes"] .place-dt-pane[data-pane="routes"],
+.place-dt[data-tab="console"] .place-dt-pane[data-pane="console"],
 .place-dt[data-tab="perf"] .place-dt-pane[data-pane="perf"] { display: block; }
 
 /* ----- summary strip ----- */
@@ -138,6 +138,16 @@ export const devtoolsCss = `
 }
 .place-dt-badge[data-kind="derived"] { background: oklch(0.72 0.14 240 / 0.16); color: oklch(0.74 0.14 240); }
 .place-dt-badge[data-kind="watch"] { background: oklch(0.8 0.15 75 / 0.16); color: var(--dt-warn); }
+.place-dt-badge[data-kind="error"] { background: oklch(0.7 0.2 25 / 0.18); color: oklch(0.75 0.19 25); }
+.place-dt-badge[data-kind="warn"] { background: oklch(0.8 0.15 75 / 0.16); color: var(--dt-warn); }
+.place-dt-badge[data-kind="info"] { background: oklch(0.72 0.14 240 / 0.16); color: oklch(0.74 0.14 240); }
+.place-dt-badge[data-kind="log"] { background: oklch(1 0 0 / 0.06); color: var(--dt-mut); }
+.place-dt-log .place-dt-row-main { align-self: center; }
+.place-dt-log-text {
+  font: 11px/1.5 var(--dt-mono); color: var(--dt-fg);
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 84px; overflow: hidden;
+}
 .place-dt-row-main { min-width: 0; }
 .place-dt-row-val {
   font: 12px var(--dt-mono); color: var(--dt-fg);

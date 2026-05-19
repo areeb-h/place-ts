@@ -22,13 +22,14 @@ that consumes them.
 
 ## Scope
 
-Four panels, each answering one question:
+Five panels, each answering one question:
 
 | Panel | Question |
 |---|---|
 | Graph | What state / derived / watch nodes exist, what are their values, what depends on what? |
 | Islands | Which islands are on this page — hydrated? what load strategy? |
 | Routes | What route is active, with what params and query? |
+| Console | What did the app log — errors, warnings, info, uncaught throws? |
 | Perf | How fast did the page load, how much JS shipped? |
 
 ## Non-goals

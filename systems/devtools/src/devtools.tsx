@@ -48,14 +48,23 @@ function adoptStyles(): void {
 
 // ===== panel data shapes =====
 
-type TabId = 'graph' | 'islands' | 'routes' | 'perf'
+type TabId = 'graph' | 'islands' | 'routes' | 'console' | 'perf'
 
 const TABS: ReadonlyArray<{ id: TabId; label: string }> = [
   { id: 'graph', label: 'Graph' },
   { id: 'islands', label: 'Islands' },
   { id: 'routes', label: 'Routes' },
+  { id: 'console', label: 'Console' },
   { id: 'perf', label: 'Perf' },
 ]
+
+/** One captured console / error entry for the Console panel. */
+interface LogEntry {
+  readonly level: 'error' | 'warn' | 'info' | 'log'
+  readonly text: string
+  /** Monotonic id — newest entries have the highest seq. */
+  readonly seq: number
+}
 
 interface IslandInfo {
   readonly id: string
@@ -128,6 +137,18 @@ function fmtQuery(q: URLSearchParams): string {
   const parts: string[] = []
   for (const [k, v] of q) parts.push(`${k}=${v}`)
   return parts.length > 0 ? parts.join('  ') : '—'
+}
+
+/** Render one console argument to a string, defensively. */
+function fmtArg(a: unknown): string {
+  if (typeof a === 'string') return a
+  if (a instanceof Error) return a.stack ?? `${a.name}: ${a.message}`
+  if (typeof a === 'function') return `ƒ ${(a as { name?: string }).name ?? ''}`.trimEnd()
+  try {
+    return typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a)
+  } catch {
+    return String(a)
+  }
 }
 
 function countKind(snap: GraphSnapshot, kind: GraphNodeSnapshot['kind']): number {
@@ -286,6 +307,48 @@ function perfPane(perf: State<PerfInfo | null>) {
   )
 }
 
+// ===== panel: Console =====
+
+function logRow(e: LogEntry) {
+  return (
+    <li class="place-dt-row place-dt-log">
+      <span class="place-dt-badge" data-kind={e.level}>
+        {e.level}
+      </span>
+      <span class="place-dt-row-main">
+        <div class="place-dt-log-text">{e.text}</div>
+      </span>
+      <span class="place-dt-id" />
+    </li>
+  )
+}
+
+function consolePane(logs: State<LogEntry[]>) {
+  const count = (lvl: LogEntry['level']): number => logs().filter((l) => l.level === lvl).length
+  return (
+    <div>
+      <div class="place-dt-summary">
+        <span>
+          <b>{() => String(count('error'))}</b> errors
+        </span>
+        <span>
+          <b>{() => String(count('warn'))}</b> warnings
+        </span>
+        <span>
+          <b>{() => String(logs().length)}</b> total
+        </span>
+      </div>
+      <ul class="place-dt-list">
+        {() =>
+          logs().length === 0
+            ? [<li class="place-dt-empty">Console is quiet — nothing captured yet.</li>]
+            : logs().map(logRow)
+        }
+      </ul>
+    </div>
+  )
+}
+
 // ===== the devtools view =====
 
 /**
@@ -329,6 +392,7 @@ export const devtoolsView = () => {
   const graph = state<GraphSnapshot>({ nodes: [], capturedAt: 0 })
   const islands = state<IslandInfo[]>([])
   const perf = state<PerfInfo | null>(null)
+  const logs = state<LogEntry[]>([])
   // Routing cap is resolved synchronously — installed before islands hydrate.
   const router = RouterCap.tryUse()
 
@@ -348,10 +412,49 @@ export const devtoolsView = () => {
     perf.set(collectPerf())
     const perfTimer = setTimeout(() => perf.set(collectPerf()), 700)
 
+    // Console — mirror console.{error,warn,info,log} plus uncaught
+    // errors + unhandled rejections into the Console panel. The
+    // originals are always still called; restored on cleanup.
+    const LEVELS: ReadonlyArray<LogEntry['level']> = ['error', 'warn', 'info', 'log']
+    let logSeq = 0
+    const pushLog = (level: LogEntry['level'], text: string): void => {
+      logs.update((prev) => {
+        const next: LogEntry[] = [{ level, text, seq: logSeq++ }, ...prev]
+        return next.length > 150 ? next.slice(0, 150) : next
+      })
+    }
+    const originalConsole: Partial<Record<LogEntry['level'], (...a: unknown[]) => void>> = {}
+    for (const lvl of LEVELS) {
+      const orig = console[lvl] as (...a: unknown[]) => void
+      originalConsole[lvl] = orig
+      console[lvl] = ((...args: unknown[]): void => {
+        try {
+          pushLog(lvl, args.map(fmtArg).join(' '))
+        } catch (_) {
+          // Capture must never break the app's own logging.
+        }
+        orig.apply(console, args)
+      }) as typeof console.log
+    }
+    const onWindowError = (e: ErrorEvent): void => {
+      pushLog('error', `${e.message}${e.filename ? `  (${e.filename}:${e.lineno})` : ''}`)
+    }
+    const onRejection = (e: PromiseRejectionEvent): void => {
+      pushLog('error', `Unhandled rejection: ${fmtArg(e.reason)}`)
+    }
+    window.addEventListener('error', onWindowError)
+    window.addEventListener('unhandledrejection', onRejection)
+
     onCleanup(() => {
       offTick()
       clearInterval(scanTimer)
       clearTimeout(perfTimer)
+      for (const lvl of LEVELS) {
+        const o = originalConsole[lvl]
+        if (o) console[lvl] = o as typeof console.log
+      }
+      window.removeEventListener('error', onWindowError)
+      window.removeEventListener('unhandledrejection', onRejection)
     })
   })
 
@@ -361,10 +464,10 @@ export const devtoolsView = () => {
         type="button"
         class="place-dt-launch"
         aria-label="Open place devtools"
+        title="place devtools"
         onClick={() => open.set(true)}
       >
         <span class="place-dt-mark">▲</span>
-        <span class="place-dt-launch-label">devtools</span>
       </button>
 
       <section class="place-dt-panel" role="dialog" aria-label="place devtools">
@@ -404,6 +507,9 @@ export const devtoolsView = () => {
           </div>
           <div class="place-dt-pane" data-pane="routes">
             {routesPane(router)}
+          </div>
+          <div class="place-dt-pane" data-pane="console">
+            {consolePane(logs)}
           </div>
           <div class="place-dt-pane" data-pane="perf">
             {perfPane(perf)}

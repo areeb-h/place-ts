@@ -32,6 +32,7 @@ A floating launcher appears in the corner; click it for the panel.
 | **Graph** | Every `state` / `derived` / `watch` node — value, status, dependency edges. Live, via `@place/reactivity`'s `inspectGraph()`. |
 | **Islands** | Every island on the page — load strategy, hydration state. |
 | **Routes** | The active route — path, params, query. |
+| **Console** | Captured `console` output — errors, warnings, info, log — plus uncaught errors and unhandled rejections. |
 | **Perf** | Page load timing + the JavaScript the page shipped. |
 
 The devtool runs as a place island — it dogfoods the framework. It
