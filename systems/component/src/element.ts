@@ -11,6 +11,31 @@
 // public surface (`el`, the heading-collection helpers, `SsrHeading`),
 // so existing call sites and the package's public API are unchanged.
 
+// Reactive primitives + the View / Child / props types.
+import { batch, type Disposer, type State, untrack, watch } from '@place/reactivity'
+// Cleanup-scope + hydration-audit + slot internals.
+import { disposeAll, withCleanups } from './_internal/cleanup.ts'
+// `ErrorBoundaryCap` — the error-boundary capability `makeView`'s
+// error path reads. A `_internal/` leaf; no barrel cycle.
+import { ErrorBoundaryCap } from './_internal/error-boundary-cap.ts'
+import { _auditHydrationFrame } from './_internal/hydration.ts'
+// Hydration-id counter — shared with the SSR renderers.
+import { nextHydrationId } from './_internal/hydrationSeq.ts'
+// `currentInlineStyleSet` — the live per-request inline-style-attr
+// hash collector. The SSR emitter `.add()`s every emitted `style="…"`
+// value into it so the dispatcher can whitelist them in the CSP.
+import { currentInlineStyleSet } from './_internal/inline-style.ts'
+import { makeSlot } from './_internal/slot.ts'
+// `mountChildren` (the reactive-children DOM mounter) lives in
+// ./mount.ts. element.ts ⇄ mount.ts is a function-level cycle —
+// `makeView`'s `.mount()` calls `mountChildren`, which mounts child
+// Views built by `el` — resolved fine since neither touches the
+// other at module-eval.
+import { mountChildren } from './mount.ts'
+import type { Child, ElementProps, View } from './types.ts'
+// HTML escaping for the SSR string emitter.
+import { escapeHtmlAttr, escapeHtmlText } from './utils/escape.ts'
+
 // ===== Generic element factory =====
 //
 // Three call forms:
@@ -86,31 +111,6 @@ const VOID_ELEMENTS = new Set([
   'track',
   'wbr',
 ])
-
-// Reactive primitives + the View / Child / props types.
-import { batch, type Disposer, type State, untrack, watch } from '@place/reactivity'
-// Cleanup-scope + hydration-audit + slot internals.
-import { disposeAll, withCleanups } from './_internal/cleanup.ts'
-// `ErrorBoundaryCap` — the error-boundary capability `makeView`'s
-// error path reads. A `_internal/` leaf; no barrel cycle.
-import { ErrorBoundaryCap } from './_internal/error-boundary-cap.ts'
-import { _auditHydrationFrame } from './_internal/hydration.ts'
-// Hydration-id counter — shared with the SSR renderers.
-import { nextHydrationId } from './_internal/hydrationSeq.ts'
-// `currentInlineStyleSet` — the live per-request inline-style-attr
-// hash collector. The SSR emitter `.add()`s every emitted `style="…"`
-// value into it so the dispatcher can whitelist them in the CSP.
-import { currentInlineStyleSet } from './_internal/inline-style.ts'
-import { makeSlot } from './_internal/slot.ts'
-// `mountChildren` (the reactive-children DOM mounter) lives in
-// ./mount.ts. element.ts ⇄ mount.ts is a function-level cycle —
-// `makeView`'s `.mount()` calls `mountChildren`, which mounts child
-// Views built by `el` — resolved fine since neither touches the
-// other at module-eval.
-import { mountChildren } from './mount.ts'
-import type { Child, ElementProps, View } from './types.ts'
-// HTML escaping for the SSR string emitter.
-import { escapeHtmlAttr, escapeHtmlText } from './utils/escape.ts'
 
 // ============================================================
 // Per-render heading collector (auto-anchors h2/h3 in <main>).

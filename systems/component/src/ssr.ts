@@ -9,6 +9,15 @@
 // `index.ts`-resident symbols only inside runtime functions, so the
 // ssr ⇄ index cycle stays benign — same shape as element.ts / mount.ts.
 
+import { type EffectBranded, type Resource, untrack, watch } from '@place/reactivity'
+import { stringify as devalueStringify } from 'devalue'
+import { _consumeCopyUsedFlag } from './__copy-runtime.ts'
+import { PLACE_RUNTIME } from './__place_runtime.ts'
+import { resetHydrationSeq } from './_internal/hydrationSeq.ts'
+import { Fragment } from './mount.ts'
+import type { Child, Children, View } from './types.ts'
+import { escapeHtmlAttrFull } from './utils/escape.ts'
+
 // ===== renderToString — server-side render =====
 //
 // Mounts `view` into a fresh detached element, reads its `innerHTML`,
@@ -129,15 +138,6 @@ export function renderToString(view: View): string {
 // undefined, is JSON-shaped (CSP-clean — no eval needed; small client
 // bundle), and round-trips loudly on unsupported input. Picked over
 // seroval (which requires `eval` and would break our `security: 'strict'`).
-
-import { type EffectBranded, type Resource, untrack, watch } from '@place/reactivity'
-import { stringify as devalueStringify } from 'devalue'
-import { _consumeCopyUsedFlag } from './__copy-runtime.ts'
-import { PLACE_RUNTIME } from './__place_runtime.ts'
-import { resetHydrationSeq } from './_internal/hydrationSeq.ts'
-import { Fragment } from './mount.ts'
-import type { Child, Children, View } from './types.ts'
-import { escapeHtmlAttrFull } from './utils/escape.ts'
 
 export interface SuspenseProps {
   /** Rendered while `on` resources are pending. Should be cheap & static. */
