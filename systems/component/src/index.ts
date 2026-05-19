@@ -396,12 +396,9 @@ import { escapeHtmlAttr, escapeHtmlAttrFull, escapeHtmlText } from './utils/esca
 import { isProductionRuntime, renderRouteError } from './error-overlay.ts'
 // Dev terminal output extracted to ./logging.ts (Tier 20 decomposition).
 import { formatRequestLogLine, formatStartupBanner } from './logging.ts'
-
-let hydrationSeq = 0
-const resetHydrationSeq = (): void => {
-  hydrationSeq = 0
-}
-const nextHydrationId = (): number => hydrationSeq++
+// Hydration-id counter extracted to ./_internal/hydrationSeq.ts so the
+// element factory + SSR emitters can share it without an index cycle.
+import { nextHydrationId, resetHydrationSeq } from './_internal/hydrationSeq.ts'
 
 // ============================================================
 // Per-render heading collector (auto-anchors h2/h3 in <main>).
