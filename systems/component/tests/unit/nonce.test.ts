@@ -7,16 +7,8 @@
 
 import { describe, expect, test } from 'vitest'
 import { resource } from '../../../reactivity/src/index.ts'
-import {
-  div,
-  generateScriptNonce,
-  page,
-  renderPage,
-  renderSecurityHeaders,
-  renderToStream,
-  span,
-  suspense,
-} from '../../src/index.ts'
+import { div, page, renderPage, renderToStream, span, suspense } from '../../src/index.ts'
+import { generateScriptNonce, renderSecurityHeaders } from '../../src/server.ts'
 
 async function drainStream(stream: ReadableStream<Uint8Array>): Promise<string> {
   const reader = stream.getReader()

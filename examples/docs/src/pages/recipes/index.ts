@@ -2,7 +2,7 @@
 // with the `/recipes` prefix. The folder's `index.page.tsx` declares
 // path `/` and resolves to `/recipes` (directory-index semantics).
 
-import { routes } from '@place/component'
+import { routes } from '@place/component/server'
 import recipeAuth from './auth.page.tsx'
 import recipeData from './data-fetching.page.tsx'
 import recipeForms from './forms.page.tsx'

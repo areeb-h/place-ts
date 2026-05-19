@@ -9,7 +9,8 @@ import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { buildStatic, div, page, span } from '../../src/index.ts'
+import { div, page, span } from '../../src/index.ts'
+import { buildStatic } from '../../src/server.ts'
 
 describe('buildStatic — pre-render Pages to disk', () => {
   let outDir = ''

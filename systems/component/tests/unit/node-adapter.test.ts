@@ -10,7 +10,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { nodeAdapter } from '../../src/adapters/node.ts'
-import { div, page, serve, span } from '../../src/index.ts'
+import { div, page, span } from '../../src/index.ts'
+import { serve } from '../../src/server.ts'
 
 // Helper: spin up an adapter on an OS-assigned port, return the port.
 function findFreePort(): Promise<number> {

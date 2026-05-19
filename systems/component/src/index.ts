@@ -29,14 +29,7 @@
 import { type Disposer, type EffectBranded, untrack, watch } from '@place/reactivity'
 
 import { onCleanup } from './_internal/cleanup.ts'
-import {
-  _auditHydrationFrame,
-  _flushHydrationDeltas,
-  _isHydratedSignal as _isHydratedState,
-  _setHydrated,
-} from './_internal/hydration.ts'
-import { _invalidateCachesByTag } from './cache.ts'
-import { _CookieJarCap } from './cookies.ts'
+import { _isHydratedSignal as _isHydratedState } from './_internal/hydration.ts'
 
 // Build-time define injected by Bun.build's `define` option in the
 // client-bundle path. `true` in the browser bundle, undefined on the
@@ -251,9 +244,8 @@ export { onCleanup } from './_internal/cleanup.ts'
 
 // ===== Element factory + SSR emitter + directives =====
 // Extracted to ./element.ts (Tier 20 decomposition, cut 3) — the
-// rendering core. `index.ts` imports the symbols it uses + re-exports
-// the public surface (`el`, the heading-collection helpers).
-import { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text } from './element.ts'
+// rendering core. `index.ts` re-exports the public surface (`el`, the
+// heading-collection helpers); see the `export {}` block below.
 
 export type { SsrHeading } from './element.ts'
 // Re-export the public element surface so `@place/component` and every
@@ -268,10 +260,8 @@ export { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text, el } f
 // to their own modules; the exports become internal then.
 // ===== Client mount machinery + Fragment + Tabs =====
 // Extracted to ./mount.ts (Tier 20 decomposition, cut 4). `index.ts`
-// imports `_consumeTabsUsedFlag` (the dispatch path drains it) +
 // re-exports the public surface so every consumer of
 // `@place/component` keeps seeing these names on the barrel.
-import { _consumeTabsUsedFlag } from './mount.ts'
 
 // Escape helper used by meta + island serialization (the SSR emitter's
 // own escaping moved to element.ts).
@@ -326,12 +316,6 @@ export {
   suspense,
 } from './ssr.ts'
 
-// Inline runtime scripts + the per-page assembly helpers that
-// `renderPage` injects. The SSR block used to import these inline;
-// they stay imported here because `renderPage` (still in this barrel)
-// is the consumer.
-import { _consumeCopyUsedFlag } from './__copy-runtime.ts'
-
 // ===== serverRouter — METHOD + path pattern → handler dispatch =====
 // Extracted to ./server-router.ts (audit Phase 2.1, Cut 1b). Re-exported
 // for public consumers. (`RouteHandler` is consumed internally by
@@ -340,17 +324,9 @@ export { type RouteHandler, type ServerRouter, serverRouter } from './server-rou
 
 // ===== T5-C — Islands primitive (ADR 0019) =====
 // Extracted to ./islands.ts (Tier 20 decomposition, cut 6). `index.ts`
-// imports the registry hooks the build pipeline + dispatch path use,
-// + re-exports the public surface (`island`, `Island`) and the
-// `_`-prefixed hooks the build modules + test-internal barrel need.
-import {
-  _beginIslandCollection,
-  _endIslandCollection,
-  _getIslandBundleUrl,
-  _getIslandRegistry,
-  _getSharedChunkUrls,
-} from './islands.ts'
-
+// re-exports the public surface (`island`, `Island`) and the
+// `_`-prefixed registry hooks the build modules + test-internal
+// barrel need.
 export {
   _beginIslandCollection,
   _drainPendingIslands,
@@ -444,12 +420,16 @@ export {
   useSearch,
 } from './page.ts'
 
-// ===== serve() orchestrator =====
-// Extracted to ./serve.ts (Tier 20 decomposition, cut 9) — the server
-// entrypoint + security headers + Tailwind integration + static-file
-// primitive + deployment adapters. Re-exported wholesale so the
-// `@place/component` public surface is unchanged.
-export * from './serve.ts'
+// ===== serve() orchestrator — NOT re-exported here =====
+// `serve` / `app` / `routes` / `buildStatic` / `discoverPages` + the
+// security-header presets live behind `@place/component/server` ONLY
+// (Tier 20 entrypoint split — full isolation). The root barrel does
+// not re-export them, so a client/island bundle that imports
+// `@place/component` never graphs `./serve.ts` and therefore never
+// reaches `Bun.serve` / `Bun.build` / `node:*`. The boundary is an
+// impossible import graph, not a `__PLACE_BROWSER__` dead-branch.
+// `renderPage` / `renderToString` / `handler` / `action` ARE node-free
+// and stay on this barrel — see the re-exports above and below.
 
 // ===== renderPage — per-request SSR assembly =====
 // Extracted to ./render-page.ts (Tier 20 decomposition, cut 10). The
@@ -504,12 +484,10 @@ export async function renderToHtml(p: AnyPage, opts: RenderToHtmlOptions = {}): 
 
 // ===== component system — HOC / errorBoundary / keyed / For / ISR =====
 // Extracted to ./component.ts (Tier 20 decomposition, cut 8). `index.ts`
-// imports the shared `_registeredCaches` registry the serve()/cache
-// path mutates + re-exports the public surface so `@place/component`
-// consumers are unchanged. (`ErrorBoundaryCap` is already re-exported
-// from the `_internal/` leaf above — not re-exported here, to avoid a
-// double export.)
-import { _registeredCaches } from './component.ts'
+// re-exports the public surface so `@place/component` consumers are
+// unchanged. (`ErrorBoundaryCap` is already re-exported from the
+// `_internal/` leaf above — not re-exported here, to avoid a double
+// export.)
 
 // `Provision` and `provide()` live in @place/capability — they're the
 // fundamental "bind a cap to an impl" primitive. We re-export them from
@@ -562,30 +540,9 @@ export {
   shape,
   type ValidationFailure,
 } from './action.ts'
-export {
-  type App,
-  type AppConfig,
-  type AppOptions,
-  app,
-  type CapInstall,
-  type RoutesOptions,
-  routes,
-} from './app.ts'
-// `discoverPages(dir)` — async helper to import every `*.page.tsx`
-// (plus subdir `index.ts`) under a directory and return a flat list
-// of `Page` values. Use with top-level await in your app entry:
-//
-//   pages: await discoverPages('./src/pages')
-//
-// Does NOT derive route paths from file paths — each page's
-// `page('/path', def)` declaration is the source of truth. See
-// `discover-pages.ts` JSDoc for the full contract.
-export { discoverPages } from './build/discover-pages.ts'
-export {
-  type BuildStaticOptions,
-  type BuildStaticResult,
-  buildStatic,
-} from './build-static.ts'
+// `app` / `routes` / `discoverPages` / `buildStatic` are server-only
+// (they reach `Bun.serve` / `Bun.build` / `node:fs`) — re-exported
+// from `@place/component/server`, not from this root barrel.
 export {
   type CacheEntry,
   type CacheOptions,

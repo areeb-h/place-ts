@@ -6,7 +6,7 @@
 // and exits instead of starting a server — that is what
 // `bun run build` does.
 
-import { app } from '@place/component'
+import { app } from '@place/component/server'
 import { homePage } from './pages/home.page.tsx'
 
 const myApp = app({

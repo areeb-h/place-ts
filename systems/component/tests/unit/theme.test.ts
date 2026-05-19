@@ -4,11 +4,11 @@ import { describe, expect, test } from 'vitest'
 import {
   DEFAULT_THEME_COOKIE,
   readThemeFromRequest,
-  resolveTailwindFromTheme,
   theme,
   themeCookieHeader,
   themeTokens,
 } from '../../src/index.ts'
+import { resolveTailwindFromTheme } from '../../src/server.ts'
 
 describe('themeTokens — typed, SSR-safe theme registration', () => {
   test('default theme tokens land in @theme block; non-default emits override class', () => {

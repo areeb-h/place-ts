@@ -4,7 +4,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { discoverPages, div, page } from '../../src/index.ts'
+import { div, page } from '../../src/index.ts'
+import { discoverPages } from '../../src/server.ts'
 
 // `discoverPages(dir)` walks a directory and dynamic-imports every
 // `*.page.{ts,tsx}` file plus subdirectory `index.{ts,tsx}` files.
@@ -49,7 +50,7 @@ function routesBarrel(prefix: string, leafImports: ReadonlyArray<{ name: string;
   const imps = leafImports.map((l, i) => `import p${i} from '${l.rel}'`).join('\n')
   const refs = leafImports.map((_, i) => `p${i}`).join(', ')
   return `
-import { routes } from '${join(process.cwd(), 'systems/component/src/index.ts').replace(/\\\\/g, '/')}'
+import { routes } from '${join(process.cwd(), 'systems/component/src/server.ts').replace(/\\\\/g, '/')}'
 ${imps}
 export default routes('${prefix}', [${refs}])
 `

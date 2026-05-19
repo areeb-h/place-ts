@@ -11,7 +11,7 @@ import { CodeBlock } from '@place/design'
 import { TypingCode } from '../components/typing-code.tsx'
 import { button, inlineCode, sectionLabel } from '../design-system.ts'
 
-const APP_SHAPE = `import { app } from '@place/component'
+const APP_SHAPE = `import { app } from '@place/component/server'
 import { pathRouter } from '@place/routing'
 import home from './pages/home.page'
 import about from './pages/about.page'

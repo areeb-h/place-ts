@@ -67,7 +67,7 @@ const WIRE = `// app.ts — pass the tokens to app({ theme }). The framework wir
 //   - <html class="theme-…"> on SSR'd output (reads the theme cookie)
 //   - the no-flash early script (see below) into every page <head>
 
-import { app } from '@place/component'
+import { app } from '@place/component/server'
 import { tokens } from './theme.ts'
 
 app({

@@ -18,13 +18,8 @@
 //   7. Codegen allowed only when it doesn't hide intent
 
 import { describe, expect, test } from 'vitest'
-import {
-  app,
-  div,
-  page,
-  renderPage,
-  span,
-} from '../../systems/component/src/index.ts'
+import { div, page, renderPage, span } from '../../systems/component/src/index.ts'
+import { app } from '../../systems/component/src/server.ts'
 
 describe('component charter conformance — architectural commitments', () => {
   // ── Charter clause #1: Routes are values, not files ──────────────────

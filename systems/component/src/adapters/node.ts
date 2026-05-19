@@ -29,7 +29,7 @@
 import { Buffer } from 'node:buffer'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { Readable } from 'node:stream'
-import type { Adapter, Builder } from '../index.ts'
+import type { Adapter, Builder } from '../serve.ts'
 
 export interface NodeAdapterOptions {
   /** Port to listen on. Default: `process.env.PORT` parsed, else 3000. */

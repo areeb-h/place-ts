@@ -45,8 +45,9 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { type Route as RouteMatcher, route as routeFactory } from '@place/routing'
-import type { AnyPage, ServeRoutes } from './index.ts'
 import { isPage, renderPage } from './index.ts'
+import type { AnyPage } from './page.ts'
+import type { ServeRoutes } from './serve.ts'
 
 export interface BuildStaticOptions {
   /** Same routes map shape `serve()` accepts. Pages are pre-rendered;
@@ -267,10 +268,7 @@ async function sha256Base64(text: string): Promise<string> {
 //   - `<script src=…>`           — external; covered by `'self'`
 //   - `type="application/json"`  — data island, non-executable
 //   - any non-JS `type`          — not executed
-async function collectInlineScriptHashes(
-  html: string,
-  sink: Set<string>,
-): Promise<void> {
+async function collectInlineScriptHashes(html: string, sink: Set<string>): Promise<void> {
   let i = 0
   while (true) {
     const start = html.indexOf('<script', i)

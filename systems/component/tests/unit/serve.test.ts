@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 
 import { afterEach, describe, expect, test } from 'vitest'
-import { page, serve, span } from '../../src/index.ts'
+import { page, span } from '../../src/index.ts'
+import { serve } from '../../src/server.ts'
 
 // serve() ultimately calls Bun.serve, which isn't available in Vitest's
 // Node-based test runtime — its dispatch + island-bundle behavior is

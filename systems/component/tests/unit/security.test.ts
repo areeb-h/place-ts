@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, test } from 'vitest'
-import { renderSecurityHeaders } from '../../src/index.ts'
+import { renderSecurityHeaders } from '../../src/server.ts'
 
 // renderSecurityHeaders is a pure function — covers preset baselines,
 // CSP directive serialization (kebab-case + quoted keywords), HSTS

@@ -18,7 +18,7 @@
 //     `viewTransitions: false` (default), so they don't need to be
 //     listed.
 
-import { app, discoverPages } from '@place/component'
+import { app, discoverPages } from '@place/component/server'
 import { styles as designStyles } from '@place/design'
 import { pathRouter } from '@place/routing'
 

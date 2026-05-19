@@ -10,8 +10,8 @@
 // `bun test` (when ports become available there) and skip under vitest.
 
 import { describe, expect, test } from 'vitest'
-import type { Adapter, Builder } from '../../src/index.ts'
-import { page, serve } from '../../src/index.ts'
+import { page } from '../../src/index.ts'
+import { type Adapter, type Builder, serve } from '../../src/server.ts'
 
 const HAS_BUN_SERVE =
   typeof globalThis !== 'undefined' &&

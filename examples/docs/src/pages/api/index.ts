@@ -1,7 +1,7 @@
 // Barrel: `routes('/api', […])` composes each page's local path with
 // the `/api` prefix.
 
-import { routes } from '@place/component'
+import { routes } from '@place/component/server'
 import apiAction from './action.page.tsx'
 import apiApp from './app.page.tsx'
 import apiComponents from './components.page.tsx'

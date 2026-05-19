@@ -30,8 +30,8 @@
 
 import type { Capability } from '@place/capability'
 import { RouterCap } from '@place/routing'
-import type { AnyLayout, AnyPage, ClientCapInstall, ServeOptions } from './index.ts'
-import { serve } from './index.ts'
+import type { AnyLayout, AnyPage } from './page.ts'
+import { type ClientCapInstall, type ServeOptions, serve } from './serve.ts'
 
 /**
  * Options accepted by `app(pages, opts)` (the legacy positional form).
@@ -254,10 +254,9 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
   // Normalize `styles` to a single string. Accept either a string OR
   // an array (DX win — `styles: [designStyles, appStyles]` instead of
   // the brittle template-literal concatenation).
-  const globalStyles =
-    Array.isArray(globalStylesRaw)
-      ? globalStylesRaw.filter((s) => typeof s === 'string' && s.length > 0).join('\n')
-      : globalStylesRaw
+  const globalStyles = Array.isArray(globalStylesRaw)
+    ? globalStylesRaw.filter((s) => typeof s === 'string' && s.length > 0).join('\n')
+    : globalStylesRaw
 
   // Resolve `styles` into a Tailwind base string. Tailwind base ordering:
   //   1. theme.base (from `themeTokens()` — contains `@import "tailwindcss"`,

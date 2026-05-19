@@ -27,7 +27,7 @@ export const updateProfile = action({
 
 const REGISTER = `// An action() result carries a \`.handler\` — a { 'METHOD /path':
 // fn } route-table fragment. Spread it into serve()'s routes:
-import { serve } from '@place/component'
+import { serve } from '@place/component/server'
 import { updateProfile, deleteAccount, createPost } from './actions'
 
 serve({

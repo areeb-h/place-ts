@@ -157,7 +157,7 @@ console.log('Building app()-only probe...')
 const appEntry = join(TMP, 'app-only.ts')
 await writeFile(
   appEntry,
-  `import { app } from '@place/component'
+  `import { app } from '@place/component/server'
 ;(globalThis as Record<string, unknown>).__sink = app
 `,
 )

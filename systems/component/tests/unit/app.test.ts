@@ -4,7 +4,8 @@
 // grouping helper. Pure-value transforms; no Bun runtime needed.
 
 import { describe, expect, test } from 'vitest'
-import { app, layout, page, routes, span } from '../../src/index.ts'
+import { layout, page, span } from '../../src/index.ts'
+import { app, routes } from '../../src/server.ts'
 
 describe('app(pages, opts) — Round 5 entry factory', () => {
   test('derives a routes object from pages with paths', () => {

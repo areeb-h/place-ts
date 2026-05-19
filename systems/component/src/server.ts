@@ -3,98 +3,106 @@
 // Everything here runs on the server or at build time: the renderers,
 // the Bun.serve orchestrator, `action()` handlers, the page/app
 // builders, cookies, security headers, the static exporter, the SSR
-// post-render helpers. None of it belongs in a client or island
-// bundle.
+// post-render helpers.
 //
-// Tier 20 entrypoint split: a server entry imports this; a
-// client/island entry must not. The forbidden-import probe
-// (`examples/docs/probes/forbidden-imports.ts`) enforces that nothing
-// reachable from here lands in an emitted client bundle.
+// Tier 20 entrypoint split — full isolation. The node/Bun-carrying
+// surface (`serve`, `app`, `routes`, `buildStatic`, `discoverPages`,
+// the security-header presets) is re-exported HERE and nowhere else:
+// the root `@place/component` barrel no longer exposes it, so a
+// client/island bundle that imports `@place/component` cannot reach
+// `Bun.serve` / `Bun.build` / `node:*` even in its module graph —
+// the boundary is an impossible import graph, not a `__PLACE_BROWSER__`
+// dead-branch. The forbidden-import probe
+// (`examples/docs/probes/forbidden-imports.ts`) is the runtime proof.
 //
-// Curated re-export of `./index.ts` — additive: `@place/component`
-// (the root) still exposes every name for back-compat while the
-// physical decomposition (Tier 20 cuts 3-5) moves the code behind
-// this entry.
+// The node-free, server-conceptual symbols (`renderToString`,
+// `renderPage`, `handler`, `action`, …) still live on the root barrel
+// — they are safe anywhere — and are re-exported from there for a
+// single server-side import surface.
+
 export {
-  // rendering
-  renderToString,
-  renderToStream,
-  type RenderToStreamOptions,
-  renderToHtml,
-  type RenderToHtmlOptions,
-  renderPage,
-  type RenderPageOptions,
-  // serving
-  serve,
-  type ServeOptions,
-  type ServeRoutes,
-  type ServeTailwindOptions,
-  resolveTailwindFromTheme,
-  type Builder,
-  type Adapter,
-  // app
-  app,
   type App,
   type AppConfig,
   type AppOptions,
+  app,
   type CapInstall,
   type RoutesOptions,
   routes,
-  // request handling
-  handler,
-  type Handler,
-  type HandlerOptions,
-  serverRouter,
-  type RouteHandler,
-  type ServerRouter,
-  notFound,
-  type LoadCtx,
-  parseCookieHeader,
-  // actions
-  action,
+} from './app.ts'
+export { discoverPages } from './build/discover-pages.ts'
+export { type BuildStaticOptions, type BuildStaticResult, buildStatic } from './build-static.ts'
+// ----- node-free, also on the root `@place/component` barrel -----
+export {
   type Action,
   type ActionDef,
   ActionError,
   type ActionSchema,
-  fromStandard,
-  isValidationFailure,
-  resolveActionUrl,
-  type ShapeField,
-  type ShapeOf,
-  shape,
-  type StandardSchemaV1,
-  type ValidationFailure,
-  // caching / ISR
-  cache,
-  memoryStore,
+  // actions
+  action,
   type CacheEntry,
   type CacheOptions,
   type CacheStore,
+  // caching / ISR
+  cache,
+  // SSR post-render helpers
+  extractMainHeadings,
+  fromStandard,
+  type Handler,
+  type HandlerOptions,
+  // request handling
+  handler,
+  isValidationFailure,
+  type LoadCtx,
+  memoryStore,
+  notFound,
+  parseCookieHeader,
+  patchIslandMarker,
+  type RenderPageOptions,
+  type RenderToHtmlOptions,
+  type RenderToStreamOptions,
+  type RouteHandler,
+  renderPage,
+  renderToHtml,
+  renderToStream,
+  // rendering
+  renderToString,
+  rerenderIsland,
+  resolveActionUrl,
   revalidate,
-  // static export
-  buildStatic,
-  type BuildStaticOptions,
-  type BuildStaticResult,
-  discoverPages,
-  // security headers
-  generateScriptNonce,
-  renderSecurityHeaders,
-  type CSPConfig,
-  type CSPDirective,
-  type CSPSource,
+  type ServerRouter,
+  type ShapeField,
+  type ShapeOf,
+  type StandardSchemaV1,
+  serverRouter,
+  shape,
+  slugifyHeading,
+  type ValidationFailure,
+} from './index.ts'
+export {
   type CrossOriginEmbedderPolicy,
   type CrossOriginOpenerPolicy,
   type CrossOriginResourcePolicy,
+  type CSPConfig,
+  type CSPDirective,
+  type CSPSource,
+  generateScriptNonce,
   type HSTSConfig,
   type PermissionsPolicyConfig,
   type ReferrerPolicy,
   type RenderSecurityOptions,
+  renderSecurityHeaders,
   type Security,
   type SecurityOptions,
   type SecurityPreset,
-  // SSR post-render helpers
-  extractMainHeadings,
-  patchIslandMarker,
-  rerenderIsland,
-  slugifyHeading,
-} from './index.ts'
+  sha256Base64,
+} from './security-headers.ts'
+// ----- node/Bun-carrying — server-only, NOT on the root barrel -----
+export {
+  type Adapter,
+  type Builder,
+  resolveTailwindFromTheme,
+  type ServeOptions,
+  type ServeRoutes,
+  type ServeTailwindOptions,
+  serve,
+} from './serve.ts'

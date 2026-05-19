@@ -14,7 +14,8 @@
 
 import { describe, expect, test } from 'vitest'
 import { memoryRouter, parsePath, route, serverRouter } from '../../systems/routing/src/index.ts'
-import { div, page, routes } from '../../systems/component/src/index.ts'
+import { div, page } from '../../systems/component/src/index.ts'
+import { routes } from '../../systems/component/src/server.ts'
 
 describe('routing charter conformance — architectural commitments', () => {
   // ── Commitment #1: Routes are values, not file paths ─────────────────
