@@ -1,0 +1,18 @@
+{
+  "name": "@place/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "place diagnostics CLI — `place explain` / `place why-js` report the JavaScript each route ships and why.",
+  "bin": {
+    "place": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ]
+}
