@@ -18,8 +18,10 @@ import { onCleanup, onMount, type View } from '@place/component'
 import {
   _beginDevtoolsNodes,
   _endDevtoolsNodes,
+  type ActivityEntry,
   type GraphNodeSnapshot,
   type GraphSnapshot,
+  inspectActivity,
   inspectGraph,
   onGraphTick,
   type State,
@@ -164,86 +166,44 @@ function countKind(snap: GraphSnapshot, kind: GraphNodeSnapshot['kind']): number
   return n
 }
 
-// ===== panel: Graph =====
+// ===== panel: Reactivity (Graph) =====
 //
-// A reactive graph's meaning is its *structure* — what feeds what.
-// The panel renders that, not a flat value list:
+// An abstract node graph is useless without identity — `#22 effect`
+// tells a developer nothing. Every reactive node is now scope-tagged
+// at creation with the island that made it, so the panel can speak
+// the developer's language. Two views, toggled by a sub-tab:
 //
-//   1. Nodes are grouped into CONNECTED COMPONENTS ("clusters") —
-//      union-find over every edge. Each cluster is one independent
-//      reactive sub-graph; on an islands page that maps cleanly to
-//      "one cluster per island", which is the developer's mental
-//      model.
-//   2. Within a cluster, nodes read top-to-bottom in flow order
-//      (state → derived → watch) and each shows its real edges
-//      (`← #3` sources, `→ #7` dependents) so a chain is traceable.
-//   3. `watch` nodes are shown, not collapsed to a count — they are
-//      the leaves of every cluster (the actual effects); hiding them
-//      hid the whole point of a graph.
+//   - "By island" — every state / derived / effect grouped under the
+//     island that created it. "search-palette — 1 state, 3 effects":
+//     a direct map to the files the developer wrote. Nodes no island
+//     scope covered (module-level, SSR hydration) fall under "shared".
+//   - "Activity" — the temporal feed. Every recent state change,
+//     newest first: which island and old → new value. Answers
+//     "what just happened".
 
-/** One connected component of the reactive graph. */
-interface GraphCluster {
-  readonly nodes: readonly GraphNodeSnapshot[]
-}
+const UNSCOPED = '— shared —'
 
-const KIND_RANK: Record<GraphNodeSnapshot['kind'], number> = { state: 0, derived: 1, watch: 2 }
-
-/**
- * Partition a snapshot into connected components (clusters) via
- * union-find over the undirected edge set. Single-node components are
- * split out as `loose` — isolated cells nobody reads yet — so they
- * don't each become a one-row card.
- */
-function clusterGraph(snap: GraphSnapshot): {
-  clusters: GraphCluster[]
-  loose: GraphNodeSnapshot[]
-} {
-  const present = new Set<number>()
-  for (const n of snap.nodes) present.add(n.id)
-  const parent = new Map<number, number>()
-  for (const n of snap.nodes) parent.set(n.id, n.id)
-  const find = (x: number): number => {
-    let r = x
-    while (parent.get(r) !== r) r = parent.get(r) as number
-    let c = x
-    while (c !== r) {
-      const next = parent.get(c) as number
-      parent.set(c, r)
-      c = next
-    }
-    return r
-  }
-  const union = (a: number, b: number): void => {
-    const ra = find(a)
-    const rb = find(b)
-    if (ra !== rb) parent.set(ra, rb)
-  }
+/** Group a snapshot's nodes by owning island; islands first, shared last. */
+function groupByScope(snap: GraphSnapshot): Array<{ scope: string; nodes: GraphNodeSnapshot[] }> {
+  const groups = new Map<string, GraphNodeSnapshot[]>()
   for (const n of snap.nodes) {
-    for (const s of n.sources) if (present.has(s)) union(n.id, s)
-    for (const d of n.dependents) if (present.has(d)) union(n.id, d)
-  }
-  const groups = new Map<number, GraphNodeSnapshot[]>()
-  for (const n of snap.nodes) {
-    const root = find(n.id)
-    const g = groups.get(root)
+    const key = n.scope ?? UNSCOPED
+    const g = groups.get(key)
     if (g) g.push(n)
-    else groups.set(root, [n])
+    else groups.set(key, [n])
   }
-  const byFlow = (a: GraphNodeSnapshot, b: GraphNodeSnapshot): number =>
-    KIND_RANK[a.kind] - KIND_RANK[b.kind] || a.id - b.id
-  const clusters: GraphCluster[] = []
-  const loose: GraphNodeSnapshot[] = []
-  for (const g of groups.values()) {
-    if (g.length === 1) loose.push(g[0] as GraphNodeSnapshot)
-    else clusters.push({ nodes: [...g].sort(byFlow) })
-  }
-  clusters.sort((a, b) => b.nodes.length - a.nodes.length)
-  loose.sort(byFlow)
-  return { clusters, loose }
+  const out = [...groups.entries()].map(([scope, nodes]) => ({ scope, nodes }))
+  out.sort((a, b) => {
+    const aShared = a.scope === UNSCOPED
+    const bShared = b.scope === UNSCOPED
+    if (aShared !== bShared) return aShared ? 1 : -1
+    return a.scope.localeCompare(b.scope)
+  })
+  return out
 }
 
-/** One-line shape of a cluster, e.g. `2 state → 1 derived → 3 watch`. */
-function clusterShape(nodes: readonly GraphNodeSnapshot[]): string {
+/** One-line kind tally, e.g. `1 state · 3 effects`. */
+function kindCounts(nodes: readonly GraphNodeSnapshot[]): string {
   let s = 0
   let d = 0
   let w = 0
@@ -255,51 +215,39 @@ function clusterShape(nodes: readonly GraphNodeSnapshot[]): string {
   const parts: string[] = []
   if (s > 0) parts.push(`${s} state`)
   if (d > 0) parts.push(`${d} derived`)
-  if (w > 0) parts.push(`${w} watch`)
-  return parts.join(' → ')
+  if (w > 0) parts.push(`${w} effect${w === 1 ? '' : 's'}`)
+  return parts.join(' · ')
 }
 
-/** Compact edge line for a node — its sources and dependents by id. */
-function edgeText(n: GraphNodeSnapshot): string {
-  const parts: string[] = []
-  if (n.sources.length > 0) parts.push(`← ${n.sources.map((i) => `#${i}`).join(' ')}`)
-  if (n.dependents.length > 0) parts.push(`→ ${n.dependents.map((i) => `#${i}`).join(' ')}`)
-  return parts.length > 0 ? parts.join('     ') : 'no edges'
-}
-
-function nodeRow(n: GraphNodeSnapshot): View {
+function scopeNodeRow(n: GraphNodeSnapshot): View {
   return (
     <li class="place-dt-gnode">
-      <div class="place-dt-gnode-head">
-        <span class="place-dt-badge" data-kind={n.kind}>
-          {n.kind}
-        </span>
-        <span class="place-dt-gnode-val">{n.kind === 'watch' ? 'effect' : (n.value ?? '—')}</span>
-        <span class="place-dt-status" data-s={n.status}>
-          {n.status}
-        </span>
-        <span class="place-dt-id">#{String(n.id)}</span>
-      </div>
-      <div class="place-dt-gnode-edges">{edgeText(n)}</div>
+      <span class="place-dt-badge" data-kind={n.kind}>
+        {n.kind}
+      </span>
+      <span class="place-dt-gnode-val">{n.kind === 'watch' ? 'effect' : (n.value ?? '—')}</span>
+      <span class="place-dt-status" data-s={n.status}>
+        {n.status}
+      </span>
+      <span class="place-dt-id">#{String(n.id)}</span>
     </li>
   )
 }
 
-function clusterCard(nodes: readonly GraphNodeSnapshot[], loose: boolean): View {
+function scopeCard(scope: string, nodes: readonly GraphNodeSnapshot[]): View {
   return (
-    <section class="place-dt-cluster" data-loose={loose ? '1' : '0'}>
+    <section class="place-dt-cluster" data-loose={scope === UNSCOPED ? '1' : '0'}>
       <header class="place-dt-cluster-head">
-        <span class="place-dt-cluster-shape">
-          {loose ? 'unconnected cells' : clusterShape(nodes)}
-        </span>
-        <span class="place-dt-id">{`${nodes.length} node${nodes.length === 1 ? '' : 's'}`}</span>
+        <span class="place-dt-cluster-name">{scope}</span>
+        <span class="place-dt-cluster-shape">{kindCounts(nodes)}</span>
       </header>
-      <ul class="place-dt-glist">{nodes.map(nodeRow)}</ul>
+      <ul class="place-dt-glist">{nodes.map(scopeNodeRow)}</ul>
     </section>
   )
 }
 
-function graphPane(graph: State<GraphSnapshot>) {
+/** "By island" view — per-scope node breakdown. */
+function islandsView(graph: State<GraphSnapshot>): View {
   return (
     <div>
       <div class="place-dt-summary">
@@ -310,19 +258,85 @@ function graphPane(graph: State<GraphSnapshot>) {
           <b>{() => String(countKind(graph(), 'derived'))}</b> derived
         </span>
         <span>
-          <b>{() => String(countKind(graph(), 'watch'))}</b> watch
+          <b>{() => String(countKind(graph(), 'watch'))}</b> effects
         </span>
       </div>
+      <div class="place-dt-clusters">
+        {() => {
+          const snap = graph()
+          if (snap.nodes.length === 0) {
+            return [<div class="place-dt-empty">No reactive nodes on this page.</div>]
+          }
+          return groupByScope(snap).map((g) => scopeCard(g.scope, g.nodes))
+        }}
+      </div>
+    </div>
+  )
+}
+
+function activityRow(e: ActivityEntry): View {
+  // The synchronous-effect count (`e.effects`) is shown only when
+  // non-zero — most framework bindings re-run on the deferred queue,
+  // outside the write's sync window, so a `0` is the common, un-
+  // interesting case and rendering it as a column would be dead weight.
+  return (
+    <li class="place-dt-act">
+      <span class="place-dt-act-scope">{e.scope ?? 'shared'}</span>
+      <span class="place-dt-act-change">
+        <span class="place-dt-act-from">{e.from}</span>
+        <span class="place-dt-act-arrow"> → </span>
+        <span class="place-dt-act-to">{e.to}</span>
+        {e.effects > 0 ? (
+          <span class="place-dt-act-fired">{`  +${e.effects} sync`}</span>
+        ) : null}
+      </span>
+    </li>
+  )
+}
+
+/** "Activity" view — the temporal feed, newest first. */
+function activityView(activity: State<readonly ActivityEntry[]>): View {
+  return (
+    <ul class="place-dt-list">
       {() => {
-        const snap = graph()
-        if (snap.nodes.length === 0) {
-          return [<div class="place-dt-empty">No reactive nodes on this page.</div>]
+        const log = activity()
+        if (log.length === 0) {
+          return [<li class="place-dt-empty">No state changes yet — interact with the page.</li>]
         }
-        const { clusters, loose } = clusterGraph(snap)
-        const out: View[] = clusters.map((c) => clusterCard(c.nodes, false))
-        if (loose.length > 0) out.push(clusterCard(loose, true))
-        return out
+        return [...log].reverse().map(activityRow)
       }}
+    </ul>
+  )
+}
+
+type GraphView = 'islands' | 'activity'
+
+function graphPane(
+  graph: State<GraphSnapshot>,
+  activity: State<readonly ActivityEntry[]>,
+  graphView: State<GraphView>,
+): View {
+  return (
+    <div>
+      <div class="place-dt-subtabs">
+        <button
+          type="button"
+          class="place-dt-subtab"
+          data-active={() => (graphView() === 'islands' ? '1' : '0')}
+          onClick={() => graphView.set('islands')}
+        >
+          By island
+        </button>
+        <button
+          type="button"
+          class="place-dt-subtab"
+          data-active={() => (graphView() === 'activity' ? '1' : '0')}
+          onClick={() => graphView.set('activity')}
+        >
+          Activity
+        </button>
+      </div>
+      {() => (graphView() === 'islands' ? islandsView(graph) : activityView(activity))}
     </div>
   )
 }
@@ -519,6 +533,8 @@ export const devtoolsView = () => {
   const open = state(false)
   const tab = state<TabId>('graph')
   const graph = state<GraphSnapshot>({ nodes: [], capturedAt: 0 })
+  const activity = state<readonly ActivityEntry[]>([])
+  const graphView = state<GraphView>('islands')
   const islands = state<IslandInfo[]>([])
   const perf = state<PerfInfo | null>(null)
   const logs = state<LogEntry[]>([])
@@ -528,9 +544,14 @@ export const devtoolsView = () => {
   const router = RouterCap.tryUse()
 
   onMount(() => {
-    // Graph — snapshot now, then re-snapshot on every settled tick.
+    // Graph — snapshot the structure + the activity log now, then
+    // re-read both on every settled tick.
     graph.set(inspectGraph())
-    const offTick = onGraphTick(() => graph.set(inspectGraph()))
+    activity.set(inspectActivity())
+    const offTick = onGraphTick(() => {
+      graph.set(inspectGraph())
+      activity.set(inspectActivity())
+    })
 
     // Islands — re-scan the DOM periodically (visible/idle islands
     // hydrate after first paint).
@@ -642,7 +663,7 @@ export const devtoolsView = () => {
 
         <div class="place-dt-body">
           <div class="place-dt-pane" data-pane="graph">
-            {graphPane(graph)}
+            {graphPane(graph, activity, graphView)}
           </div>
           <div class="place-dt-pane" data-pane="islands">
             {islandsPane(islands)}

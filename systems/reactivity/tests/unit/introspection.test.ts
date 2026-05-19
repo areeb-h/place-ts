@@ -10,9 +10,12 @@
 
 import { describe, expect, test } from 'vitest'
 import {
+  _popDevScope,
+  _pushDevScope,
   derived,
   flush,
   type GraphSnapshot,
+  inspectActivity,
   inspectGraph,
   onGraphTick,
   state,
@@ -143,6 +146,80 @@ describe('onGraphTick', () => {
     await Promise.resolve()
     expect(runs).toBe(2) // a fresh app-originated write still ticks
     off()
+  })
+})
+
+describe('_pushDevScope — scope tagging', () => {
+  test('a node created inside a scope carries that scope', () => {
+    _pushDevScope('scope-test-island')
+    state('scoped-9101')
+    _popDevScope()
+    const node = nodeByValue(inspectGraph(), '"scoped-9101"')
+    expect(node?.scope).toBe('scope-test-island')
+  })
+
+  test('a node created outside any scope has no scope', () => {
+    state('unscoped-9102')
+    const node = nodeByValue(inspectGraph(), '"unscoped-9102"')
+    expect(node?.scope).toBeUndefined()
+  })
+
+  test('scopes nest — innermost wins', () => {
+    _pushDevScope('outer-9103')
+    _pushDevScope('inner-9103')
+    state('nested-9103')
+    _popDevScope()
+    state('outer-only-9103')
+    _popDevScope()
+    const snap = inspectGraph()
+    expect(nodeByValue(snap, '"nested-9103"')?.scope).toBe('inner-9103')
+    expect(nodeByValue(snap, '"outer-only-9103"')?.scope).toBe('outer-9103')
+  })
+
+  test('popping past empty is harmless; later nodes stay unscoped', () => {
+    _popDevScope()
+    _popDevScope()
+    state('after-overpop-9104')
+    expect(nodeByValue(inspectGraph(), '"after-overpop-9104"')?.scope).toBeUndefined()
+  })
+})
+
+describe('inspectActivity — the temporal log', () => {
+  test('a value-changing write appends an entry with from / to', () => {
+    const s = state(940001)
+    s.set(940002)
+    const entry = inspectActivity().find((e) => e.to === '940002')
+    expect(entry).toBeDefined()
+    expect(entry?.from).toBe('940001')
+    expect(entry?.to).toBe('940002')
+  })
+
+  test('the entry carries the writing node’s scope', () => {
+    _pushDevScope('activity-island-9402')
+    const s = state(940010)
+    _popDevScope()
+    s.set(940011)
+    const entry = inspectActivity().find((e) => e.to === '940011')
+    expect(entry?.scope).toBe('activity-island-9402')
+  })
+
+  test('a no-op write (equal value) records nothing', () => {
+    const s = state(940020)
+    const before = inspectActivity().length
+    s.set(940020)
+    expect(inspectActivity().length).toBe(before)
+  })
+
+  test('entries are ordered oldest-first with monotonic seq', () => {
+    const s = state(940030)
+    s.set(940031)
+    s.set(940032)
+    const log = inspectActivity()
+    const a = log.findIndex((e) => e.to === '940031')
+    const b = log.findIndex((e) => e.to === '940032')
+    expect(a).toBeGreaterThanOrEqual(0)
+    expect(b).toBeGreaterThan(a)
+    expect((log[b]?.seq ?? 0) > (log[a]?.seq ?? 0)).toBe(true)
   })
 })
 

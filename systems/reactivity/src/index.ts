@@ -59,6 +59,15 @@ interface BaseNode {
    * exclude them — the graph panel shows the app, not the debugger.
    */
   devInternal?: boolean
+  /**
+   * Dev-only: the label of the `_pushDevScope()` scope active when the
+   * node was created — the island (or named region) that owns it. The
+   * component layer pushes the island name around each island's
+   * instantiate-and-mount, so `inspectGraph()` can group nodes by the
+   * island a developer actually wrote. Absent for module-eval / SSR
+   * nodes that no island scope covers.
+   */
+  devScope?: string
   // **`Set<BaseNode>`, not `BaseNode[]`** — `track()` had been doing
   // `sources.includes(source)` (O(N)) and `clearSources` was doing
   // `dependents.indexOf(node)` (also O(N)), both inside the per-write
@@ -274,19 +283,33 @@ function writeState<T>(node: StateNode<T>, next: T | ((prev: T) => T)): void {
 
   if (node.hasValue && node.equals(node.value, value)) return
 
+  // Dev activity log: capture the pre-write value + watch-run count
+  // BEFORE the overwrite / flush below. Skipped in production and for
+  // the devtool's own cells (they would feed back into the log).
+  const devLog = GRAPH_DEV && node.devInternal !== true
+  const devPrev: unknown = devLog ? (node.hasValue ? node.value : DEV_NO_PREV) : undefined
+  const devRunsBefore = devLog ? devWatchRuns : 0
+
   if (node.fn !== null) node.hasLocalWrite = true
   node.value = value
   node.hasValue = true
   node.state = CLEAN
   propagateChange(node)
   maybeFlushSync()
-  if (GRAPH_DEV) devNotifyTick()
+  if (GRAPH_DEV) {
+    if (devLog) devRecordActivity(node, devPrev, value, devWatchRuns - devRunsBefore)
+    devNotifyTick()
+  }
 }
 
 // ===== Watch + Scheduler =====
 
 function runWatch(node: WatchNode): void {
   if (!node.active) return
+  // Dev: count app watch-effect runs so a `state` write can report
+  // how many effects it fired. The devtool's own panel watches are
+  // excluded so the count reflects the app, not the inspector.
+  if (GRAPH_DEV && node.devInternal !== true) devWatchRuns++
   const prevObserver = currentObserver
   clearSources(node)
   currentObserver = node
@@ -1136,13 +1159,86 @@ const devTickListeners = new Set<() => void>()
 let devTickQueued = false
 let devTickRunning = false
 let devInternalDepth = 0
+// Stack of active scope labels (innermost last). The component layer
+// pushes an island's name around its instantiate-and-mount; every
+// reactive node created in that window is tagged with the island, so
+// the devtools can group the graph by the code a developer wrote.
+const devScopeStack: string[] = []
 
 /** Tag a node with a stable id and add it to the live registry. */
 function devRegister(node: BaseNode): void {
   node.devId = ++devIdSeq
   if (devInternalDepth > 0) node.devInternal = true
+  const scope = devScopeStack[devScopeStack.length - 1]
+  if (scope !== undefined) node.devScope = scope
   devNodes.add(node)
 }
+
+/**
+ * Open a named scope. Every reactive node created until the matching
+ * {@link _popDevScope} is tagged with `label` — used by the component
+ * layer to attribute a node to the island that created it. Nestable
+ * (innermost wins). Cheap + safe to call in production; the label is
+ * only ever read by `inspectGraph()`, which is dev-only.
+ */
+export function _pushDevScope(label: string): void {
+  devScopeStack.push(label)
+}
+
+/** Close the most recent {@link _pushDevScope}. */
+export function _popDevScope(): void {
+  devScopeStack.pop()
+}
+
+// ===== Activity log — the temporal view of the graph =====
+//
+// A bounded ring buffer of state changes. Where `inspectGraph()` is the
+// *structural* snapshot ("what nodes exist"), this is the *temporal*
+// one ("what changed, in what order"). Each entry is one value-changing
+// `state` write: which node, its owning scope, old → new value, and how
+// many watch effects re-ran synchronously as a result. The devtools
+// renders it newest-first as a live feed. Dev-only — never recorded in
+// a production build.
+
+/** One state change recorded in the {@link inspectActivity} log. */
+export interface ActivityEntry {
+  /** Monotonic id — higher is newer. Stable across reads. */
+  readonly seq: number
+  /** `devId` of the `state` node that changed. */
+  readonly nodeId: number
+  /** Owning scope (island name), if the node was created inside one. */
+  readonly scope?: string
+  /** One-line preview of the value before the write (`<initial>` for
+   *  the node's first-ever value). */
+  readonly from: string
+  /** One-line preview of the value after the write. */
+  readonly to: string
+  /** Watch effects that re-ran synchronously because of this write.
+   *  Batched writes flush at batch-end, so a write inside `batch()`
+   *  reports 0 here and the batch's final write carries the total. */
+  readonly effects: number
+}
+
+const DEV_ACTIVITY_CAP = 120
+let devActivitySeq = 0
+let devWatchRuns = 0
+const devActivityLog: ActivityEntry[] = []
+
+/** Record one value-changing write into the ring buffer. */
+function devRecordActivity(node: BaseNode, from: unknown, to: unknown, effects: number): void {
+  devActivityLog.push({
+    seq: ++devActivitySeq,
+    nodeId: node.devId ?? 0,
+    ...(node.devScope !== undefined ? { scope: node.devScope } : {}),
+    from: from === DEV_NO_PREV ? '<initial>' : devPreviewValue(from),
+    to: devPreviewValue(to),
+    effects,
+  })
+  if (devActivityLog.length > DEV_ACTIVITY_CAP) devActivityLog.shift()
+}
+
+/** Sentinel: the node had no value before this write. */
+const DEV_NO_PREV: unique symbol = Symbol('place:no-prev')
 
 /**
  * Open a scope in which every reactive node created is flagged
@@ -1234,6 +1330,11 @@ export interface GraphNodeSnapshot {
   readonly sources: readonly number[]
   /** ids of the nodes that read this node (its subscribers). */
   readonly dependents: readonly number[]
+  /** The island (or named region) that created this node — the label
+   *  of the `_pushDevScope()` scope active at creation. Absent for
+   *  module-eval / SSR nodes no scope covered. Lets the devtools group
+   *  the graph by the code a developer wrote. */
+  readonly scope?: string
 }
 
 /** A point-in-time picture of the whole reactive graph. */
@@ -1329,9 +1430,20 @@ export function inspectGraph(): GraphSnapshot {
       sources,
       dependents,
       ...(value !== undefined ? { value } : {}),
+      ...(node.devScope !== undefined ? { scope: node.devScope } : {}),
     })
   }
   return { nodes, capturedAt: Date.now() }
+}
+
+/**
+ * The activity log — every recent value-changing `state` write,
+ * oldest-first. The temporal companion to {@link inspectGraph}: the
+ * devtools renders it as a live feed. Bounded ring buffer (last ~120
+ * writes); empty in a production build.
+ */
+export function inspectActivity(): readonly ActivityEntry[] {
+  return [...devActivityLog]
 }
 
 /**

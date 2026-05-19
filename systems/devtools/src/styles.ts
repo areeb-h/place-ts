@@ -167,7 +167,24 @@ export const devtoolsCss = `
 .place-dt-status[data-s="dirty"] { color: var(--dt-warn); }
 .place-dt-status[data-s="computing"] { color: var(--dt-ac); }
 
-/* ----- graph clusters (Graph panel) ----- */
+/* ----- Reactivity panel: sub-tabs ----- */
+.place-dt-subtabs {
+  display: flex; gap: 2px; margin-bottom: 8px;
+  padding: 2px; border-radius: 8px;
+  background: var(--dt-raise);
+}
+.place-dt-subtab {
+  flex: 1; padding: 5px 8px;
+  font: 600 11px/1 var(--dt-sans);
+  color: var(--dt-mut); background: transparent;
+  border: 0; border-radius: 6px; cursor: pointer;
+  transition: color .12s ease, background .12s ease;
+}
+.place-dt-subtab:hover { color: var(--dt-fg); }
+.place-dt-subtab[data-active="1"] { color: var(--dt-ac); background: var(--dt-ac-soft); }
+
+/* ----- Reactivity panel: by-island view ----- */
+.place-dt-clusters { display: flex; flex-direction: column; }
 .place-dt-cluster {
   margin-bottom: 8px;
   background: var(--dt-raise);
@@ -177,34 +194,53 @@ export const devtoolsCss = `
 }
 .place-dt-cluster[data-loose="1"] { border-style: dashed; }
 .place-dt-cluster-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 5px 9px;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 6px 9px;
   background: oklch(1 0 0 / 0.025);
   border-bottom: 1px solid var(--dt-line);
 }
-.place-dt-cluster-shape {
-  font: 600 10px/1.3 var(--dt-mono); color: var(--dt-mut);
+.place-dt-cluster-name {
+  font: 600 11px/1.3 var(--dt-mono); color: var(--dt-fg);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.place-dt-cluster-shape {
+  flex-shrink: 0;
+  font: 500 10px/1.3 var(--dt-mono); color: var(--dt-mut);
 }
 .place-dt-glist {
   list-style: none; margin: 0; padding: 4px;
   display: flex; flex-direction: column; gap: 3px;
 }
 .place-dt-gnode {
+  display: flex; align-items: center; gap: 6px;
   padding: 5px 7px; border-radius: 6px;
   background: var(--dt-bg-solid);
 }
-.place-dt-gnode-head { display: flex; align-items: center; gap: 6px; }
 .place-dt-gnode-val {
   flex: 1; min-width: 0;
   font: 12px var(--dt-mono); color: var(--dt-fg);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.place-dt-gnode-edges {
-  margin-top: 3px; padding-left: 1px;
-  font: 10px/1.3 var(--dt-mono); color: var(--dt-dim);
+
+/* ----- Reactivity panel: activity feed ----- */
+.place-dt-act {
+  display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px;
+  padding: 6px 9px;
+  background: var(--dt-raise); border-radius: 8px;
+}
+.place-dt-act-scope {
+  font: 600 10px/1 var(--dt-mono); color: var(--dt-ac);
+  padding: 3px 5px; border-radius: 4px; background: var(--dt-ac-soft);
+  max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.place-dt-act-change {
+  min-width: 0; font: 11px var(--dt-mono);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.place-dt-act-from { color: var(--dt-dim); }
+.place-dt-act-arrow { color: var(--dt-mut); }
+.place-dt-act-to { color: var(--dt-fg); }
+.place-dt-act-fired { color: var(--dt-dim); }
 
 /* ----- key/value grid ----- */
 .place-dt-kv { margin: 0; display: grid; grid-template-columns: 84px 1fr; gap: 1px; }
