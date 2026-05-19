@@ -14,7 +14,7 @@
 //     off `data-open` / `data-tab` on the root — no conditional
 //     mounting, so panel subscriptions stay alive across tab switches.
 
-import { island, onCleanup, onMount } from '@place/component'
+import { onCleanup, onMount } from '@place/component'
 import {
   type GraphNodeSnapshot,
   type GraphSnapshot,
@@ -286,9 +286,26 @@ function perfPane(perf: State<PerfInfo | null>) {
   )
 }
 
-// ===== the island =====
+// ===== the devtools view =====
 
-const DevtoolsImpl = () => {
+/**
+ * The devtools component — the floating launcher + tabbed panel.
+ *
+ * Exported as a plain view, not a pre-wrapped `island()`: the island
+ * bundler requires an island's source file to live under the
+ * consuming app's project tree, so the `island()` call belongs in the
+ * app, not in this package. Wrap it in a one-line island file:
+ *
+ * ```tsx
+ * // src/islands/devtools.tsx
+ * import { island } from '@place/component'
+ * import { devtoolsView } from '@place/devtools'
+ * export default island(import.meta.url, devtoolsView)
+ * ```
+ *
+ * then render `<Devtools />` once in a root layout (behind a dev gate).
+ */
+export const devtoolsView = () => {
   const open = state(false)
   const tab = state<TabId>('graph')
   const graph = state<GraphSnapshot>({ nodes: [], capturedAt: 0 })
@@ -380,13 +397,3 @@ const DevtoolsImpl = () => {
     </div>
   )
 }
-
-/**
- * The place devtools island. Render it once in a root layout behind a
- * dev gate:
- *
- * ```tsx
- * {import.meta.env?.DEV ? <Devtools /> : null}
- * ```
- */
-export const Devtools = island(import.meta.url, DevtoolsImpl)

@@ -1,6 +1,9 @@
 // @place/devtools — public surface.
 //
-// One export: the `Devtools` island. Drop it into a root layout
-// behind a dev gate; see the README + docs/00-charter.md.
+// Exports the devtools VIEW, not a pre-wrapped island: the island
+// bundler requires an island's source to live under the consuming
+// app's project tree, so the `island()` call belongs in the app. Wrap
+// it in a one-line island file (see the README), then render
+// `<Devtools />` once in a root layout behind a dev gate.
 
-export { Devtools } from './devtools.tsx'
+export { devtoolsView } from './devtools.tsx'

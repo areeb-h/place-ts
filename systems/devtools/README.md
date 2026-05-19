@@ -3,21 +3,27 @@
 > See the running app from inside it — the reactive graph, the islands,
 > the route, the JS weight.
 
-A dev-only island. Drop it into your root layout behind a dev check:
+A dev-only island. The package exports the devtools **view**; the
+`island()` call has to live in a file under your own project tree (the
+island bundler requires it). Wrap it in a one-line island file:
 
 ```tsx
-import { Devtools } from '@place/devtools'
+// src/islands/devtools.tsx
+import { island } from '@place/component'
+import { devtoolsView } from '@place/devtools'
 
-export const rootLayout = layout((page) => (
-  <body>
-    {page}
-    {import.meta.env?.DEV ? <Devtools /> : null}
-  </body>
-))
+export default island(import.meta.url, devtoolsView)
 ```
 
-Register it with the island bundler the same way as any island — add it
-to `app({ islands: [...] })`, or re-export it from your `islandsDir`.
+`islandsDir` discovery picks that file up automatically. Then render it
+once in your root layout:
+
+```tsx
+import Devtools from './islands/devtools.tsx'
+
+// …in the layout view, near the end of <body>:
+<Devtools client="idle" />
+```
 
 A floating launcher appears in the corner; click it for the panel.
 
@@ -28,7 +34,7 @@ A floating launcher appears in the corner; click it for the panel.
 | **Routes** | The active route — path, params, query. |
 | **Perf** | Page load timing + the JavaScript the page shipped. |
 
-The devtool is itself a place island — it dogfoods the framework. It
+The devtool runs as a place island — it dogfoods the framework. It
 ships its own self-contained stylesheet (CSP-safe, adopted via a
 constructable `CSSStyleSheet`) and never touches your app's theme or
 layout.

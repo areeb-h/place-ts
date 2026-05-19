@@ -7,6 +7,7 @@ import { Link, layout } from '@place/component'
 // component; the framework auto-discovers them via `app({ islandsDir })`
 // so no manual registration is needed in `app.ts`. We still import
 // the values here to use as JSX.
+import Devtools from '../islands/devtools.tsx'
 import MobileNavButton from '../islands/mobile-nav-button.tsx'
 import MobileNavDrawer from '../islands/mobile-nav-drawer.tsx'
 import PageNav from '../islands/page-nav.tsx'
@@ -152,6 +153,10 @@ export const docsLayout = layout<{}, 'headerActions' | 'tocOverride'>({
           deferred islands whose marker IS visible. */}
       <SearchPalette client="idle" />
       <MobileNavDrawer client="idle" />
+
+      {/* The place devtools — the docs site doubles as a live demo of
+          `@place/devtools`. Loads on idle, off the critical path. */}
+      <Devtools client="idle" />
     </div>
   ),
 })

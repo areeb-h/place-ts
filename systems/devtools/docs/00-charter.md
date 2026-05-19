@@ -65,5 +65,9 @@ Four panels, each answering one question:
 
 ## Public surface
 
-- `Devtools` — the island. `import { Devtools } from '@place/devtools'`,
-  rendered once in the root layout behind a dev gate.
+- `devtoolsView` — the devtools component (a `() => View`). The package
+  exports the view rather than a pre-wrapped `island()` because the
+  island bundler requires an island's source file to live under the
+  consuming app's project tree. The app wraps it in a one-line island
+  file (`island(import.meta.url, devtoolsView)`) and renders it once in
+  a root layout behind a dev gate. See the README.
