@@ -16,6 +16,8 @@
 
 import { onCleanup, onMount } from '@place/component'
 import {
+  _beginDevtoolsNodes,
+  _endDevtoolsNodes,
   type GraphNodeSnapshot,
   type GraphSnapshot,
   inspectGraph,
@@ -25,6 +27,11 @@ import {
 } from '@place/reactivity'
 import { type Router, RouterCap } from '@place/routing'
 import { devtoolsCss } from './styles.ts'
+
+// True in a development build — the build injects `__PLACE_DEV__`.
+// Used to caveat dev-only measurements (sourcemap-inflated bundles).
+declare const __PLACE_DEV__: boolean | undefined
+const IS_DEV: boolean = typeof __PLACE_DEV__ !== 'undefined' && __PLACE_DEV__ === true
 
 // ===== self-contained stylesheet =====
 
@@ -185,6 +192,11 @@ function nodeRow(n: GraphNodeSnapshot) {
 }
 
 function graphPane(graph: State<GraphSnapshot>) {
+  // The panel lists `state` + `derived` — the nodes that carry a
+  // value and are worth scanning. `watch` nodes are the framework's
+  // own reactive-binding effects (one per `class={() => …}` etc.);
+  // there are dozens, all anonymous, so they collapse into a single
+  // count rather than dozens of indistinguishable rows.
   return (
     <div>
       <div class="place-dt-summary">
@@ -195,15 +207,16 @@ function graphPane(graph: State<GraphSnapshot>) {
           <b>{() => String(countKind(graph(), 'derived'))}</b> derived
         </span>
         <span>
-          <b>{() => String(countKind(graph(), 'watch'))}</b> watch
+          <b>{() => String(countKind(graph(), 'watch'))}</b> watch effects
         </span>
       </div>
       <ul class="place-dt-list">
-        {() =>
-          graph().nodes.length === 0
-            ? [<li class="place-dt-empty">No reactive nodes yet.</li>]
-            : graph().nodes.map(nodeRow)
-        }
+        {() => {
+          const cells = graph().nodes.filter((n) => n.kind !== 'watch')
+          return cells.length === 0
+            ? [<li class="place-dt-empty">No state or derived cells on this page.</li>]
+            : cells.map(nodeRow)
+        }}
       </ul>
     </div>
   )
@@ -278,7 +291,7 @@ function perfPane(perf: State<PerfInfo | null>) {
       {() => {
         const p = perf()
         if (p === null) return <div class="place-dt-empty">measuring…</div>
-        return (
+        return [
           <dl class="place-dt-kv">
             <div>
               <dt>TTFB</dt>
@@ -300,8 +313,14 @@ function perfPane(perf: State<PerfInfo | null>) {
               <dt>JS shipped</dt>
               <dd>{fmtBytes(p.jsBytes)}</dd>
             </div>
-          </dl>
-        )
+          </dl>,
+          IS_DEV ? (
+            <div class="place-dt-note">
+              Dev build — “JS shipped” includes inline sourcemaps; production bundles are far
+              smaller. Timing reflects the initial document load.
+            </div>
+          ) : null,
+        ]
       }}
     </div>
   )
@@ -387,12 +406,19 @@ export const devtoolsView = () => {
   // Adopt the stylesheet before the panel's first paint — no FOUC.
   adoptStyles()
 
+  // The devtool's own panel-state cells are reactive nodes too — flag
+  // them so the Graph panel excludes them and shows only the app's
+  // graph. The scope is synchronous (just these six `state()` calls),
+  // so nothing else can land in it.
+  _beginDevtoolsNodes()
   const open = state(false)
   const tab = state<TabId>('graph')
   const graph = state<GraphSnapshot>({ nodes: [], capturedAt: 0 })
   const islands = state<IslandInfo[]>([])
   const perf = state<PerfInfo | null>(null)
   const logs = state<LogEntry[]>([])
+  _endDevtoolsNodes()
+
   // Routing cap is resolved synchronously — installed before islands hydrate.
   const router = RouterCap.tryUse()
 
@@ -407,10 +433,16 @@ export const devtoolsView = () => {
     scan()
     const scanTimer = setInterval(scan, 800)
 
-    // Perf — collect now, and once more after `load` has had a chance
-    // to fire (the island may hydrate before the load event).
-    perf.set(collectPerf())
-    const perfTimer = setTimeout(() => perf.set(collectPerf()), 700)
+    // Perf — collect now; re-collect when `load` fires (the island
+    // can hydrate before the load event, leaving `loadEventEnd` at 0)
+    // and on every SPA navigation, so the panel tracks the current
+    // route instead of going stale on the first paint.
+    const refreshPerf = (): void => perf.set(collectPerf())
+    refreshPerf()
+    if (document.readyState !== 'complete') {
+      window.addEventListener('load', refreshPerf, { once: true })
+    }
+    window.addEventListener('place:nav', refreshPerf)
 
     // Console — mirror console.{error,warn,info,log} plus uncaught
     // errors + unhandled rejections into the Console panel. The
@@ -425,15 +457,19 @@ export const devtoolsView = () => {
     }
     const originalConsole: Partial<Record<LogEntry['level'], (...a: unknown[]) => void>> = {}
     for (const lvl of LEVELS) {
-      const orig = console[lvl] as (...a: unknown[]) => void
+      // Patching `console` is the Console panel's whole purpose — it
+      // mirrors console output into the panel. The originals are kept
+      // and always still called; restored on cleanup.
+      const target = console
+      const orig = target[lvl] as (...a: unknown[]) => void
       originalConsole[lvl] = orig
-      console[lvl] = ((...args: unknown[]): void => {
+      target[lvl] = ((...args: unknown[]): void => {
         try {
           pushLog(lvl, args.map(fmtArg).join(' '))
         } catch (_) {
           // Capture must never break the app's own logging.
         }
-        orig.apply(console, args)
+        orig.apply(target, args)
       }) as typeof console.log
     }
     const onWindowError = (e: ErrorEvent): void => {
@@ -448,7 +484,8 @@ export const devtoolsView = () => {
     onCleanup(() => {
       offTick()
       clearInterval(scanTimer)
-      clearTimeout(perfTimer)
+      window.removeEventListener('load', refreshPerf)
+      window.removeEventListener('place:nav', refreshPerf)
       for (const lvl of LEVELS) {
         const o = originalConsole[lvl]
         if (o) console[lvl] = o as typeof console.log

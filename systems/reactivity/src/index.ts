@@ -52,6 +52,13 @@ interface BaseNode {
    * registration call sites are DCE'd. `@place/devtools` reads it.
    */
   devId?: number
+  /**
+   * Dev-only: set when the node was created inside a
+   * `_beginDevtoolsNodes()` / `_endDevtoolsNodes()` scope. The devtool
+   * marks its own reactive cells this way so `inspectGraph()` can
+   * exclude them — the graph panel shows the app, not the debugger.
+   */
+  devInternal?: boolean
   // **`Set<BaseNode>`, not `BaseNode[]`** — `track()` had been doing
   // `sources.includes(source)` (O(N)) and `clearSources` was doing
   // `dependents.indexOf(node)` (also O(N)), both inside the per-write
@@ -1128,11 +1135,29 @@ const devNodes = new Set<BaseNode>()
 const devTickListeners = new Set<() => void>()
 let devTickQueued = false
 let devTickRunning = false
+let devInternalDepth = 0
 
 /** Tag a node with a stable id and add it to the live registry. */
 function devRegister(node: BaseNode): void {
   node.devId = ++devIdSeq
+  if (devInternalDepth > 0) node.devInternal = true
   devNodes.add(node)
+}
+
+/**
+ * Open a scope in which every reactive node created is flagged
+ * `devInternal` and excluded from `inspectGraph()`. The devtools
+ * wraps the creation of its own panel-state cells in this so the
+ * graph panel shows the app under inspection, not the inspector.
+ * Nestable; pair every call with `_endDevtoolsNodes()`.
+ */
+export function _beginDevtoolsNodes(): void {
+  devInternalDepth++
+}
+
+/** Close a `_beginDevtoolsNodes()` scope. */
+export function _endDevtoolsNodes(): void {
+  if (devInternalDepth > 0) devInternalDepth--
 }
 
 /**
@@ -1224,13 +1249,23 @@ export interface GraphSnapshot {
  * `watch` node, its value, and its edges. Dev-only: returns an empty
  * snapshot in a production build (registration is DCE'd there).
  *
- * Reading a node's value here never forces a recompute — a `dirty`
- * derived shows its last-computed value plus the `dirty` status, so
- * inspection has zero effect on the graph it observes.
+ * Nodes flagged `devInternal` (the devtools' own panel-state cells)
+ * are excluded — the snapshot describes the app, not the inspector.
+ *
+ * **Derived values are computed for display.** A `derived` that has
+ * never been read would otherwise show no value; `inspectGraph` reads
+ * it (outside any tracking scope, so nothing subscribes) to surface a
+ * real value. Derivations are pure — writes inside one are forbidden —
+ * so computing one for inspection has no observable side effect beyond
+ * populating its own cache, which the next real read would do anyway.
  */
 export function inspectGraph(): GraphSnapshot {
   const nodes: GraphNodeSnapshot[] = []
-  for (const node of devNodes) {
+  // Snapshot the registry first — computing a derived below could
+  // create new nodes (its `fn` may call `state()`), and mutating the
+  // set mid-iteration is something we'd rather not reason about.
+  for (const node of [...devNodes]) {
+    if (node.devInternal === true) continue
     const isWatch = node.kind === 'watch'
     const isDerived = node.kind === 'state' && (node as StateNode<unknown>).fn !== null
     const sources: number[] = []
@@ -1238,19 +1273,30 @@ export function inspectGraph(): GraphSnapshot {
     const dependents: number[] = []
     if (node.dependents)
       for (const d of node.dependents) if (d.devId !== undefined) dependents.push(d.devId)
+    let value: string | undefined
+    if (!isWatch) {
+      const sn = node as StateNode<unknown>
+      // Compute a derived that hasn't produced a value yet, so the
+      // panel shows a real value instead of a placeholder. Guarded —
+      // a derivation can throw; a throwing node shows the error.
+      if (sn.fn !== null && !sn.hasValue) {
+        try {
+          readState(sn)
+        } catch (e) {
+          value = `⚠ ${e instanceof Error ? e.message : String(e)}`
+        }
+      }
+      if (value === undefined) {
+        value = sn.hasValue ? devPreviewValue(sn.value) : '<uncomputed>'
+      }
+    }
     nodes.push({
       id: node.devId ?? 0,
       kind: isWatch ? 'watch' : isDerived ? 'derived' : 'state',
       status: devStatusLabel(node.state),
       sources,
       dependents,
-      ...(isWatch
-        ? {}
-        : {
-            value: (node as StateNode<unknown>).hasValue
-              ? devPreviewValue((node as StateNode<unknown>).value)
-              : '<uncomputed>',
-          }),
+      ...(value !== undefined ? { value } : {}),
     })
   }
   return { nodes, capturedAt: Date.now() }

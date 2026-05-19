@@ -43,7 +43,7 @@
   },
   "overrides": [
     {
-      "includes": ["examples/**", "tools/**"],
+      "includes": ["examples/**", "tools/**", "systems/devtools/**"],
       "linter": {
         "rules": {
           "suspicious": {

@@ -181,9 +181,15 @@ export const devtoolsCss = `
   background: var(--dt-raise); word-break: break-word;
 }
 
-/* ----- empty / hint ----- */
+/* ----- empty / hint / note ----- */
 .place-dt-empty {
   padding: 24px 14px; text-align: center;
   color: var(--dt-dim); font-size: 12px;
+}
+.place-dt-note {
+  margin-top: 8px; padding: 8px 10px;
+  font-size: 11px; line-height: 1.5; color: var(--dt-mut);
+  background: var(--dt-raise); border-radius: 8px;
+  border-left: 2px solid var(--dt-ac);
 }
 `
