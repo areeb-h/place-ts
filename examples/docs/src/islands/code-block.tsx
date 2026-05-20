@@ -14,6 +14,7 @@
 import { CodeBlock as CodeBlockImpl, type CodeBlockProps } from '../components/code-block.tsx'
 
 const CodeBlockIsland = island<CodeBlockProps & Record<string, unknown>>(CodeBlockImpl)
+
 // Re-export with the original name so consumers only have to swap the
 // IMPORT PATH (`components/` → `islands/`) without renaming bindings.
 export { CodeBlockIsland as CodeBlock }

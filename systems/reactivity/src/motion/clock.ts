@@ -15,8 +15,8 @@
 // The clock is a `State<number>` (mutable from the rAF driver) exposed
 // publicly as a `Derived<number>` so app code can read but not write.
 
-import { state, derived } from '../index.ts'
 import type { Derived, State } from '../index.ts'
+import { derived, state } from '../index.ts'
 
 // Build-time define injected by `Bun.build` on browser builds. On the
 // server runtime the symbol is undefined; `typeof __PLACE_BROWSER__`

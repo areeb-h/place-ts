@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@place/component'
 import { state } from '@place/reactivity'
+import { describe, expect, test, vi } from 'vitest'
 import { Sheet } from '../../src/Sheet.tsx'
 
 // happy-dom doesn't reliably implement <dialog>.showModal() — same

@@ -10,8 +10,7 @@
 //     so works for SSR (renderToString) without async work.
 
 import { describe, expect, test } from 'vitest'
-import { renderToString } from '../../../component/src/index.ts'
-import { div, span } from '../../../component/src/index.ts'
+import { div, renderToString, span } from '../../../component/src/index.ts'
 import { Can, type Session, SessionCap } from '../../src/index.ts'
 
 const baseSession = (overrides: Partial<Session> = {}): Session => ({

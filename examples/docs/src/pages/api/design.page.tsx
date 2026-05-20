@@ -1,9 +1,8 @@
 // /api/design — @place/design overview. The curated component library.
 
 import { Link, page } from '@place/component'
-import { Button, Card } from '@place/design'
+import { Button, Card, CodeBlock } from '@place/design'
 import { Callout } from '../../components/callout.tsx'
-import { CodeBlock } from '@place/design'
 import SheetComboboxDemo from '../../islands/sheet-combobox-demo.tsx'
 
 const INSTALL = `// Already wired in workspace apps via workspace:* dep.

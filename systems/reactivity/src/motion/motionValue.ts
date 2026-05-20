@@ -24,9 +24,9 @@
 //   const finalX = x.target()                  // un-smoothed target
 //   x.snap(0)                                   // hard reset, no spring
 
-import { state } from '../index.ts'
 import type { Derived, State } from '../index.ts'
-import { animate, type AnimateOptions } from './animate.ts'
+import { state } from '../index.ts'
+import { type AnimateOptions, animate } from './animate.ts'
 import type { SpringPreset } from './spring.ts'
 
 /**

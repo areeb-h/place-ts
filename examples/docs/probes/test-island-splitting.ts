@@ -2,12 +2,11 @@
 // runtime, does `splitting: true` extract a shared chunk and shrink
 // the total bytes a page with N islands ships?
 
-import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-
-import { buildIslandBundles } from '../../../systems/component/src/build/island-bundler.ts'
+import { gzipSync } from 'node:zlib'
 import { placeAutoImport } from '../../../systems/component/src/auto-import-plugin.ts'
+import { buildIslandBundles } from '../../../systems/component/src/build/island-bundler.ts'
 
 const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)
 

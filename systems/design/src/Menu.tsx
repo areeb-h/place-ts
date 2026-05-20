@@ -33,8 +33,8 @@
 // `id` field on the rendered element, but for cleanest call sites,
 // pass an explicit id).
 
-import { cls, onMount } from '@place/component'
 import type { View } from '@place/component'
+import { cls, onMount } from '@place/component'
 import { state } from '@place/reactivity'
 import { closePopover, nextAnchorName, popoverStyle } from './_popover.ts'
 

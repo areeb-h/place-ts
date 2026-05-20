@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test } from 'vitest'
 import { renderToString } from '@place/component'
+import { describe, expect, test } from 'vitest'
 import { Copy } from '../../src/Copy.tsx'
 
 describe('Copy — generic click-to-copy primitive', () => {

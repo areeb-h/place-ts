@@ -28,8 +28,8 @@
 // `<dialog>` + `showModal()` is the reliable substrate today; switch
 // can happen later behind the same `<Sheet>` API if it pays off.
 
-import { cls, recipe } from '@place/component'
 import type { Children, View } from '@place/component'
+import { cls, recipe } from '@place/component'
 import { state, watch } from '@place/reactivity'
 
 // ===== Recipe =====

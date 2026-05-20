@@ -11,8 +11,8 @@
 // moves further. Apps wanting strict from-to bounds should snapshot
 // the value before re-targeting.)
 
-import { derived, untrack } from '../index.ts'
 import type { Derived } from '../index.ts'
+import { derived, untrack } from '../index.ts'
 import { clock } from './clock.ts'
 import { type EasingFn, type EasingPreset, resolveEasing } from './easing.ts'
 

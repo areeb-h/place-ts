@@ -53,10 +53,10 @@
 // once, and walks the impl-function body. On the docs site (11
 // islands, ~10K LOC), the typed pass adds <1 s to a cold build.
 
-import * as ts from 'typescript'
-import type * as TS from 'typescript'
 import type { Effect, ViewLevel } from '@place/reactivity/effects'
 import { levelOf, lubEffect } from '@place/reactivity/effects'
+import type * as TS from 'typescript'
+import * as ts from 'typescript'
 import type {
   ClassifierFinding,
   ClassifierResult,

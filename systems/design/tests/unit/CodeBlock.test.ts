@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test } from 'vitest'
 import { renderToString } from '@place/component'
+import { describe, expect, test } from 'vitest'
 import {
   CodeBlock,
-  registerLanguage,
   knownLanguages,
+  registerLanguage,
   type Tokenizer,
 } from '../../src/CodeBlock.tsx'
 

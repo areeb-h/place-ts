@@ -4,12 +4,12 @@
 
 import { describe, expect, test } from 'vitest'
 import {
+  type Tok,
   tokenizeCss,
   tokenizeHtml,
   tokenizeJson,
   tokenizePython,
   tokenizeTs,
-  type Tok,
 } from '../../src/code/tokenize.ts'
 
 // Helpers: project the tokenizer output to a `kind+text` shape that's

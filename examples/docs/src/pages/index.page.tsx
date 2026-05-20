@@ -4,8 +4,7 @@
 // a *platform of nine systems* — we name each one.
 
 import { Link, page } from '@place/component'
-import { Badge, Card } from '@place/design'
-import { CodeBlock } from '@place/design'
+import { Badge, Card, CodeBlock } from '@place/design'
 // TypingCode is now pure SSR + CSS — no JS reactivity needed for the
 // reveal animation. Imported directly from `components/`, not islands.
 import { TypingCode } from '../components/typing-code.tsx'

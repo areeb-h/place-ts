@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@place/component'
 import { state } from '@place/reactivity'
+import { describe, expect, test, vi } from 'vitest'
 import { Combobox } from '../../src/Combobox.tsx'
 
 // happy-dom popover polyfill — same pattern as Menu/Tooltip tests.

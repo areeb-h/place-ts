@@ -4,8 +4,8 @@
 // parallel runtime.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const IMPORT = `import {
   animate, tween, sequence, curve, delay, motionValue,

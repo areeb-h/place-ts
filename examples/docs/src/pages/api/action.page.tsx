@@ -2,8 +2,8 @@
 // callable from the client by the same name with the same input shape.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const SIG = `action<I, O>(def: {
   path: string

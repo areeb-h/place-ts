@@ -29,8 +29,8 @@
 //   - No `forwardRef` ceremony. The framework's `ref` prop is the
 //     contract.
 
-import { cls, el, recipe } from '@place/component'
 import type { Children, RefCallback, View } from '@place/component'
+import { cls, el, recipe } from '@place/component'
 
 // ===== Recipe =====
 

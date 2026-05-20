@@ -3,8 +3,8 @@
 // stops, how the presets compose, and how to tighten or loosen.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const PRESET = `app({
   pages: [...],

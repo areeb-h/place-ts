@@ -13,8 +13,8 @@
 // state. This is just `derived(() => fn(source()))` with a clearer
 // name for the use case.
 
-import { derived } from '../index.ts'
 import type { Derived } from '../index.ts'
+import { derived } from '../index.ts'
 
 /**
  * Map a source signal through a pure curve function.

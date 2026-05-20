@@ -4,8 +4,8 @@
 // `@place/reactivity` primitives the framework itself uses.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 import ReactivityDemo from '../../islands/reactivity-demo.tsx'
 import ViewportDemo from '../../islands/viewport-demo.tsx'
 

@@ -3,8 +3,8 @@
 // and action calls.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const DECLARE = `// src/pages/post.page.tsx
 import { page } from '@place/component'

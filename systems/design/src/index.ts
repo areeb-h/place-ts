@@ -1,3 +1,4 @@
+// biome-ignore-all assist/source/organizeImports: documented re-export groupings (lib stylesheet, primitives, library exports) must stay in source order
 // @place/design — opinionated component library.
 //
 // Re-exports the framework's design primitives (recipe, cls,

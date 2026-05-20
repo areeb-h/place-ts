@@ -8,8 +8,8 @@
 // `recipe()` factors the per-kind variants (border + tint + glyph
 // background) into one declaration.
 
-import { recipe } from '@place/component'
 import type { Children } from '@place/component'
+import { recipe } from '@place/component'
 
 type CalloutKind = 'tip' | 'note' | 'warn' | 'danger'
 

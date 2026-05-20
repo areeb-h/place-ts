@@ -47,8 +47,8 @@
 // Tailwind v4 defaults are used out of the box; apps with custom
 // breakpoint widths call `configureViewport` once at module load.
 
-import { derived, state } from '@place/reactivity'
 import type { Derived } from '@place/reactivity'
+import { derived, state } from '@place/reactivity'
 
 // ===== Configuration =====
 

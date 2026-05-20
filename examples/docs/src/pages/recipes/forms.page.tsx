@@ -2,8 +2,8 @@
 // JS-on and JS-off paths both supported by the same action.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const PAGE_ACTION = `// Co-located on a page — the natural shape for "form belongs to page".
 const subscribe = page('/subscribe', {

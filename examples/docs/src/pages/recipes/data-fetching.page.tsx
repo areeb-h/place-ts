@@ -2,8 +2,8 @@
 // useSearch for typed URL params, resource() for client-side fetches.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const LOAD = `// Server-only loader. Result is serialized into the SSR'd HTML
 // and read back on the client at boot.

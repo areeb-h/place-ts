@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test } from 'vitest'
 import { mount, renderToString } from '@place/component'
 import { state } from '@place/reactivity'
+import { describe, expect, test } from 'vitest'
 import { Field, Input, Textarea } from '../../src/Field.tsx'
 
 describe('Input — native-first form control', () => {

@@ -24,8 +24,8 @@
 // onMouseLeave/onFocusOut handlers). Feature-detect happens once at
 // module load — see `POPOVER_KIND` below.
 
-import { cls, onMount } from '@place/component'
 import type { Children, View } from '@place/component'
+import { cls, onMount } from '@place/component'
 import { state } from '@place/reactivity'
 import {
   closePopover,

@@ -6,9 +6,9 @@
 // e.g.
 //   bun probes/classifier-debug.ts code-block
 
-import { findConfigFile, sys } from 'typescript'
-import * as ts from 'typescript'
 import { resolve } from 'node:path'
+import * as ts from 'typescript'
+import { findConfigFile, sys } from 'typescript'
 
 const islandName = process.argv[2] ?? 'code-block'
 const islandPath = resolve(

@@ -1,4 +1,5 @@
 /// <reference types="bun" />
+// biome-ignore-all assist/source/organizeImports: documented re-export groupings (Phase 2.1 cut narrative) must stay in source order; auto-sort would scramble the structure
 // @place/component — rendering layer (Phase v0.2 minimum)
 //
 // Sits on top of @place/reactivity. Components are functions from props to

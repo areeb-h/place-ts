@@ -4,11 +4,10 @@
 // Run from project root:
 //   bun examples/docs/probes/measure-docs-islands.ts
 
-import { gzipSync } from 'node:zlib'
 import { resolve } from 'node:path'
-
-import { buildIslandBundles } from '../../../systems/component/src/build/island-bundler.ts'
+import { gzipSync } from 'node:zlib'
 import { placeAutoImport } from '../../../systems/component/src/auto-import-plugin.ts'
+import { buildIslandBundles } from '../../../systems/component/src/build/island-bundler.ts'
 import { ThemeToggle } from '../src/components/theme-toggle.tsx'
 
 const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)

@@ -3,8 +3,8 @@
 // secure cookies, and CSP defaults.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const SESSION_EX = `// Session capability — typed runtime slot for the authenticated user.
 import { SessionCap, requireSession, type Session } from '@place/security'

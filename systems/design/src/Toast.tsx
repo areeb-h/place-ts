@@ -32,8 +32,8 @@
 //   - No imperative `controls` API. Each toast's open/close state is
 //     a derivation of its presence in the queue + lifecycle stage.
 
-import { cls, keyed, onMount, recipe, Show } from '@place/component'
 import type { View } from '@place/component'
+import { cls, keyed, onMount, recipe, Show } from '@place/component'
 import { state, watch } from '@place/reactivity'
 import { animate } from '@place/reactivity/motion'
 import { openPopover } from './_popover.ts'

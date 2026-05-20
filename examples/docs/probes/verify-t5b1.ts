@@ -2,11 +2,10 @@
 // `serve()` now calls when `clientEntries` is provided) over the
 // docs app's per-route entry map. Measures each bundle.
 
-import { gzipSync } from 'node:zlib'
 import { resolve } from 'node:path'
-
-import { buildRouteSplitBundles } from '../../../systems/component/src/build/route-splitter.ts'
+import { gzipSync } from 'node:zlib'
 import { placeAutoImport } from '../../../systems/component/src/auto-import-plugin.ts'
+import { buildRouteSplitBundles } from '../../../systems/component/src/build/route-splitter.ts'
 
 const DOCS_ROOT = resolve(import.meta.dir, '..')
 

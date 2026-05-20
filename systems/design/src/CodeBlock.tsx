@@ -26,9 +26,8 @@
 // ONE prop. The recipe defaults render a tasteful block in two lines
 // of JSX: `<CodeBlock code={src} lang="ts" />`.
 
-import { cls, recipe } from '@place/component'
 import type { Children, View } from '@place/component'
-import { markCopyUsedOnThisRequest } from '@place/component'
+import { cls, markCopyUsedOnThisRequest, recipe } from '@place/component'
 import { getTokenizer, type Tok, type Tokenizer } from './code/tokenize.ts'
 
 // ===== Copy runtime emission =====
@@ -472,17 +471,17 @@ export const CodeBlock = (props: CodeBlockProps): View => {
 // ===== Re-exports — tokenizer primitives for advanced consumers =====
 
 export {
-  registerLanguage,
-  knownLanguages,
   getTokenizer,
-  tokenizeTs,
-  tokenizeShell,
-  tokenizeJson,
+  knownLanguages,
+  registerLanguage,
+  type Tok,
+  type Tokenizer,
+  type TokKind,
   tokenizeCss,
   tokenizeHtml,
-  tokenizePython,
+  tokenizeJson,
   tokenizePlain,
-  type Tok,
-  type TokKind,
-  type Tokenizer,
+  tokenizePython,
+  tokenizeShell,
+  tokenizeTs,
 } from './code/tokenize.ts'

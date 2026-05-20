@@ -23,8 +23,8 @@
 // utility on the call site); the recipe runs through `cls()` which is
 // Tailwind-aware merging.
 
-import { cls, recipe } from '@place/component'
 import type { Children, View } from '@place/component'
+import { cls, recipe } from '@place/component'
 import { state } from '@place/reactivity'
 import { animate } from '@place/reactivity/motion'
 

@@ -7,8 +7,8 @@
 // CSS variables that aren't colors.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const DEFINE_THEME = `// theme.ts — declare your color modes once. theme() is the
 // canonical entry-point: bare color keys (no \`--color-\` prefix),

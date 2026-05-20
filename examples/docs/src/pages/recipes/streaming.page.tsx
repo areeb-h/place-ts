@@ -2,8 +2,8 @@
 // swap, no React baggage.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const STREAM = `// Mark the page streaming and wrap the slow part in <Suspense>.
 page('/feed', {

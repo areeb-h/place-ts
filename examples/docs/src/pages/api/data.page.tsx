@@ -2,8 +2,8 @@
 // v0.1 ships ONE primitive: collection<T>().
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const COLLECTION = `// collection<T>(state, options?) — keyed CRUD over a State<T[]>.
 // The collection operates on a reactive array; the State stays

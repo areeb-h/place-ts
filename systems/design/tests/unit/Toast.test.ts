@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 
-import { afterEach, describe, expect, test } from 'vitest'
 import { mount } from '@place/component'
 import { flush } from '@place/reactivity'
-import { Toaster, toast, _clearToastsForTest } from '../../src/Toast.tsx'
+import { afterEach, describe, expect, test } from 'vitest'
+import { _clearToastsForTest, Toaster, toast } from '../../src/Toast.tsx'
 
 // happy-dom doesn't implement the Popover API. Polyfill the methods the
 // Toaster calls so mount() doesn't blow up — we don't test top-layer

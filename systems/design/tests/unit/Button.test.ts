@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test } from 'vitest'
 import { mount, renderToString } from '@place/component'
 import { state } from '@place/reactivity'
+import { describe, expect, test } from 'vitest'
 import { Button } from '../../src/Button.tsx'
 
 describe('Button — variants + base behavior', () => {

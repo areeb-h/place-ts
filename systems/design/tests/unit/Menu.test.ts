@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test, vi } from 'vitest'
 import { mount } from '@place/component'
+import { describe, expect, test, vi } from 'vitest'
 import { Menu } from '../../src/Menu.tsx'
 
 // happy-dom popover polyfill — same as Tooltip/Toast.

@@ -6,9 +6,9 @@
 // could be conditionally stripped via per-system __PLACE_USES_X__
 // defines.
 
-import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { gzipSync } from 'node:zlib'
 
 const ROOT = resolve(import.meta.dir, '../../..')
 const TMP = resolve(import.meta.dir, '.tmp/island-bundle-audit')

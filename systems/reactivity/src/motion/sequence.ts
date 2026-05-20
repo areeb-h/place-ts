@@ -8,8 +8,8 @@
 // If you need a sequence that restarts on a state change, wrap it in
 // a parent derivation that reconstructs it.
 
-import { derived } from '../index.ts'
 import type { Derived } from '../index.ts'
+import { derived } from '../index.ts'
 import { clock } from './clock.ts'
 import { type EasingFn, resolveEasing } from './easing.ts'
 

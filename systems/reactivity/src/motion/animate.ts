@@ -21,14 +21,14 @@
 // t=0, sees no time advancing, settles at the initial target. Apps
 // can render animated views server-side and ship the rest position.
 
-import { derived, untrack } from '../index.ts'
 import type { Derived } from '../index.ts'
+import { derived, untrack } from '../index.ts'
 import { clock } from './clock.ts'
 import {
-  type SpringParams,
-  type SpringPreset,
   isAtRest,
   resolveSpring,
+  type SpringParams,
+  type SpringPreset,
   stepSpringMs,
 } from './spring.ts'
 

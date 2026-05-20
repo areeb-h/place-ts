@@ -3,8 +3,8 @@
 // custom session scheme.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const SESSION_CAP = `// src/auth.ts
 import { defineCapability } from '@place/capability'

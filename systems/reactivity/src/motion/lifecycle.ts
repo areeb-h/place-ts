@@ -40,7 +40,7 @@
 //   - The phase string is data-bindable, so the CSS contract is
 //     plain Tailwind/utility classes; no JS class swap.
 
-import { state, watch, untrack, type Derived } from '../index.ts'
+import { type Derived, state, untrack, watch } from '../index.ts'
 
 /**
  * Lifecycle phases emitted by `motion()`. Bind to an element via

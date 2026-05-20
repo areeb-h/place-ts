@@ -47,8 +47,8 @@
 //   - `clearable` — show `×` button when a value is selected.
 //   - `filter` — replace the default substring match.
 
-import { cls, onMount, recipe } from '@place/component'
 import type { Children, View } from '@place/component'
+import { cls, onMount, recipe } from '@place/component'
 import { state, watch } from '@place/reactivity'
 import {
   anchorStyle,

@@ -7,7 +7,7 @@
 //     showing the customization story.
 
 import { island, state, type View } from '@place/component'
-import { Button, Combobox, Sheet, type ComboboxItemState } from '@place/design'
+import { Button, Combobox, type ComboboxItemState, Sheet } from '@place/design'
 
 interface Framework {
   readonly value: string

@@ -2,8 +2,8 @@
 // v0.1 ships ONE primitive: searchable().
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const SEARCHABLE = `// searchable(items, options) — reactive search over a reactive
 // collection. Substring match, case-insensitive, AND-of-tokens.

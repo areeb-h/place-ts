@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { describe, expect, test } from 'vitest'
 import { mount } from '@place/component'
+import { describe, expect, test } from 'vitest'
 import { Tooltip } from '../../src/Tooltip.tsx'
 
 // happy-dom doesn't implement Popover API. Polyfill the methods so

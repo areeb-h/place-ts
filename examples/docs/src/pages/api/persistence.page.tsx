@@ -2,8 +2,8 @@
 // persistedState() + the storage adapters that back it.
 
 import { Link, page } from '@place/component'
-import { Callout } from '../../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../../components/callout.tsx'
 
 const PERSISTED_STATE = `// persistedState(adapter) — a State<T> that loads from the adapter
 // on creation and saves on every change. Persistence sits ON TOP of

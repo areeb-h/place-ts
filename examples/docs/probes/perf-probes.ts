@@ -20,7 +20,7 @@
 //     chosen so total time per probe is in the 50-500 ms range.
 
 import { Window } from 'happy-dom'
-import { div, hydrate, p, renderToString, span, ul, li } from '../../../systems/component/src/index.ts'
+import { div, hydrate, li, p, renderToString, span, ul } from '../../../systems/component/src/index.ts'
 import type { Child, View } from '../../../systems/component/src/types.ts'
 
 // ─── DOM bootstrap ─────────────────────────────────────────────────────

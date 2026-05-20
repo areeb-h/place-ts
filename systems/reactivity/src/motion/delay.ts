@@ -15,8 +15,8 @@
 //   // unhover; symmetric delay on both edges.
 //   const tooltipOpen = delay(() => hovered(), 300)
 
-import { derived, untrack } from '../index.ts'
 import type { Derived } from '../index.ts'
+import { derived, untrack } from '../index.ts'
 import { clock } from './clock.ts'
 
 export interface DelayOptions {

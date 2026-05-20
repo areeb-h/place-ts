@@ -3,9 +3,10 @@
 // followed by a feature matrix. No fluff — just the receipts.
 
 import { page } from '@place/component'
-import { Callout } from '../components/callout.tsx'
 import { CodeBlock } from '@place/design'
+import { Callout } from '../components/callout.tsx'
 import { ComparisonTable } from '../components/comparison-table.tsx'
+
 // Tabs + Tab are auto-imported from @place/component via bunfig preload.
 
 const PLACE_HELLO = `// src/pages/hello.page.tsx

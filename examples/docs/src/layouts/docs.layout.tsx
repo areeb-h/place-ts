@@ -3,6 +3,7 @@
 // below md. Cmd+K search palette mounts globally.
 
 import { Link, layout } from '@place/component'
+import { Sidebar } from '../components/sidebar.tsx'
 // Chrome ISLANDS — each default-exports an `island(...)`-wrapped
 // component; the framework auto-discovers them via `app({ islandsDir })`
 // so no manual registration is needed in `app.ts`. We still import
@@ -15,7 +16,6 @@ import SearchPalette from '../islands/search-palette.tsx'
 import SearchTrigger from '../islands/search-trigger.tsx'
 import ThemeToggle from '../islands/theme-toggle.tsx'
 import ToC from '../islands/toc.tsx'
-import { Sidebar } from '../components/sidebar.tsx'
 import { NAV } from '../nav-index.ts'
 
 // Favicon — a "place" location-pin mark, inlined as a data-URI SVG.
