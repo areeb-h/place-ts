@@ -236,20 +236,45 @@ function scopeNodeRow(n: GraphNodeSnapshot): View {
   )
 }
 
-function scopeCard(scope: string, nodes: readonly GraphNodeSnapshot[]): View {
+function scopeCard(
+  scope: string,
+  nodes: readonly GraphNodeSnapshot[],
+  isCollapsed: boolean,
+  toggle: (scope: string) => void,
+): View {
   return (
-    <section class="place-dt-cluster" data-loose={scope === UNSCOPED ? '1' : '0'}>
-      <header class="place-dt-cluster-head">
+    <section
+      class="place-dt-cluster"
+      data-loose={scope === UNSCOPED ? '1' : '0'}
+      data-collapsed={isCollapsed ? '1' : '0'}
+    >
+      <button
+        type="button"
+        class="place-dt-cluster-head"
+        aria-expanded={isCollapsed ? 'false' : 'true'}
+        onClick={() => toggle(scope)}
+      >
+        <span class="place-dt-cluster-chevron" aria-hidden="true">
+          ▾
+        </span>
         <span class="place-dt-cluster-name">{scope}</span>
         <span class="place-dt-cluster-shape">{kindCounts(nodes)}</span>
-      </header>
+      </button>
       <ul class="place-dt-glist">{nodes.map(scopeNodeRow)}</ul>
     </section>
   )
 }
 
-/** "By island" view — per-scope node breakdown. */
-function islandsView(graph: State<GraphSnapshot>): View {
+/** "By island" view — per-scope node breakdown; clusters collapse on header click. */
+function islandsView(graph: State<GraphSnapshot>, collapsed: State<ReadonlySet<string>>): View {
+  const toggle = (scope: string): void => {
+    collapsed.update((prev) => {
+      const next = new Set(prev)
+      if (next.has(scope)) next.delete(scope)
+      else next.add(scope)
+      return next
+    })
+  }
   return (
     <div>
       <div class="place-dt-summary">
@@ -269,7 +294,8 @@ function islandsView(graph: State<GraphSnapshot>): View {
           if (snap.nodes.length === 0) {
             return [<div class="place-dt-empty">No reactive nodes on this page.</div>]
           }
-          return groupByScope(snap).map((g) => scopeCard(g.scope, g.nodes))
+          const c = collapsed()
+          return groupByScope(snap).map((g) => scopeCard(g.scope, g.nodes, c.has(g.scope), toggle))
         }}
       </div>
     </div>
@@ -315,6 +341,7 @@ function graphPane(
   graph: State<GraphSnapshot>,
   activity: State<readonly ActivityEntry[]>,
   graphView: State<GraphView>,
+  collapsed: State<ReadonlySet<string>>,
 ): View {
   return (
     <div>
@@ -336,7 +363,7 @@ function graphPane(
           Activity
         </button>
       </div>
-      {() => (graphView() === 'islands' ? islandsView(graph) : activityView(activity))}
+      {() => (graphView() === 'islands' ? islandsView(graph, collapsed) : activityView(activity))}
     </div>
   )
 }
@@ -535,6 +562,7 @@ export const devtoolsView = () => {
   const graph = state<GraphSnapshot>({ nodes: [], capturedAt: 0 })
   const activity = state<readonly ActivityEntry[]>([])
   const graphView = state<GraphView>('islands')
+  const collapsed = state<ReadonlySet<string>>(new Set())
   const islands = state<IslandInfo[]>([])
   const perf = state<PerfInfo | null>(null)
   const logs = state<LogEntry[]>([])
@@ -663,7 +691,7 @@ export const devtoolsView = () => {
 
         <div class="place-dt-body">
           <div class="place-dt-pane" data-pane="graph">
-            {graphPane(graph, activity, graphView)}
+            {graphPane(graph, activity, graphView, collapsed)}
           </div>
           <div class="place-dt-pane" data-pane="islands">
             {islandsPane(islands)}

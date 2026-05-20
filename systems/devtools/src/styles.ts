@@ -194,12 +194,26 @@ export const devtoolsCss = `
 }
 .place-dt-cluster[data-loose="1"] { border-style: dashed; }
 .place-dt-cluster-head {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
-  padding: 6px 9px;
+  display: flex; align-items: baseline; gap: 8px;
+  width: 100%; padding: 6px 9px; margin: 0;
   background: oklch(1 0 0 / 0.025);
-  border-bottom: 1px solid var(--dt-line);
+  border: 0; border-bottom: 1px solid var(--dt-line);
+  color: inherit; text-align: left; cursor: pointer;
+  transition: background .12s ease;
 }
+.place-dt-cluster-head:hover { background: oklch(1 0 0 / 0.05); }
+.place-dt-cluster-head:focus-visible { outline: 2px solid var(--dt-ac); outline-offset: -2px; }
+.place-dt-cluster-chevron {
+  flex-shrink: 0; display: inline-block;
+  width: 10px; color: var(--dt-mut);
+  font-size: 9px; line-height: 1.3;
+  transition: transform .15s ease;
+}
+.place-dt-cluster[data-collapsed="1"] .place-dt-cluster-chevron { transform: rotate(-90deg); }
+.place-dt-cluster[data-collapsed="1"] .place-dt-glist { display: none; }
+.place-dt-cluster[data-collapsed="1"] .place-dt-cluster-head { border-bottom-color: transparent; }
 .place-dt-cluster-name {
+  flex: 1; min-width: 0;
   font: 600 11px/1.3 var(--dt-mono); color: var(--dt-fg);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
