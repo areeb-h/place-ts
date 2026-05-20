@@ -172,6 +172,17 @@ function readHtml(r){
     return html;
   });
 }
+// Two paths normalise to the "same logical page" — used to classify
+// redirects so a trailing-slash normaliser (Cloudflare Pages' default)
+// is treated as a successful prefetch, while a real path change
+// (auth-expiry -> /login) still aborts the cache.
+function samePath(a,b){
+  try{
+    var pa=new URL(a,location.href).pathname.replace(/\\/+$/,'');
+    var pb=new URL(b,location.href).pathname.replace(/\\/+$/,'');
+    return pa===pb;
+  }catch(_){return false;}
+}
 // Warm the cache for a likely-next destination. No-ops when already
 // cached, over budget, or the user has Data Saver enabled.
 function prefetch(url){
@@ -187,11 +198,16 @@ function prefetch(url){
     priority:'low'
   })
     .then(function(r){
-      // A prefetch that was redirected (e.g. session expired ->
-      // /login, or a trailing-slash normaliser on a static host) must
-      // NOT be cached as this destination — drop it so the real click
-      // re-fetches live and the redirect is honoured.
-      if(r.redirected)throw new Error('prefetch redirected');
+      // A prefetch that was redirected to a DIFFERENT logical path
+      // (e.g. session expired -> /login) must NOT be cached as this
+      // destination — drop it so the real click re-fetches live and
+      // the redirect is honoured. Same-path redirects (trailing-slash
+      // normalisers on static hosts like Cloudflare Pages) are benign:
+      // the response IS the requested page, just at a canonical URL.
+      // We cache those and the eventual click swaps without a fetch.
+      if(r.redirected && !samePath(k,r.url)){
+        throw new Error('prefetch redirected');
+      }
       return readHtml(r);
     })
     .catch(function(err){delete prefetchCache[k];throw err;});
