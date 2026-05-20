@@ -662,15 +662,31 @@ export const Island = (props: IslandProps): View => {
         `to \`app({ islands: { ${props.name}: { component, src } } })\`.`,
     )
   }
-  // Render the registered component to get its View. Then wrap in
-  // a marker div with the props serialized as a JSON attribute.
-  const inner = reg.component(props.props as never)
   const strategy = validateClientStrategy(props.client)
-  // Track this island + its strategy for the current render so
-  // renderPage knows whether to emit an eager `<script>` or the
-  // deferred-fetch shape. Lazily-initialized — if no collection scope
-  // is active (e.g. island used outside a renderPage call), we still
-  // render server-side, just no script emission.
+  // The registered component is always an `island(import.meta.url, fn)`
+  // callable — it already emits its own `<div data-view="island"
+  // data-view-id="…">` marker via its `toHtml`. If `<Island name="…" />`
+  // wrapped it in ANOTHER marker the SSR'd HTML would be
+  //   <div data-view="island" data-view-id="X"><div data-view="island"
+  //     data-view-id="X"></div></div>
+  // and the client bundle's `[data-view-id="X"]` selector would match
+  // BOTH layers; the outer's `el.firstChild` is the inner (empty SSR-
+  // throw recovery) marker, so `hydrate(view, outer)` would walk the
+  // inner div thinking it's the view's outermost element and crash on
+  // the first child mismatch (e.g. devtools view's outermost is `<div
+  // class="place-dt">` whose first child is `<button class="place-dt-
+  // launch">`, but the inner marker has no children — a real hydration
+  // mismatch). The branded fast path delegates straight to the island
+  // callable, forwarding the `client` strategy as a reserved prop.
+  const islandLike = reg.component as IslandComponent<Record<string, unknown>>
+  if (islandLike.__islandBrand === ISLAND_BRAND) {
+    _addIslandWithStrategy(props.name, strategy)
+    const userProps = (props.props ?? {}) as Record<string, unknown>
+    return islandLike({ ...userProps, client: strategy })
+  }
+  // Legacy / programmatic registration: `reg.component` is a plain
+  // `(props) => View` constructor (no marker emission). Wrap it.
+  const inner = reg.component(props.props as never)
   _addIslandWithStrategy(props.name, strategy)
   return {
     toHtml: (): string => {
