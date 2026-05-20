@@ -1,6 +1,6 @@
 // @place/component criticalAction() — high-assurance server action.
 //
-// The mil-grade sibling of `action()`. Same author shape (one
+// The high-assurance sibling of `action()`. Same author shape (one
 // declaration produces a typed `call()` and a route handler), but
 // every request is verified against an HMAC envelope BEFORE the
 // handler body runs:
