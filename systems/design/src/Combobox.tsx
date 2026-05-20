@@ -487,15 +487,31 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
       closeListbox()
     }
     // Reset keyboard-active flag when the user moves the mouse —
-    // they're switching back to mouse-driven nav.
+    // they're switching back to mouse-driven nav. ATTACHED ONLY
+    // WHILE THE POPOVER IS OPEN — a `mousemove` listener that fires
+    // on every pointer tick page-wide for the whole lifetime of
+    // every Combobox instance would be a real perf footgun for
+    // pages with multiple comboboxes (a form with several
+    // typeaheads, an admin filter row, …).
     const onDocMouseMove = (): void => {
       if (keyboardActive()) keyboardActive.set(false)
     }
+    let mouseMoveAttached = false
+    const stopOpenWatch = watch(() => {
+      const open = isOpen()
+      if (open && !mouseMoveAttached) {
+        document.addEventListener('mousemove', onDocMouseMove, { passive: true })
+        mouseMoveAttached = true
+      } else if (!open && mouseMoveAttached) {
+        document.removeEventListener('mousemove', onDocMouseMove)
+        mouseMoveAttached = false
+      }
+    })
     document.addEventListener('mousedown', onDocMouseDown, true)
-    document.addEventListener('mousemove', onDocMouseMove, { passive: true })
     return () => {
+      stopOpenWatch()
       document.removeEventListener('mousedown', onDocMouseDown, true)
-      document.removeEventListener('mousemove', onDocMouseMove)
+      if (mouseMoveAttached) document.removeEventListener('mousemove', onDocMouseMove)
     }
   })
 

@@ -194,6 +194,8 @@ const SheetImpl = (props: SheetProps): View => {
     <dialog
       class={finalClass}
       data-side={side}
+      // Match Dialog.tsx — explicit aria-modal for older AT.
+      aria-modal="true"
       aria-label={props['aria-label']}
       aria-labelledby={props['aria-labelledby']}
       onClick={onClick as unknown as (e: Event) => void}

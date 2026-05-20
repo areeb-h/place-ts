@@ -41,22 +41,64 @@ export interface SearchableOptions<T> {
  * The returned function takes the query getter (reactive) and yields a
  * getter that recomputes when either the items or the query change.
  *
- * Tokenization: the query is split on whitespace; an item matches when
- * EVERY non-empty token appears in some field (substring match). An
- * empty query returns the unfiltered list.
+ * **Tokenization:** the query is split on whitespace; an item matches
+ * when EVERY non-empty token appears in some field (substring match,
+ * case-insensitive by default). An empty query returns the unfiltered
+ * list.
+ *
+ * **Case folding:** uses `toLocaleLowerCase('en')` rather than the
+ * default `toLowerCase()` — the default is locale-dependent and
+ * misfolds the Turkish dotted/dotless I (`İ` → `i̇` in tr locale)
+ * which silently breaks substring match across runtimes set to those
+ * locales. Pinning to `'en'` makes the fold deterministic everywhere.
+ * Pass `caseSensitive: true` if you actually want case-strict.
+ *
+ * **Performance:** per-item lowercased fields are memoised by item
+ * identity (`WeakMap<T, string[]>`) so repeated queries against the
+ * same item array don't re-lowercase the whole haystack on every
+ * keystroke. Items that leave the collection are GC'd from the cache
+ * with their objects. The cache is invalidated naturally — a fresh
+ * item object (the typical pattern from `collection.update`) is a
+ * cache miss and re-lowercases. If you mutate items in place AND want
+ * the search to track the mutation, replace the item reference too.
  */
 export function searchable<T>(
   items: () => readonly T[],
   options: SearchableOptions<T>,
 ): (query: () => string) => () => readonly T[] {
-  const norm = options.caseSensitive ? (s: string) => s : (s: string) => s.toLowerCase()
+  const norm: (s: string) => string = options.caseSensitive
+    ? (s: string) => s
+    : (s: string) => s.toLocaleLowerCase('en')
+
+  // Per-item lowercased-haystack cache. Object items get a WeakMap
+  // entry (auto-GC); non-object items (e.g. plain strings, numbers)
+  // can't be WeakMap keys, so they get a separate Map. The cache is
+  // never explicitly cleared — orphan WeakMap entries collect with
+  // the items they keyed; the Map for primitive keys grows with
+  // distinct primitive values, which is bounded by the input domain.
+  const objectCache = new WeakMap<object, readonly string[]>()
+  const primitiveCache = new Map<unknown, readonly string[]>()
+  const haystacksFor = (item: T): readonly string[] => {
+    if (item !== null && (typeof item === 'object' || typeof item === 'function')) {
+      const cached = objectCache.get(item as object)
+      if (cached !== undefined) return cached
+      const computed = options.fields(item).map(norm)
+      objectCache.set(item as object, computed)
+      return computed
+    }
+    const cached = primitiveCache.get(item)
+    if (cached !== undefined) return cached
+    const computed = options.fields(item).map(norm)
+    primitiveCache.set(item, computed)
+    return computed
+  }
 
   return (query) => () => {
     const tokens = norm(query()).split(/\s+/).filter(Boolean)
     const all = items()
     if (tokens.length === 0) return all
     return all.filter((item) => {
-      const haystacks = options.fields(item).map(norm)
+      const haystacks = haystacksFor(item)
       return tokens.every((tok) => haystacks.some((h) => h.includes(tok)))
     })
   }

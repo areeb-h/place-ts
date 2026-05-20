@@ -209,8 +209,19 @@ export const Menu = (props: MenuProps): View => {
     //     API (Chrome 134+, Firefox 145+).
     // The OR selector matches whichever the consumer chose; no JS
     // toggle wiring beyond the anchor-name plumbing.
+    //
+    // The id flows from `props.id ?? nextMenuId()`. If the consumer
+    // forwarded user-controlled input as the id (legal per HTML5 —
+    // any non-whitespace), the value lands in a CSS attribute
+    // selector here. `CSS.escape` rewrites any character that would
+    // alter selector parsing — quotes, brackets, backslashes — into
+    // their escaped forms so the selector is structurally safe
+    // regardless of the id's contents.
+    const safeId = (
+      typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(menuId) : menuId
+    )
     const trigger = document.querySelector(
-      `[popovertarget="${menuId}"], [commandfor="${menuId}"]`,
+      `[popovertarget="${safeId}"], [commandfor="${safeId}"]`,
     ) as HTMLElement | null
     if (trigger) {
       trigger.style.setProperty('anchor-name', `--${anchorName}`)

@@ -238,6 +238,14 @@ const DialogImpl = (props: DialogProps): View => {
       // **`closedby`** is set only when the browser supports it.
       // Older browsers see no attribute → JS handlers below take over.
       {...(SUPPORTS_CLOSEDBY ? { closedby: closedByAttr } : {})}
+      // Native `<dialog>` has implicit `role="dialog"` and when
+      // `showModal()` is called the browser exposes it modally in
+      // the accessibility tree — sufficient for current Chrome /
+      // Firefox / Safari. `aria-modal="true"` is an explicit
+      // belt-and-braces hint older screen readers (VoiceOver 14,
+      // pre-2023 NVDA configurations) still rely on; cheap to add
+      // and harmless on modern stacks.
+      aria-modal="true"
       aria-label={props['aria-label']}
       aria-labelledby={props['aria-labelledby']}
       onMouseDown={onMouseDown as unknown as (e: Event) => void}
