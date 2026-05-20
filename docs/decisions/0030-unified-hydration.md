@@ -1,8 +1,32 @@
 # ADR 0030: Unified hydration via effect-typed classification (`view()`)
 
-**Status:** proposed (2026-05-15)
+**Status:** classifier shipped report-only; `view()` factory deferred (2026-05-21)
 **Date:** 2026-05-15
-**Affects:** new `systems/component/src/view.ts`; new `systems/component/src/build/view-classifier.ts`; effect-kind type extensions on `state`, `derived`, `watch`, `onMount`, `fetch`, `setInterval`, etc. across `systems/reactivity/src/index.ts` and `systems/component/src/index.ts`; `island()` and `thaw()` become deprecated aliases that error on classifier mismatch; the streaming dispatch from ADR 0029 wires as the L3 emitter.
+**Affects:** `systems/component/src/build/view-classifier.ts` (shipped); `systems/component/src/build/view-classifier-types.ts` (shipped); effect-kind brands (`EffectBranded<E>`) shipped on `state`, `derived`, `watch`, `Suspense` (see `systems/reactivity/src/effects.ts`); a future `systems/component/src/view.ts` factory replacing `island()` — **NOT shipped**.
+
+> **Inventory note (2026-05-21).** What landed: the build-time
+> classifier ([view-classifier.ts]) and its effect-kind map
+> ([view-classifier-types.ts]) — 722 lines that walk each island's
+> source, identify which effect primitives it uses, and predict the
+> level (L0/L1/L2/L3) the future `view()` would compile to. It
+> ships in the build manifest + console report ("Tier 8" comment in
+> the file's header) but does NOT change emission — every island
+> still ships at L2 ("island") today.
+>
+> What didn't land: the `view()` factory that consumes the
+> classifier output and dispatches to the right emitter. Without
+> `view()`, the unification this ADR proposes (one primitive, four
+> emitters, deprecate `island()` + `thaw()` as aliases) hasn't
+> materialised. The current shape — `island()` always L2, classifier
+> as advisor — is fine for what the docs site and the in-flight
+> demos need; the trigger for `view()` is a real workload that
+> demonstrates the L0/L1/L3 emitters paying off (a thaw runtime
+> for a static-mostly app, or streaming for a suspense-heavy app
+> per ADR 0029's deferred coalescing).
+>
+> Since the classifier is wired and the brands are real types, the
+> migration to `view()` is a future tier flag-flip: emit per the
+> classifier instead of always-L2. No re-architecture pending.
 
 ## Context
 

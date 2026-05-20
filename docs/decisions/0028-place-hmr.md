@@ -1,8 +1,10 @@
 # ADR 0028: Place HMR — typed-island boundaries, effect-aware state preservation
 
-**Status:** proposed (2026-05-15)
+**Status:** superseded by [ADR 0043](0043-hmr-per-island-swap.md) (2026-05-16)
 **Date:** 2026-05-15
-**Affects:** new `systems/component/src/dev/hmr/*`; `systems/component/src/build/island-bundler.ts` (signature hashing); `systems/component/src/build/discover-islands.ts` (manifest extension); the `bun --watch` startup path in `examples/*/package.json` scripts; dev server WebSocket route in `systems/component/src/index.ts`.
+**Affects:** `systems/component/src/__hmr.ts` (shipped via 0043); `systems/component/src/build/island-bundler.ts` (HMR-dispose hooks shipped); per-island WebSocket swap protocol shipped.
+
+> **Inventory note (2026-05-21).** ADR 0043 ("Tier 15-E phase 2 — typed-envelope HMR + per-island module swap") landed the design this ADR proposed. `__hmr.ts` implements the hello / swap / reload protocol; `island-bundler.ts` emits the per-island disposer registry; the shared `window.__placeIslandRegistry` lets new bundles tear down live mounts before injecting. The signature-hashing detail from this ADR's Section 5 was simplified to content-hashed URLs (the bundler already produces them); HMR detects rebuilds via WebSocket push, not file-watching, so the "bun --watch" startup-path change was unnecessary. Read 0043 for the shipped design.
 
 ## Context
 

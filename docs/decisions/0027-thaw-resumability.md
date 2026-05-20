@@ -1,10 +1,26 @@
 # ADR 0027: "Thaw" — resumability, our way
 
-**Status:** proposed (2026-05-15)
+**Status:** deferred — classifier ready, runtime not built (2026-05-21)
 **Date:** 2026-05-15
 **Affects:** future `systems/component/src/thaw.ts`; future
 `systems/component/src/build/thaw-bundler.ts`; documentation under
 `systems/component/docs/`.
+
+> **Inventory note (2026-05-21).** No `thaw.ts` runtime, no
+> `thaw-bundler.ts`. The view-classifier ([view-classifier.ts])
+> recognises the L1 "thaw" level and the manifest labels which
+> islands could compile to it, but every island today emits at L2
+> ("island", per ADR 0030's inventory note). The trigger to build
+> the L1 thaw runtime hasn't fired: the candidate workload is a
+> static-mostly site whose islands carry only `state` + reactive
+> reads (no `watch`, no `onMount`), where the 1.5KB shared thaw
+> runtime would beat the per-island L2 hydration bundles. The
+> docs site has plenty of such candidates per the classifier
+> report (`page-nav`, `theme-toggle`, `code-block` would all
+> classify as L1) — but the L2 emitter at 4-7KB per island
+> already hits Lighthouse 100 with TBT 0ms, so the demand is
+> theoretical. Build the runtime when a workload demonstrates a
+> measurable improvement, not before.
 
 ## Context
 

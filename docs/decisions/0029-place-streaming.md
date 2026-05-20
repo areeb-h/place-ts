@@ -1,8 +1,24 @@
 # ADR 0029: Place streaming — suspense-driven, request-coalesced
 
-**Status:** proposed (2026-05-15)
+**Status:** core shipped; cross-request coalescing deferred (2026-05-21)
 **Date:** 2026-05-15
-**Affects:** `systems/component/src/index.ts` (`renderToStream`, `suspense()`, dispatch); `systems/component/src/__spa_nav.ts` (incremental shell-swap); a new `systems/component/src/streaming/coordinator.ts` for cross-request coalescing.
+**Affects:** `systems/component/src/ssr.ts` (`renderToStream` + `suspense()` + `<Suspense>` shipped); `systems/component/src/__spa_nav.ts` (incremental shell-swap shipped); a future `systems/component/src/streaming/coordinator.ts` for cross-request coalescing — **NOT shipped**.
+
+> **Inventory note (2026-05-21).** The single-request streaming surface
+> shipped: `renderToStream` in [ssr.ts:374], `suspense()` boundary
+> primitive in [ssr.ts:191], and the `<Suspense>` JSX wrapper with
+> `EffectBranded<'suspense'>` for the classifier. Apps use it through
+> the standard `<Suspense fallback={…}>` shape, and `resource()` is
+> the producer side. The CROSS-REQUEST coalescing coordinator — the
+> distinguishing claim of this ADR vs Astro / Marko / Next — has NOT
+> been built. The trigger for that build is a workload that proves
+> the savings real: two concurrent requests for the same suspended
+> projection, the second piggybacking the first's resolved value
+> rather than re-fetching. The docs site has no such concurrent fan-
+> in, and no concrete app on the roadmap does either. Build when a
+> workload demands it; the streaming substrate is already wired so
+> the coordinator slots in as a `SuspenseCap` impl swap rather than
+> a re-architecture.
 
 ## Context
 

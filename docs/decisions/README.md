@@ -80,10 +80,10 @@ Optional. Things future readers might find useful — links, references, follow-
 | [0024](0024-spa-nav-and-island-dx.md) | SPA navigation + island DX | accepted | 2026-05-15 |
 | [0025](0025-sri-and-attack-surface-reduction.md) | SRI + attack-surface reduction | accepted | 2026-05-15 |
 | [0026](0026-magic-with-clarity.md) | Charter pivot: "magic with clarity" | accepted | 2026-05-15 |
-| [0027](0027-thaw-resumability.md) | "Thaw" — resumability, our way | proposed | 2026-05-15 |
-| [0028](0028-place-hmr.md) | Place HMR — typed-island boundaries, effect-aware preservation | proposed | 2026-05-15 |
-| [0029](0029-place-streaming.md) | Place streaming — suspense-driven, request-coalesced | proposed | 2026-05-15 |
-| [0030](0030-unified-hydration.md) | Unified hydration via effect-typed classification (`view()`) | proposed | 2026-05-15 |
+| [0027](0027-thaw-resumability.md) | "Thaw" — resumability, our way | deferred (classifier ready, runtime not built) | 2026-05-15 |
+| [0028](0028-place-hmr.md) | Place HMR — typed-island boundaries, effect-aware preservation | superseded by 0043 | 2026-05-15 |
+| [0029](0029-place-streaming.md) | Place streaming — suspense-driven, request-coalesced | core shipped; cross-request coalescing deferred | 2026-05-15 |
+| [0030](0030-unified-hydration.md) | Unified hydration via effect-typed classification (`view()`) | classifier shipped report-only; `view()` factory deferred | 2026-05-15 |
 | [0031](0031-page-directive-ergonomics.md) | Page directive ergonomics: string `meta`, title templates, `<h1>` auto-title | accepted | 2026-05-16 |
 | [0032](0032-dev-supervisor.md) | Dev-mode self-supervisor: instant auto-reload from `bun src/app.ts` | accepted | 2026-05-16 |
 | [0033](0033-customizable-codeblock.md) | `<CodeBlock>` as a highly customizable design-library primitive | accepted | 2026-05-16 |
