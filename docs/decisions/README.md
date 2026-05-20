@@ -108,4 +108,5 @@ Optional. Things future readers might find useful — links, references, follow-
 | [0052](0052-trailing-slash-canonical-hrefs.md) | `trailingSlash` option + canonical-href emission from `<Link>` | accepted | 2026-05-20 |
 | [0053](0053-framework-owned-dev-primitives.md) | Framework-owned dev primitives — `app({ devtools })` + additive `islands`/`islandsDir` | accepted | 2026-05-20 |
 | [0054](0054-inline-runtime-minification.md) | HTML-transport minification — strip comments + indentation from inline runtime sources | accepted | 2026-05-20 |
-| [0055](0055-critical-action-mil-grade-server-actions.md) | `criticalAction()` — mil-grade server actions (Phases 1+2 shipped; 3–5 specified) | accepted | 2026-05-20 |
+| [0055](0055-critical-action-mil-grade-server-actions.md) | `criticalAction()` — high-assurance server actions (Phases 1+2 shipped; 3–5 specified) | accepted | 2026-05-20 |
+| [0056](0056-entrypoint-subpaths.md) | Bounded entrypoint subpaths — client safety is an impossible import graph, not DCE | accepted | 2026-05-20 |
