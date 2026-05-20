@@ -62,7 +62,7 @@ Optional. Things future readers might find useful — links, references, follow-
 | [0006](0006-view-transitions.md) | View Transitions API opt-in | accepted | 2026-05-08 |
 | [0007](0007-smaller-app-arc.md) | The smaller-app arc: `app([pages])` + `page(path, def)` + `on:` | accepted | 2026-05-11 |
 | [0008](0008-port-the-insight-not-the-shape.md) | Port the insight, not the shape (virtualList, future Dialog/Table) | accepted | 2026-05-12 |
-| [0009](0009-commonplace-flagship.md) | Commonplace as flagship — what the demo proves | accepted | 2026-05-12 |
+| [0009](0009-commonplace-flagship.md) | Commonplace as flagship — what the demo proves | retired (docs site is canonical) | 2026-05-12 |
 | [0010](0010-place-browser-define.md) | `__PLACE_BROWSER__` build define for server-only DCE | accepted | 2026-05-13 |
 | [0011](0011-layout-persistence-boot.md) | Layout persistence in `boot()` — page swaps without remounting the chain | accepted | 2026-05-13 |
 | [0012](0012-fragment-reactive-children.md) | Fragment.hydrate handles reactive function children | accepted | 2026-05-13 |

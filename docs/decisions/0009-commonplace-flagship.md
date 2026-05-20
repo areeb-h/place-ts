@@ -1,8 +1,29 @@
 # ADR 0009: Commonplace as flagship — what the demo proves
 
-**Status:** accepted
+**Status:** retired — `examples/commonplace` deleted; `examples/docs` is now the canonical example (2026-05-21)
 **Date:** 2026-05-12
-**Affects:** `examples/commonplace` (rebuilt in Round 6)
+**Affects:** `examples/commonplace` (deleted in commit `d7b5875`, 2026-05-18); `examples/docs` (new canonical example, islands-based)
+
+> **Inventory note (2026-05-21).** Commit `d7b5875` retired
+> `examples/commonplace` alongside `sandbox` and `sync-server` on
+> 2026-05-18 with the commit message: *"sandbox, sync-server, and
+> commonplace ran on the retired full-page hydration model
+> (mount/boot/hydrate, page(def), serve clientEntry).
+> examples/docs is the canonical example: islands-based, deployed,
+> comprehensive."* The ADR's "structural-wins demo" claim now
+> points at `examples/docs` — the docs site dogfoods every shipped
+> system (router, security, design, reactivity, persistence,
+> search, data via the search palette, capability via RouterCap +
+> SessionCap, the new criticalAction substrate via the API ref
+> pages). It's islands-based, hits Lighthouse 100, and is the
+> active example apps target their patterns against. The Round-6
+> Commonplace shape (full-page hydration, `serve clientEntry`,
+> capability-swap demo) is structurally incompatible with the
+> islands model the framework now ships; a rebuilt commonplace
+> would be a parallel demo of the same patterns the docs site
+> already exercises, with no additional structural proof. Build
+> a fresh client-data flagship (notes app, todo manager, etc.) if
+> demand emerges; until then, the docs site IS the flagship.
 
 ## Context
 
