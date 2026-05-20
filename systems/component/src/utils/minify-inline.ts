@@ -83,17 +83,17 @@ export function minifyInline(src: string): string {
     // strings and no URL literals containing `//`), so a simple
     // character scan suffices:
     let inStr: '"' | "'" | null = null
-    let escape = false
+    let escaped = false
     let commentAt = -1
     for (let j = 0; j < trimmed.length; j++) {
       const ch = trimmed.charAt(j)
-      if (escape) {
-        escape = false
+      if (escaped) {
+        escaped = false
         continue
       }
       if (inStr) {
         if (ch === '\\') {
-          escape = true
+          escaped = true
         } else if (ch === inStr) {
           inStr = null
         }

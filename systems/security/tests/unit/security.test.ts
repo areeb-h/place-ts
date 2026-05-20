@@ -3,16 +3,20 @@
 import { describe, expect, test } from 'vitest'
 import { defineCapability } from '../../../capability/src/index.ts'
 import {
+  bunCryptoProvider,
+  CryptoProviderCap,
   CSP_DEFAULTS,
   cspHeader,
   csrfToken,
   parseCookies,
   rateLimit,
   requireSession,
+  rotatingKey,
   SecurityError,
   SessionCap,
   setCookieHeader,
   signedToken,
+  useCryptoProvider,
 } from '../../src/index.ts'
 
 const SECRET = 'this-is-a-test-secret-32-bytes-long!'
@@ -255,5 +259,152 @@ describe('integration: SessionCap + capability requires() + SecurityError', () =
     expect(SessionCap.provide(session, () => EditCap.provide({ canEdit: true }, editPost))).toBe(
       'ok',
     )
+  })
+})
+
+// ===== Phase 1: crypto floor + rotating keys =====
+
+describe('CryptoProvider (Phase 1 — crypto floor)', () => {
+  test('bunCryptoProvider satisfies the interface', () => {
+    expect(bunCryptoProvider.id).toBe('bun-native')
+    expect(bunCryptoProvider.fipsValidated).toBe(false)
+    expect(typeof bunCryptoProvider.randomBytes).toBe('function')
+    expect(typeof bunCryptoProvider.hmacSha256).toBe('function')
+    expect(typeof bunCryptoProvider.timingSafeEqual).toBe('function')
+    expect(typeof bunCryptoProvider.hkdfSha256).toBe('function')
+  })
+
+  test('randomBytes returns the requested length + non-zero entropy', () => {
+    const out = bunCryptoProvider.randomBytes(32)
+    expect(out.length).toBe(32)
+    // Hopelessly weak entropy check, but it catches a stuck implementation.
+    let nonZero = 0
+    for (const b of out) if (b !== 0) nonZero++
+    expect(nonZero).toBeGreaterThan(16)
+  })
+
+  test('hmacSha256 produces a 32-byte tag + same input → same output', async () => {
+    const key = new TextEncoder().encode('test-key-at-least-32-bytes-long!!!')
+    const msg = new TextEncoder().encode('hello world')
+    const t1 = await bunCryptoProvider.hmacSha256(key, msg)
+    const t2 = await bunCryptoProvider.hmacSha256(key, msg)
+    expect(t1.length).toBe(32)
+    expect(bunCryptoProvider.timingSafeEqual(t1, t2)).toBe(true)
+  })
+
+  test('hmacSha256 — different keys produce different tags', async () => {
+    const k1 = new TextEncoder().encode('key-one-must-be-32-bytes-long!!!!')
+    const k2 = new TextEncoder().encode('key-two-must-be-32-bytes-long!!!!')
+    const msg = new TextEncoder().encode('same message')
+    const t1 = await bunCryptoProvider.hmacSha256(k1, msg)
+    const t2 = await bunCryptoProvider.hmacSha256(k2, msg)
+    expect(bunCryptoProvider.timingSafeEqual(t1, t2)).toBe(false)
+  })
+
+  test('timingSafeEqual on unequal lengths returns false', () => {
+    const a = new Uint8Array([1, 2, 3])
+    const b = new Uint8Array([1, 2, 3, 4])
+    expect(bunCryptoProvider.timingSafeEqual(a, b)).toBe(false)
+  })
+
+  test('timingSafeEqual on equal arrays returns true', () => {
+    const a = new Uint8Array([1, 2, 3, 4, 5])
+    const b = new Uint8Array([1, 2, 3, 4, 5])
+    expect(bunCryptoProvider.timingSafeEqual(a, b)).toBe(true)
+  })
+
+  test('hkdfSha256 — deterministic + same inputs → same key', async () => {
+    const ikm = new TextEncoder().encode('input-key-material-must-be-long!!')
+    const salt = new TextEncoder().encode('test-salt')
+    const info = new TextEncoder().encode('test-info')
+    const k1 = await bunCryptoProvider.hkdfSha256(ikm, salt, info, 32)
+    const k2 = await bunCryptoProvider.hkdfSha256(ikm, salt, info, 32)
+    expect(k1.length).toBe(32)
+    expect(bunCryptoProvider.timingSafeEqual(k1, k2)).toBe(true)
+  })
+
+  test('hkdfSha256 — different salts produce different keys', async () => {
+    const ikm = new TextEncoder().encode('same-ikm-must-be-at-least-32-bytes')
+    const info = new TextEncoder().encode('same-info')
+    const k1 = await bunCryptoProvider.hkdfSha256(ikm, new TextEncoder().encode('s1'), info, 32)
+    const k2 = await bunCryptoProvider.hkdfSha256(ikm, new TextEncoder().encode('s2'), info, 32)
+    expect(bunCryptoProvider.timingSafeEqual(k1, k2)).toBe(false)
+  })
+
+  test('useCryptoProvider falls back to bunCryptoProvider when no cap installed', () => {
+    expect(useCryptoProvider()).toBe(bunCryptoProvider)
+  })
+
+  test('useCryptoProvider returns the installed cap impl', () => {
+    const mock: typeof bunCryptoProvider = {
+      ...bunCryptoProvider,
+      id: 'mock-provider',
+      fipsValidated: true,
+    }
+    CryptoProviderCap.provide(mock, () => {
+      expect(useCryptoProvider().id).toBe('mock-provider')
+      expect(useCryptoProvider().fipsValidated).toBe(true)
+    })
+  })
+})
+
+describe('rotatingKey — per-day HMAC sub-key derivation', () => {
+  test('rejects roots shorter than 32 bytes', () => {
+    expect(() => rotatingKey(new Uint8Array(16))).toThrow(/at least 32 bytes/)
+  })
+
+  test('keyAt returns a 32-byte sub-key', async () => {
+    const root = bunCryptoProvider.randomBytes(32)
+    const rk = rotatingKey(root)
+    const k = await rk.keyAt(new Date('2026-05-20T12:00:00Z'))
+    expect(k.length).toBe(32)
+  })
+
+  test('same day → same sub-key (cache hit)', async () => {
+    const root = bunCryptoProvider.randomBytes(32)
+    const rk = rotatingKey(root)
+    const noon = new Date('2026-05-20T12:00:00Z')
+    const midnight = new Date('2026-05-20T23:59:59Z')
+    const k1 = await rk.keyAt(noon)
+    const k2 = await rk.keyAt(midnight)
+    expect(bunCryptoProvider.timingSafeEqual(k1, k2)).toBe(true)
+  })
+
+  test('different days → different sub-keys', async () => {
+    const root = bunCryptoProvider.randomBytes(32)
+    const rk = rotatingKey(root)
+    const k1 = await rk.keyAt(new Date('2026-05-20T12:00:00Z'))
+    const k2 = await rk.keyAt(new Date('2026-05-21T12:00:00Z'))
+    expect(bunCryptoProvider.timingSafeEqual(k1, k2)).toBe(false)
+  })
+
+  test('keyIdAt is stable per day + differs across days', () => {
+    const rk = rotatingKey(bunCryptoProvider.randomBytes(32))
+    const id1 = rk.keyIdAt(new Date('2026-05-20T12:00:00Z'))
+    const id2 = rk.keyIdAt(new Date('2026-05-20T23:00:00Z'))
+    const id3 = rk.keyIdAt(new Date('2026-05-21T01:00:00Z'))
+    expect(id1).toBe(id2)
+    expect(id1).not.toBe(id3)
+  })
+
+  test('custom rotation window (1 hour) produces 24 different keys per day', async () => {
+    const root = bunCryptoProvider.randomBytes(32)
+    const rk = rotatingKey(root, { rotateEveryMs: 60 * 60 * 1000 })
+    const seen = new Set<string>()
+    for (let h = 0; h < 24; h++) {
+      const at = new Date(`2026-05-20T${String(h).padStart(2, '0')}:30:00Z`)
+      seen.add(rk.keyIdAt(at))
+    }
+    expect(seen.size).toBe(24)
+  })
+
+  test('two rotating keys with the same root produce the same sub-keys (deterministic across processes)', async () => {
+    const root = new TextEncoder().encode('deterministic-root-32-bytes-long')
+    const rkA = rotatingKey(root)
+    const rkB = rotatingKey(root)
+    const at = new Date('2026-05-20T00:00:00Z')
+    const kA = await rkA.keyAt(at)
+    const kB = await rkB.keyAt(at)
+    expect(bunCryptoProvider.timingSafeEqual(kA, kB)).toBe(true)
   })
 })
