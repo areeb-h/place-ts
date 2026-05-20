@@ -11,7 +11,6 @@
 
 import { type EffectBranded, type Resource, untrack, watch } from '@place/reactivity'
 import { stringify as devalueStringify } from 'devalue'
-import { _consumeCopyUsedFlag } from './__copy-runtime.ts'
 import { PLACE_RUNTIME } from './__place_runtime.ts'
 import { resetHydrationSeq } from './_internal/hydrationSeq.ts'
 import { Fragment } from './mount.ts'

@@ -75,8 +75,6 @@ console.log(`Total (raw / gzip): ${fmt(totalRaw)} / ${fmt(totalGz)}`)
 console.log('')
 console.log('What a page with all 3 islands ships:')
 const entries = [...result.nameToBundleUrl.values()]
-const entrySize = entries.reduce((a, u) => a + result.bundles.get(u)!.length, 0)
-const sharedSize = totalRaw - entrySize
 const entryGz = entries.reduce((a, u) => a + gzipSync(result.bundles.get(u)!).length, 0)
 const sharedGz = totalGz - entryGz
 console.log(`  Entries: ${entries.length} × ${fmt(entryGz / entries.length)} ≈ ${fmt(entryGz)} gzipped`)

@@ -8,7 +8,7 @@
 
 import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { resolve, dirname } from 'node:path'
+import { resolve } from 'node:path'
 
 const ROOT = resolve(import.meta.dir, '../../..')
 const TMP = resolve(import.meta.dir, '.tmp/island-bundle-audit')

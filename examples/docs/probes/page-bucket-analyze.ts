@@ -130,8 +130,10 @@ const bundleLines = bundleText.split('\n')
 const bytesPerSource = new Map<number, number>()
 
 let sourceIndex = 0
-let sourceLine = 0
-let sourceCol = 0
+// We don't care about source line / col — only which source file each
+// span came from. But the VLQ stream still encodes them per segment,
+// so we must advance past those bytes to stay aligned with the next
+// segment's deltas.
 const mappings = mapJson.mappings
 const lines = mappings.split(';')
 
@@ -162,14 +164,12 @@ for (let li = 0; li < lines.length; li++) {
     p = dSrc.next
     sourceIndex += dSrc.value
     if (p < seg.length) {
-      const dLine = decodeVlq(seg, p)
-      p = dLine.next
-      sourceLine += dLine.value
+      // Skip the sourceLine VLQ (value discarded).
+      p = decodeVlq(seg, p).next
     }
     if (p < seg.length) {
-      const dCol = decodeVlq(seg, p)
-      p = dCol.next
-      sourceCol += dCol.value
+      // Skip the sourceCol VLQ (value discarded).
+      p = decodeVlq(seg, p).next
     }
     parsed.push({ genCol, src: sourceIndex })
   }

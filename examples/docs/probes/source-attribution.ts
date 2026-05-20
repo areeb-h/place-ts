@@ -13,7 +13,7 @@
 // source file each output position came from. We walk the mappings,
 // count output bytes per source file, then bucket.
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
