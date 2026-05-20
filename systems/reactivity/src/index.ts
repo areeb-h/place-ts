@@ -349,10 +349,24 @@ function drainQueue(queue: Set<WatchNode>): void {
   if (queue.size === 0) return
   const batch = [...queue]
   queue.clear()
-  for (const w of batch) {
-    if (!w.active) continue
-    if (w.state === CHECK) refreshFromSources(w)
-    if (w.state === DIRTY) runWatch(w)
+  // Save + null the current observer for the drain. `refreshFromSources`
+  // calls `readState(src)` which calls `track(src)` against the global
+  // `currentObserver`. In the normal flow (microtask flush, sync flush
+  // after a top-level write), `currentObserver` is `null` and this is a
+  // no-op. But if user code calls `flush()` or `batch()` from inside a
+  // watch body, `currentObserver` is the outer watch — and without this
+  // guard, the outer watch silently subscribes to every dirty-checked
+  // source of every queued inner watch.
+  const prevObserver = currentObserver
+  currentObserver = null
+  try {
+    for (const w of batch) {
+      if (!w.active) continue
+      if (w.state === CHECK) refreshFromSources(w)
+      if (w.state === DIRTY) runWatch(w)
+    }
+  } finally {
+    currentObserver = prevObserver
   }
 }
 
@@ -421,8 +435,10 @@ export interface BaseState<T> {
   update(fn: (prev: T) => T): void
   /** Read without subscribing the active observer. */
   peek(): T
-  /** Memoized derived signal — recomputes only when sources change. */
-  map<U>(transform: (value: T) => U): () => U
+  /** Memoized derived signal — recomputes only when sources change.
+   *  The returned accessor carries `dispose()` for explicit teardown
+   *  when created in a re-runnable scope. */
+  map<U>(transform: (value: T) => U): MappedAccessor<U>
   /**
    * Alias for the callable form. Both `count.read()` and `count()` return
    * the value and subscribe the observer. Prefer the callable form in
@@ -487,7 +503,32 @@ export type ArrayState<T> = State<readonly T[]>
 export interface Derived<T> extends EffectBranded<'state'> {
   (): T
   peek(): T
-  map<U>(transform: (value: T) => U): () => U
+  map<U>(transform: (value: T) => U): MappedAccessor<U>
+  /**
+   * Release the derived's subscriptions to its upstream sources +
+   * remove it from the dev graph registry. After `dispose()`,
+   * reading the accessor still recomputes (it doesn't lose its
+   * `fn`), but it no longer re-fires when upstream state changes —
+   * and upstream state writes stop propagating through this node.
+   *
+   * Use when a derived is created in a re-runnable scope (per-item
+   * `items.map(item => derived(...))`, a watch body, a hot-reloaded
+   * module). Module-level deriveds living for the process lifetime
+   * don't need this — their natural lifetime is the right one.
+   *
+   * Idempotent.
+   */
+  dispose(): void
+}
+
+/** Return type of `state(...).map(...)` and `derived(...).map(...)`.
+ *  Same shape as a memo: read accessor + `dispose()`. Disposing the
+ *  mapped accessor disconnects only IT from its upstream — the
+ *  source state/derived is untouched. */
+export interface MappedAccessor<U> {
+  (): U
+  /** Release this mapped accessor's subscriptions. Idempotent. */
+  dispose(): void
 }
 
 /**
@@ -606,7 +647,7 @@ export function state<T>(initial: T | (() => T), options?: StateOptions<T>): Sta
   s.write = (next: T | ((prev: T) => T)) => {
     writeState(node, next)
   }
-  s.map = <U>(transform: (value: T) => U): (() => U) => {
+  s.map = <U>(transform: (value: T) => U): MappedAccessor<U> => {
     // Memoize via a derived state — multi-read in the same pass hits cache.
     const dNode: StateNode<U> = {
       kind: 'state',
@@ -620,7 +661,10 @@ export function state<T>(initial: T | (() => T), options?: StateOptions<T>): Sta
       equals: defaultEquals,
     }
     if (GRAPH_DEV) devRegister(dNode)
-    return () => readState(dNode)
+    const reader = (): U => readState(dNode)
+    const m = reader as MappedAccessor<U>
+    m.dispose = () => disposeStateNode(dNode)
+    return m
   }
   // BooleanState.toggle
   s.toggle = () => {
@@ -720,7 +764,7 @@ export function derived<T>(fn: () => T, options?: StateOptions<T>): Derived<T> {
   const read = (): T => readState(node)
   const d = read as Derived<T>
   d.peek = () => untrack(() => readState(node))
-  d.map = <U>(transform: (value: T) => U): (() => U) => {
+  d.map = <U>(transform: (value: T) => U): MappedAccessor<U> => {
     const dNode: StateNode<U> = {
       kind: 'state',
       state: DIRTY,
@@ -733,9 +777,27 @@ export function derived<T>(fn: () => T, options?: StateOptions<T>): Derived<T> {
       equals: defaultEquals,
     }
     if (GRAPH_DEV) devRegister(dNode)
-    return () => readState(dNode)
+    const reader = (): U => readState(dNode)
+    const m = reader as MappedAccessor<U>
+    m.dispose = () => disposeStateNode(dNode)
+    return m
   }
+  d.dispose = () => disposeStateNode(node)
   return d
+}
+
+// Tear down a derived/mapped state node. Removes its subscriptions
+// to upstream sources (so future writes don't propagate through it),
+// drops dev-graph membership, and clears any cached value so a
+// subsequent read recomputes rather than handing back stale data.
+function disposeStateNode<T>(node: StateNode<T>): void {
+  if (node.fn === null) return // not a derived — `state()` doesn't expose dispose
+  clearSources(node)
+  if (node.dependents !== null) node.dependents = null
+  node.state = DIRTY
+  node.hasValue = false
+  node.value = undefined as T
+  if (GRAPH_DEV) devNodes.delete(node)
 }
 
 /**

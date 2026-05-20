@@ -639,7 +639,7 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
         class={inputClass}
         placeholder={props.placeholder}
         name={props.name}
-        disabled={isDisabled() ? true : undefined}
+        disabled={() => (isDisabled() ? true : undefined)}
         aria-label={props['aria-label']}
         aria-expanded={() => (isOpen() ? 'true' : 'false')}
         aria-controls={listboxId}

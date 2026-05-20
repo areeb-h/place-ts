@@ -85,15 +85,28 @@ export function toast(message: string, opts: ToastOptions = {}): () => void {
     visible: state(true),
   }
   queue.set([...queue(), record])
+  let autoTimer: ReturnType<typeof setTimeout> | null = null
+  let dismissed = false
   const dismiss = (): void => {
+    if (dismissed) return
+    dismissed = true
+    if (autoTimer !== null) {
+      clearTimeout(autoTimer)
+      autoTimer = null
+    }
     record.visible.set(false)
-    // Wait for the exit animation, then remove from queue.
+    // Wait for the exit animation, then remove from queue. Re-entrancy
+    // is gated by `dismissed` — a manual + auto dismiss racing only
+    // schedules ONE removal.
     setTimeout(() => {
       queue.set(queue().filter((t) => t.id !== id))
     }, 220)
   }
   if (record.duration > 0) {
-    setTimeout(dismiss, record.duration)
+    // Track the auto-dismiss handle so an early manual dismiss
+    // (user clicks the close button) cancels the pending fire
+    // instead of leaving it to run a redundant queue filter.
+    autoTimer = setTimeout(dismiss, record.duration)
   }
   return dismiss
 }

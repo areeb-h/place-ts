@@ -240,7 +240,18 @@ export function route<S extends string>(pattern: S): Route<ParamsOf<S>> {
     const out = segs.map((seg) => {
       if (seg.startsWith(':')) {
         const key = seg.slice(1)
-        return encodeURIComponent(params[key] ?? '')
+        const value = params[key]
+        // Empty / missing params used to silently produce a malformed
+        // URL (`route('/users/:id')({})` → `/users/`) that hits the
+        // pattern's own match path matched a different route entirely.
+        // Fail loud at the call site so missing wiring is impossible
+        // to miss in development.
+        if (value === undefined || value === null || value === '') {
+          throw new Error(
+            `route: missing required param '${key}' for pattern ${JSON.stringify(pattern)}`,
+          )
+        }
+        return encodeURIComponent(value)
       }
       return seg
     })
@@ -249,7 +260,13 @@ export function route<S extends string>(pattern: S): Route<ParamsOf<S>> {
 
   const matchPath = (path: string): Record<string, string> | null => {
     const q = path.indexOf('?')
-    const pathSegs = (q >= 0 ? path.slice(0, q) : path).split('/').filter(Boolean)
+    // Reject pathologic inputs (`//`, `/foo//bar`) up-front. Filter(
+    // Boolean) used to silently drop empty segments and match a
+    // pattern with fewer slashes — a malformed URL would resolve to
+    // a legitimate route with the wrong params.
+    const raw = q >= 0 ? path.slice(0, q) : path
+    if (raw.includes('//')) return null
+    const pathSegs = raw.split('/').filter(Boolean)
     if (pathSegs.length !== segs.length) return null
     const result: Record<string, string> = {}
     for (let i = 0; i < segs.length; i++) {
@@ -704,23 +721,33 @@ export function pathRouter(): RouterHandle {
     hrefForLink: (to) => to,
     urlFor: (to) => absoluteUrl(to),
     pushPath: (path, target) => {
+      // Update the reactive `path` SYNCHRONOUSLY in BOTH branches so
+      // the documented `navigate(p); router.path() === p` invariant
+      // (see header comment) holds during the SPA fetch+swap window.
+      // Without this, every consumer of `path()` (sidebar active-
+      // link, breadcrumbs, `<Link>` active-state) sees the OLD path
+      // for the duration of the SPA roundtrip — a visible flicker on
+      // every nav.
+      //
+      // Safety: the SPA runtime owns pushState + fetch + swap. On
+      // success it later dispatches `place:nav`; the listener below
+      // writes the same path (state.write dedupes — no second fire).
+      // On failure the runtime calls `location.href = url` (hard
+      // reload) — the optimistic state is wiped with the page; no
+      // lasting desync.
+      path.write(normalizePath(target))
       if (spaNavActive()) {
-        // SPA runtime will pushState + fetch + swap + dispatch
-        // `place:nav` (which the listener below relays back into
-        // path.write). Skip the local pushState/write; let the SPA
-        // runtime own the round-trip so the user sees fresh content.
         globalThis.dispatchEvent?.(
           new CustomEvent('place:navigate', { detail: { url: target, replace: false } }),
         )
         return
       }
-      // No SPA runtime → static-app fallback. Same as the original
-      // behavior: pushState manually + write the signal so
-      // subscribers see the path immediately.
+      // No SPA runtime → static-app fallback. The signal write
+      // already landed above; just commit the URL change.
       globalThis.history?.pushState(null, '', target)
-      path.write(target)
     },
     replacePath: (path, p) => {
+      path.write(normalizePath(p))
       if (spaNavActive()) {
         globalThis.dispatchEvent?.(
           new CustomEvent('place:navigate', { detail: { url: p, replace: true } }),
@@ -728,7 +755,6 @@ export function pathRouter(): RouterHandle {
         return
       }
       globalThis.history?.replaceState(null, '', p)
-      path.write(p)
     },
     back: () => globalThis.history?.back(),
     forward: () => globalThis.history?.forward(),

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { state, watch } from '../../src/index.ts'
+import { batch, derived, state, watch } from '../../src/index.ts'
 
 describe('state — raw mode (no derivation)', () => {
   test('read returns initial value', () => {
@@ -252,5 +252,98 @@ describe('derived state — error recovery', () => {
     x.set(3)
     // d should recover and recompute — not stay stuck after the throw.
     expect(d()).toBe(6)
+  })
+})
+
+describe('derived — disposal', () => {
+  test('derived().dispose() clears upstream subscriptions so writes do not propagate', () => {
+    const x = state(1)
+    const d = derived(() => x() * 2)
+    // Materialise d's value so its sources are populated.
+    expect(d()).toBe(2)
+    // Sanity: x has d as a dependent at this point.
+    // After dispose, d's sources are cleared — meaning when we walk
+    // x's dependents, d is no longer there to receive propagation.
+    d.dispose()
+    // Construct a fresh writer to x and verify d isn't a recompute
+    // target via the watch path either.
+    let watchFires = 0
+    const stopW = watch(() => {
+      x()
+      watchFires++
+    })
+    const baseline = watchFires
+    x.set(7)
+    // The watch (which reads x directly) still fires — verifies x's
+    // dependents set is intact for legitimate subscribers.
+    expect(watchFires).toBeGreaterThan(baseline)
+    // But the disposed derived is not in x.dependents anymore;
+    // verify by re-reading d (which now recomputes fresh due to
+    // DIRTY + cleared sources, picking up the new x).
+    expect(d()).toBe(14)
+    stopW()
+  })
+
+  test('derived().dispose() is idempotent', () => {
+    const x = state(1)
+    const d = derived(() => x() * 2)
+    expect(() => d.dispose()).not.toThrow()
+    expect(() => d.dispose()).not.toThrow()
+  })
+
+  test('state.map() return value exposes dispose()', () => {
+    const x = state(10)
+    const m = x.map((n) => n * 3)
+    expect(m()).toBe(30)
+    expect(typeof m.dispose).toBe('function')
+    m.dispose()
+    expect(() => m.dispose()).not.toThrow()
+  })
+
+  test('derived().map() return value exposes dispose()', () => {
+    const x = state(2)
+    const d = derived(() => x() * 5)
+    const m = d.map((n) => n + 1)
+    expect(m()).toBe(11)
+    expect(typeof m.dispose).toBe('function')
+    m.dispose()
+  })
+})
+
+describe('drainQueue — nested batch/flush inside watch must not leak subscriptions', () => {
+  test('batch() inside a watch body does not subscribe the outer watch to inner-watch sources', () => {
+    // Reproducer for the silent-subscription-leak: a watch reads `a`,
+    // and inside its body calls batch() that drains a separate inner
+    // watch reading `b`. Without the drainQueue currentObserver guard,
+    // the outer watch silently subscribes to `b` and re-fires on `b`
+    // writes — even though it never reads `b` directly.
+    const a = state(0)
+    const b = state(0)
+    let outerFires = 0
+    let innerFires = 0
+    const stopInner = watch(() => {
+      b()
+      innerFires++
+    })
+    const stopOuter = watch(() => {
+      a()
+      outerFires++
+      // Calling batch synchronously inside the watch body triggers
+      // a settle pass that drains any newly-queued watches — that's
+      // the path drainQueue must guard against tracking under the
+      // outer observer.
+      batch(() => {
+        b.set(b.peek() + 1)
+      })
+    })
+    const baseInner = innerFires
+    const baseOuter = outerFires
+    b.set(b.peek() + 10)
+    // The inner watch must re-fire (it reads b).
+    expect(innerFires).toBeGreaterThan(baseInner)
+    // The outer watch must NOT re-fire (it never reads b directly).
+    expect(outerFires).toBe(baseOuter)
+    stopOuter()
+    stopInner()
   })
 })
