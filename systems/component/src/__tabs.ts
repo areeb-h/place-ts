@@ -38,6 +38,8 @@
 // Tabs (no `group` prop on the server) omit the cookie attribute and
 // behave as in-memory only.
 
+import { minifyInline } from './utils/minify-inline.ts'
+
 export interface PlaceTabsOptions {
   /** Reserved for future per-app config. Currently unused. */
   readonly _placeholder?: never
@@ -53,7 +55,7 @@ export interface PlaceTabsOptions {
 export function placeTabs(_opts?: PlaceTabsOptions): string {
   // Hand-written IIFE. Inline + single-statement so size stays minimal
   // and CSP-nonce friendly (no further compile pass needed).
-  return `
+  return minifyInline(`
 (function(){
   if (window.__placeTabs === 1) return;
   window.__placeTabs = 1;
@@ -123,5 +125,5 @@ export function placeTabs(_opts?: PlaceTabsOptions): string {
     }
   });
 })();
-`.trim()
+`).trim()
 }

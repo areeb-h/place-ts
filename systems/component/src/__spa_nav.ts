@@ -30,6 +30,8 @@
 // 1–5 ms fetch + parse + swap; the user's bar is "faster than Next 16",
 // and the default cross-fade defeated that on every click.
 
+import { minifyInline } from './utils/minify-inline.ts'
+
 export interface PlaceSpaNavOptions {
   /**
    * Wrap the `<main>` swap in `document.startViewTransition()` when
@@ -80,7 +82,7 @@ export function placeSpaNav(options: PlaceSpaNavOptions = {}): string {
   const ENABLE_VT = options.viewTransitions === true
   const ENABLE_PREFETCH = options.prefetch !== false
   const themeClassMap = options.themeClassMap ?? {}
-  return `(function(){
+  return minifyInline(`(function(){
 if(window.__place_spa)return;window.__place_spa=1;
 var ENABLE_VT=${ENABLE_VT ? 'true' : 'false'};
 var ENABLE_PREFETCH=${ENABLE_PREFETCH ? 'true' : 'false'};
@@ -452,5 +454,5 @@ window.addEventListener('place:navigate',function(e){
   if(typeof url!=='string')return;
   navigate(url,!detail.replace);
 });
-})();`
+})();`)
 }
