@@ -160,6 +160,7 @@ export const Tooltip = (props: TooltipProps): View => {
 
   return (
     <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: the focusable trigger is the consumer-provided child; this `<span class="contents">` is a phantom wrapper that delegates hover/focus events */}
       <span
         class="contents"
         ref={(el: HTMLElement) => {

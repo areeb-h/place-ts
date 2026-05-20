@@ -736,10 +736,9 @@ export async function buildIslandBundles(
   // The typed context is created lazily — first island that needs it
   // triggers the program build. Subsequent islands reuse the cached
   // program; the heavy cost is paid once per `serve()` startup.
-  const firstSrc =
-    names.length > 0 && islands[names[0] ?? '']
-      ? resolve(process.cwd(), islands[names[0] ?? '']!.src)
-      : process.cwd()
+  const firstName = names[0] ?? ''
+  const firstReg = islands[firstName]
+  const firstSrc = firstReg ? resolve(process.cwd(), firstReg.src) : process.cwd()
   const typedCtx = await createTypedClassifierContext(firstSrc).catch(() => null)
   const manifestEntries: ViewManifestEntry[] = []
   for (const name of names) {

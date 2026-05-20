@@ -70,7 +70,7 @@ export const Avatar = (props: AvatarProps): View => {
     img.parentElement.textContent = initials(props.name)
   }
   return (
-    <span class={finalClass} aria-label={props.name}>
+    <span class={finalClass} role="img" aria-label={props.name}>
       {props.src ? (
         <img
           src={props.src}

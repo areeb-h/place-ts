@@ -40,6 +40,7 @@ export default island(import.meta.url, ({ start = 0 }: { start?: number }) => {
   const count = state(start)
   return (
     <button
+      type="button"
       class="rounded-md bg-accent text-accent-fg px-3 py-1"
       onClick={() => count.set(count() + 1)}
     >
@@ -54,6 +55,7 @@ const Counter = island(`file://${counterSrc}`, ({ start = 0 }: { start?: number 
   const count = state(start)
   return (
     <button
+      type="button"
       class="rounded-md bg-accent text-accent-fg px-3 py-1"
       onClick={() => count.set(count() + 1)}
     >

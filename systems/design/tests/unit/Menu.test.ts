@@ -195,10 +195,12 @@ describe('Menu — render + items + keyboard', () => {
       }),
       root,
     )
-    const sep = root.querySelector('[role="separator"]') as HTMLElement | null
+    // <hr> has implicit role="separator" — querySelector for the
+    // explicit attribute would miss it; query the element directly.
+    const sep = root.querySelector('hr') as HTMLHRElement | null
     expect(sep).not.toBeNull()
-    // Has no children + is NOT a button.
-    expect(sep?.tagName).toBe('DIV')
+    // Is NOT a button.
+    expect(sep?.tagName).toBe('HR')
     // Two buttons, not three.
     expect(root.querySelectorAll('button[role="menuitem"]').length).toBe(2)
   })

@@ -601,6 +601,8 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
   // ===== Render — flex shell =====
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: shell is a flex wrapper; the interactive role lives on the <input> child. Click is a tap-anywhere-focuses-input shortcut.
+    // biome-ignore lint/a11y/useKeyWithClickEvents: keyboard users reach the <input> directly via Tab; no key equivalent needed for the shell click
     <div
       data-place-combobox=""
       class={shellClass}

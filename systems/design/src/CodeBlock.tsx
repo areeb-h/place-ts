@@ -426,10 +426,9 @@ export const CodeBlock = (props: CodeBlockProps): View => {
   }
 
   return (
-    <div
+    <section
       class={finalClass}
       data-wrap={wrap}
-      role="region"
       aria-label={props['aria-label']}
       style={inlineStyle}
     >
@@ -466,7 +465,7 @@ export const CodeBlock = (props: CodeBlockProps): View => {
           </div>
         </code>
       </pre>
-    </div>
+    </section>
   )
 }
 

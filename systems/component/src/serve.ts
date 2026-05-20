@@ -1764,16 +1764,16 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     // extracted) lives in `splitterBundles`. We serve any URL the map
     // knows about. In dev the URLs are stable across restarts; in prod
     // they include a content hash (Bun's chunk-naming scheme).
-    if (
-      splitterBundles.size > 0 &&
-      (req.method === 'GET' || req.method === 'HEAD') &&
-      splitterBundles.has(url.pathname)
-    ) {
-      // `bytes` is the *same* `Uint8Array` we hashed for SRI at build
+    const splitBytes =
+      splitterBundles.size > 0 && (req.method === 'GET' || req.method === 'HEAD')
+        ? splitterBundles.get(url.pathname)
+        : undefined
+    if (splitBytes !== undefined) {
+      // `splitBytes` is the *same* `Uint8Array` we hashed for SRI at build
       // time (T6-A). Passing it directly to `Response` writes those
       // bytes verbatim — no string encoder in the path that could
       // disagree with what we declared in the `integrity` attribute.
-      const bytes = splitterBundles.get(url.pathname)!
+      const bytes = splitBytes
       // Discriminate JS vs sourcemap by URL extension. External
       // sourcemaps (`*.js.map`) are JSON content; serving them as
       // JavaScript would make DevTools refuse the map and fall back

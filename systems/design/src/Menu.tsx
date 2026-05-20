@@ -256,15 +256,10 @@ export const Menu = (props: MenuProps): View => {
       }}
     >
       {props.items.map((item, i) => {
-        // **Separator** — non-interactive divider, no label.
+        // **Separator** — native <hr> has implicit role="separator";
+        // no need for the ARIA-prop overrides.
         if (item.kind === 'separator') {
-          return (
-            <div
-              role="separator"
-              class="my-1 h-px bg-border/60"
-              aria-hidden="true"
-            />
-          )
+          return <hr class="my-1 h-px bg-border/60 border-0" />
         }
         // **Group** — non-interactive section header. Small caps
         // styling; readable as a labelling cue without keyboard

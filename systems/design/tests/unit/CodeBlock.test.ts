@@ -247,7 +247,10 @@ describe('CodeBlock — composition escape hatches', () => {
     const html = renderToString(
       CodeBlock({ code: 'x', 'aria-label': 'Snippet for example' }),
     )
-    expect(html).toContain('role="region"')
+    // <section> has implicit role="region" when given an aria-label —
+    // the semantic-elements lint rule prefers the native element over
+    // a div with an explicit role.
+    expect(html).toContain('<section')
     expect(html).toContain('aria-label="Snippet for example"')
   })
 })

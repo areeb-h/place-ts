@@ -190,6 +190,7 @@ const SheetImpl = (props: SheetProps): View => {
   const side: SheetSide = props.side ?? 'right'
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: native <dialog> handles Escape via the browser — the JS click handler exists only for backdrop dismiss
     <dialog
       class={finalClass}
       data-side={side}

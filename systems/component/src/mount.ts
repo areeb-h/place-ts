@@ -402,14 +402,15 @@ let anonTabsGroupCounter = 0
  */
 export function Tabs(props: TabsProps): View {
   const tabs = collectTabs(props.children)
-  if (tabs.length === 0) {
+  const firstTab = tabs[0]
+  if (firstTab === undefined) {
     throw new Error(
       '<Tabs>: at least one <Tab> child is required. ' +
         'Use: <Tabs group="…"><Tab label="A">…</Tab><Tab label="B">…</Tab></Tabs>',
     )
   }
   const groupId = props.group ?? `tabs-${++anonTabsGroupCounter}`
-  const fallback = tabs[0]!.value
+  const fallback = firstTab.value
   // SSR-correct active resolution. cookieState reads request cookies
   // on the server, document.cookie on the client.
   const cookieKey = props.group ? `place-tab-${props.group}` : ''

@@ -234,6 +234,7 @@ const DialogImpl = (props: DialogProps): View => {
   const finalClass = cls(baseClasses, rootExtra, backdropClasses)
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: native <dialog> handles Escape via the browser (and the closedby attribute) — the JS click handler exists only for backdrop dismiss
     <dialog
       class={finalClass}
       // **`closedby`** is set only when the browser supports it.
