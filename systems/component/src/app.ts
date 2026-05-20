@@ -376,7 +376,7 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
         | (((...args: unknown[]) => unknown) & {
             __placeClientImport?: { module: string; name: string; capName: string }
           })
-      if (router && router.__placeClientImport) {
+      if (router?.__placeClientImport) {
         const meta = router.__placeClientImport
         clientCaps.push({
           module: meta.module,

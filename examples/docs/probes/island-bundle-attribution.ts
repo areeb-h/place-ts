@@ -136,11 +136,11 @@ function attribute(bundle: string, map: SourceMap): Map<string, number> {
       const seg = segs[segIdx]!
       const pos = { i: 0 }
       const genColDelta = decodeVLQ(seg, pos)
-      if (isNaN(genColDelta)) continue
+      if (Number.isNaN(genColDelta)) continue
       const genCol = lastGenCol + genColDelta
       if (pos.i < seg.length) {
         const srcDelta = decodeVLQ(seg, pos)
-        if (!isNaN(srcDelta)) lastSource += srcDelta
+        if (!Number.isNaN(srcDelta)) lastSource += srcDelta
       }
       const nextGenCol =
         segIdx + 1 < segs.length

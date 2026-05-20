@@ -19,7 +19,7 @@ import {
   linear,
   motionValue,
   sequence,
-  SPRING_PRESETS,
+  type SPRING_PRESETS,
   tween,
 } from '../../src/motion/index.ts'
 

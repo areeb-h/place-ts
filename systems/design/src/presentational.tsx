@@ -66,7 +66,7 @@ export const Avatar = (props: AvatarProps): View => {
   // textContent + replaceChild on the img element).
   const onImgError = (e: Event): void => {
     const img = e.target as HTMLImageElement | null
-    if (!img || !img.parentElement) return
+    if (!img?.parentElement) return
     img.parentElement.textContent = initials(props.name)
   }
   return (

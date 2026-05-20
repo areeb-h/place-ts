@@ -28,7 +28,7 @@ export const easeOutCubic: EasingFn = (t) => {
   return 1 - u * u * u
 }
 export const easeInOutCubic: EasingFn = (t) =>
-  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+  t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
 
 // Quartic
 export const easeInQuart: EasingFn = (t) => t * t * t * t
@@ -43,8 +43,8 @@ export const easeOutSine: EasingFn = (t) => Math.sin((t * Math.PI) / 2)
 export const easeInOutSine: EasingFn = (t) => -(Math.cos(Math.PI * t) - 1) / 2
 
 // Exponential
-export const easeInExpo: EasingFn = (t) => (t === 0 ? 0 : Math.pow(2, 10 * t - 10))
-export const easeOutExpo: EasingFn = (t) => (t === 1 ? 1 : 1 - Math.pow(2, -10 * t))
+export const easeInExpo: EasingFn = (t) => (t === 0 ? 0 : 2 ** (10 * t - 10))
+export const easeOutExpo: EasingFn = (t) => (t === 1 ? 1 : 1 - 2 ** (-10 * t))
 
 // Back — overshoots before settling. `1.70158` is the canonical Penner
 // constant; tuning higher = more overshoot.

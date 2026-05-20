@@ -69,5 +69,3 @@ declare global {
   const setTheme: typeof _setTheme
   const themeTokens: typeof _themeTokens
 }
-
-export {}

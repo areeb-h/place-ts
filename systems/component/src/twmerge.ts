@@ -196,7 +196,7 @@ function classGroup(cls: string): string | null {
  *   twMerge('px-4 hover:px-6')       → 'px-4 hover:px-6'  (different group)
  */
 export function twMerge(input: string): string {
-  if (!input || !input.includes(' ')) return input.trim()
+  if (!input?.includes(' ')) return input.trim()
   const cached = cache.get(input)
   if (cached !== undefined) return cached
   const tokens = input.split(/\s+/).filter(Boolean)

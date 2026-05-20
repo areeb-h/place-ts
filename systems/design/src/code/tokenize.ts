@@ -565,7 +565,7 @@ export const tokenizeJson: Tokenizer = (src) => {
     if ((ch >= '0' && ch <= '9') || (ch === '-' && (src[i + 1] ?? '') >= '0' && (src[i + 1] ?? '') <= '9')) {
       let j = i
       if (src[j] === '-') j++
-      while (j < src.length && /[0-9.eE+\-]/.test(src[j] ?? '')) j++
+      while (j < src.length && /[0-9.eE+-]/.test(src[j] ?? '')) j++
       out.push({ kind: 'number', text: src.slice(i, j) })
       i = j
       continue

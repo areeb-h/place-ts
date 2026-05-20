@@ -75,13 +75,13 @@ function attributeBytes(bundle: string, map: SourceMap): SourceContribution[] {
       const seg = segments[segIdx]!
       const pos = { i: 0 }
       const genColDelta = decodeVLQ(seg, pos)
-      if (isNaN(genColDelta)) continue
+      if (Number.isNaN(genColDelta)) continue
       const genCol = lastGenCol + genColDelta
       // Only present if segment has source info (segments can be
       // generated-only with just one VLQ).
       if (pos.i < seg.length) {
         const srcIdxDelta = decodeVLQ(seg, pos)
-        if (!isNaN(srcIdxDelta)) {
+        if (!Number.isNaN(srcIdxDelta)) {
           lastSource = lastSource + srcIdxDelta
         }
       }

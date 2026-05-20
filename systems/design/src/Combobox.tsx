@@ -486,8 +486,8 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
       if (!isOpen()) return
       const target = e.target as Node | null
       if (!target) return
-      if (rootEl && rootEl.contains(target)) return
-      if (popoverEl && popoverEl.contains(target)) return
+      if (rootEl?.contains(target)) return
+      if (popoverEl?.contains(target)) return
       closeListbox()
     }
     // Reset keyboard-active flag when the user moves the mouse —
