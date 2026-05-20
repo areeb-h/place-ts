@@ -1,7 +1,9 @@
 // @vitest-environment happy-dom
 
 import {
+  AuditLogCap,
   bunCryptoProvider,
+  inMemoryAuditLog,
   inMemoryNonceStore,
   NonceStoreCap,
   rotatingKey,
@@ -403,6 +405,173 @@ describe('criticalAction — handler verification pipeline', () => {
       disposeNonce()
     }
     expect(res.status).toBe(400)
+  })
+})
+
+describe('criticalAction — audit log integration (Phase 4)', () => {
+  test('successful invocation appends ONE audit entry with both payload + result hashes', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/audit-ok',
+      input: (raw) => raw as { x: number },
+      sameOrigin: false,
+      fn: (input) => ({ doubled: input.x * 2 }),
+    })
+    const handler = a.handler['POST /__a/audit-ok']
+    if (!handler) throw new Error('handler not registered')
+    const body = ENCODER.encode(JSON.stringify({ x: 21 }))
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/audit-ok', body })
+    const req = new Request('http://localhost/__a/audit-ok', {
+      method: 'POST',
+      headers: { referer: 'http://localhost/', 'x-place-envelope': envelope },
+      body,
+    })
+    const auditLog = inMemoryAuditLog()
+    const disposeAudit = AuditLogCap.install(auditLog)
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+      disposeAudit()
+    }
+    expect(res.status).toBe(200)
+    const entries = await auditLog.query()
+    expect(entries.length).toBe(1)
+    expect(entries[0]?.action).toBe('POST /__a/audit-ok')
+    expect(entries[0]?.actor).toBe(SESSION.userId)
+    expect(entries[0]?.payloadHash.length).toBeGreaterThan(20)
+    expect(entries[0]?.resultHash.length).toBeGreaterThan(20)
+    // Chain verification: a freshly-installed log must verify ok.
+    const verify = await auditLog.verify()
+    expect(verify.ok).toBe(true)
+  })
+
+  test('handler throw appends a failure entry (action + "#error" suffix)', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/audit-err',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      fn: () => {
+        throw new Error('handler decided to fail')
+      },
+    })
+    const handler = a.handler['POST /__a/audit-err']
+    if (!handler) throw new Error('handler not registered')
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/audit-err', body })
+    const req = new Request('http://localhost/__a/audit-err', {
+      method: 'POST',
+      headers: { referer: 'http://localhost/', 'x-place-envelope': envelope },
+      body,
+    })
+    const auditLog = inMemoryAuditLog()
+    const disposeAudit = AuditLogCap.install(auditLog)
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+      disposeAudit()
+    }
+    expect(res.status).toBe(500)
+    const entries = await auditLog.query()
+    expect(entries.length).toBe(1)
+    expect(entries[0]?.action).toBe('POST /__a/audit-err#error')
+    expect(entries[0]?.resultHash).toBe('')
+  })
+
+  test('ctx.audit() appends handler-emitted events alongside the auto entry', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/audit-events',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      fn: async (_input, ctx) => {
+        await ctx.audit('fraud_score.high', { score: 0.91, reason: 'velocity' })
+        await ctx.audit('kyc.escalated')
+        return { ok: true }
+      },
+    })
+    const handler = a.handler['POST /__a/audit-events']
+    if (!handler) throw new Error('handler not registered')
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/audit-events', body })
+    const req = new Request('http://localhost/__a/audit-events', {
+      method: 'POST',
+      headers: { referer: 'http://localhost/', 'x-place-envelope': envelope },
+      body,
+    })
+    const auditLog = inMemoryAuditLog()
+    const disposeAudit = AuditLogCap.install(auditLog)
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    try {
+      await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+      disposeAudit()
+    }
+    const entries = await auditLog.query()
+    // 2 ctx.audit() events + 1 auto-append on return = 3 entries.
+    expect(entries.length).toBe(3)
+    expect(entries[0]?.action).toBe('fraud_score.high')
+    expect(entries[0]?.payloadHash.length).toBeGreaterThan(20)
+    expect(entries[1]?.action).toBe('kyc.escalated')
+    expect(entries[1]?.payloadHash).toBe('')
+    expect(entries[2]?.action).toBe('POST /__a/audit-events')
+    // Chain still intact.
+    const verify = await auditLog.verify()
+    expect(verify.ok).toBe(true)
+  })
+
+  test('failed envelope verification does NOT append to audit (rejection before handler)', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/audit-reject',
+      input: (raw) => raw as object,
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/audit-reject']
+    if (!handler) throw new Error('handler not registered')
+    const body = ENCODER.encode('{}')
+    // Mint with wrong session id → rejected as wrong-session.
+    const envelope = await mintEnvelope({
+      actionId: 'POST /__a/audit-reject',
+      body,
+      sessionId: 'attacker-session',
+    })
+    const req = new Request('http://localhost/__a/audit-reject', {
+      method: 'POST',
+      headers: { referer: 'http://localhost/', 'x-place-envelope': envelope },
+      body,
+    })
+    const auditLog = inMemoryAuditLog()
+    const disposeAudit = AuditLogCap.install(auditLog)
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+      disposeAudit()
+    }
+    expect(res.status).toBe(403)
+    // No audit entries — the handler never ran; the framework's
+    // automatic append is gated on handler execution. Rejected
+    // envelopes are a separate concern (a future "rejected-action"
+    // log could capture them if needed).
+    expect(await auditLog.size()).toBe(0)
   })
 })
 

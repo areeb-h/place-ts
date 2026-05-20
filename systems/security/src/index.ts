@@ -831,3 +831,22 @@ export {
   type VerifyOptions,
   verifyEnvelope,
 } from './envelope.ts'
+
+// ===== Audit log (Phase 4) =====
+//
+// Tamper-evident, append-only chain of accepted critical-action
+// invocations + handler-emitted events. Each entry binds the
+// previous one via `prev_hash`, so any modification anywhere
+// earlier breaks the chain and is detected on next `verify()`.
+
+export {
+  type AuditAppendInput,
+  type AuditEntry,
+  type AuditLog,
+  AuditLogCap,
+  canonicaliseAuditEntry,
+  GENESIS_HASH,
+  inMemoryAuditLog,
+  useAuditLog,
+  type VerifyResult,
+} from './audit-log.ts'

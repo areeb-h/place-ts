@@ -55,6 +55,8 @@ import {
   type RotatingKey,
   type Session,
   SessionCap,
+  sha256Base64url,
+  useAuditLog,
   useCryptoProvider,
   useNonceStore,
   verifyEnvelope,
@@ -98,11 +100,25 @@ export interface CriticalActionDef<I, R> {
   readonly maxAgeSec?: number
 }
 
-/** Context passed to the handler. Differs from `LoadCtx` only in
- *  the `session` guarantee — never null when the handler runs. */
+/** Context passed to the handler. Differs from `LoadCtx` in:
+ *  - `session` is GUARANTEED non-null (framework enforces).
+ *  - `audit(event, payload?)` appends to the tamper-evident audit
+ *    log. Use for events the handler decides to record beyond the
+ *    framework's automatic per-request entry (which happens on
+ *    return). Common cases: a multi-step handler that records
+ *    intermediate checkpoints, or a handler that emits an event
+ *    when a particular branch fires (`fraud_score.high`,
+ *    `kyc.escalated`). Cheap (~200 ns) so liberal use is fine. */
 export interface CriticalActionCtx extends LoadCtx {
   /** Authenticated session for the request. Framework-enforced. */
   readonly session: Session
+  /**
+   * Append a handler-emitted event to the audit log. Binds
+   * (session.userId, event, sha256(payload), result-hash="",
+   * prev-hash) — the regular entry shape with the action field
+   * set to `event` instead of the request's action_id.
+   */
+  audit(event: string, payload?: unknown): Promise<void>
 }
 
 /** The shape returned by `criticalAction()` — call site + handler
@@ -352,6 +368,11 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
       })
     }
     // 10. Call the handler.
+    const auditLog = useAuditLog()
+    const payloadHash = await sha256Base64url(bodyBytes)
+    // Pre-compute the canonical actor field once; reused for the
+    // request entry below + every ctx.audit() call inside the handler.
+    const actor = session.userId
     let result: R
     try {
       const ctx: CriticalActionCtx = {
@@ -360,9 +381,38 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
         params,
         prefetch: false,
         session,
+        async audit(event, payload) {
+          const evHash =
+            payload === undefined
+              ? ''
+              : await sha256Base64url(new TextEncoder().encode(JSON.stringify(payload)))
+          await auditLog.append({
+            actor,
+            action: event,
+            payloadHash: evHash,
+            resultHash: '',
+            keyId: verifyResult.fields.keyId,
+          })
+        },
       }
       result = await def.fn(validated, ctx)
     } catch (e) {
+      // Audit the failed attempt so the tamper-evident chain shows
+      // it. resultHash is empty; action is the route id; the error
+      // class/message is NOT bound (could be PII or implementation
+      // detail). Handlers that want richer failure attribution call
+      // `ctx.audit('action_name.failure', { reason })` themselves.
+      await auditLog
+        .append({
+          actor,
+          action: `${routeKey}#error`,
+          payloadHash,
+          resultHash: '',
+          keyId: verifyResult.fields.keyId,
+        })
+        .catch(() => {
+          // Audit failure during error path — don't double-fault.
+        })
       if (e instanceof ActionError) {
         return new Response(JSON.stringify({ error: e.message, payload: e.payload }), {
           status: e.status,
@@ -374,7 +424,27 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       })
     }
-    return new Response(JSON.stringify(result), {
+    // Auto-append the success entry. Bound: (actor, action_id,
+    // payload_hash, result_hash, key_id). result_hash is the
+    // SHA-256 of the JSON-stringified result — deterministic enough
+    // to verify "this user got this answer to this request" later.
+    const resultJson = JSON.stringify(result)
+    const resultHash = await sha256Base64url(new TextEncoder().encode(resultJson))
+    await auditLog
+      .append({
+        actor,
+        action: routeKey,
+        payloadHash,
+        resultHash,
+        keyId: verifyResult.fields.keyId,
+      })
+      .catch(() => {
+        // Audit-store failure on the success path is non-fatal for
+        // the request — the action ran + the user gets their result.
+        // Apps that need stricter "no result without audit" semantics
+        // install a durable adapter that fails closed.
+      })
+    return new Response(resultJson, {
       status: 200,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     })

@@ -3,6 +3,8 @@
 import { describe, expect, test } from 'vitest'
 import { defineCapability } from '../../../capability/src/index.ts'
 import {
+  type AuditLog,
+  AuditLogCap,
   bunCryptoProvider,
   CryptoProviderCap,
   CSP_DEFAULTS,
@@ -10,6 +12,8 @@ import {
   cspHeader,
   csrfToken,
   type EnvelopeFields,
+  GENESIS_HASH,
+  inMemoryAuditLog,
   inMemoryNonceStore,
   NonceStoreCap,
   parseCookies,
@@ -22,6 +26,7 @@ import {
   sha256Base64url,
   signEnvelope,
   signedToken,
+  useAuditLog,
   useCryptoProvider,
   useNonceStore,
   verifyEnvelope,
@@ -611,10 +616,17 @@ describe('HMAC envelope — Phase 2b', () => {
     const body = new TextEncoder().encode('{"x":1}')
     const bodyHash = await sha256Base64url(body)
     const wire = await signEnvelope(KEY, validFields({ bodyHash }))
-    // Flip the last char of the tag.
-    const lastChar = wire.charAt(wire.length - 1)
-    const replaceWith = lastChar === 'A' ? 'B' : 'A'
-    const tampered = `${wire.slice(0, -1)}${replaceWith}`
+    // Tag lives after the `.`. Flip a char in the MIDDLE of the tag
+    // — flipping the LAST char of a base64url tag only changes 4
+    // bits (the other 2 bits are "don't care" padding) and may not
+    // actually change the decoded bytes; flipping a middle char
+    // unambiguously flips 6 bits.
+    const dot = wire.lastIndexOf('.')
+    const tagStart = dot + 1
+    const midTagIdx = tagStart + 5
+    const midChar = wire.charAt(midTagIdx)
+    const replaceWith = midChar === 'A' ? 'B' : 'A'
+    const tampered = `${wire.slice(0, midTagIdx)}${replaceWith}${wire.slice(midTagIdx + 1)}`
     const result = await verifyEnvelope(tampered, baseOpts(body))
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.reason).toBe('bad-tag')
@@ -724,5 +736,221 @@ describe('HMAC envelope — Phase 2b', () => {
     expect(lines.filter((l) => l.startsWith('action_id=')).length).toBe(1)
     // The actionId line contains the escaped form, not a raw newline.
     expect(lines[1]).toContain('\\n')
+  })
+})
+
+describe('Audit log — Phase 4', () => {
+  const SAMPLE = {
+    actor: 'user-alice',
+    action: 'POST /__a/createComment',
+    payloadHash: 'fake-payload-hash',
+    resultHash: 'fake-result-hash',
+    keyId: 'b20020',
+  }
+
+  test('inMemoryAuditLog: first append starts the chain at GENESIS_HASH', async () => {
+    const log = inMemoryAuditLog()
+    expect(await log.tip()).toBe(0)
+    expect(await log.tipHash()).toBe(GENESIS_HASH)
+    const entry = await log.append(SAMPLE)
+    expect(entry.seq).toBe(1)
+    expect(entry.prevHash).toBe(GENESIS_HASH)
+    expect(entry.hash.length).toBeGreaterThan(20)
+    expect(entry.actor).toBe('user-alice')
+  })
+
+  test('appends form a hash chain — each prev_hash matches the prior hash', async () => {
+    const log = inMemoryAuditLog()
+    const e1 = await log.append(SAMPLE)
+    const e2 = await log.append(SAMPLE)
+    const e3 = await log.append(SAMPLE)
+    expect(e1.prevHash).toBe(GENESIS_HASH)
+    expect(e2.prevHash).toBe(e1.hash)
+    expect(e3.prevHash).toBe(e2.hash)
+    // Hashes must differ even though the input is identical — the
+    // seq + ts + prev_hash fields are distinct per entry.
+    expect(e1.hash).not.toBe(e2.hash)
+    expect(e2.hash).not.toBe(e3.hash)
+  })
+
+  test('verify() returns ok on an untampered chain', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 5; i++) await log.append(SAMPLE)
+    const result = await log.verify()
+    expect(result.ok).toBe(true)
+  })
+
+  test('verify() detects a tampered prev_hash field (hash-mismatch)', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 5; i++) await log.append(SAMPLE)
+    // Reach into the in-memory entries + corrupt one. The canonical
+    // bytes still match the hash field on THAT entry (we didn't change
+    // either), but the NEXT entry's prev_hash references the OLD
+    // hash. Easier: corrupt the `canonical` so recompute fails.
+    const all = await log.query()
+    const target = all[2]
+    if (!target)
+      throw new Error('expected 5 entries')
+      // Hack: cast away readonly to mutate the in-memory record. In a
+      // real attack, an attacker with write access to the store would
+      // do this.
+    ;(target as unknown as { canonical: string }).canonical = target.canonical.replace(
+      'user-alice',
+      'user-evil',
+    )
+    const result = await log.verify()
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.brokenAt).toBe(3) // seq 3 = the corrupted entry
+      expect(result.reason).toBe('hash-mismatch')
+    }
+  })
+
+  test('verify() detects a broken prev-link (missing-prev)', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 5; i++) await log.append(SAMPLE)
+    const all = await log.query()
+    const target = all[2]
+    if (!target)
+      throw new Error('expected 5 entries')
+      // Forge the prev_hash to something that doesn't match the prior
+      // entry's hash. The canonical line + its hash field still match
+      // each other (no `hash-mismatch`), but the chain link is broken.
+    ;(target as unknown as { prevHash: string }).prevHash = 'forged-prev-hash'
+    const result = await log.verify()
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.brokenAt).toBe(3)
+      expect(result.reason).toBe('missing-prev')
+    }
+  })
+
+  test('query(from, to) returns the inclusive slice', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 10; i++) await log.append(SAMPLE)
+    const window = await log.query(3, 7)
+    expect(window.length).toBe(5)
+    expect(window[0]?.seq).toBe(3)
+    expect(window[4]?.seq).toBe(7)
+  })
+
+  test('query() with no args returns all retained entries', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 3; i++) await log.append(SAMPLE)
+    const all = await log.query()
+    expect(all.length).toBe(3)
+  })
+
+  test('ring-buffer eviction: maxEntries=3 drops oldest after 4th append', async () => {
+    const log = inMemoryAuditLog({ maxEntries: 3 })
+    const e1 = await log.append(SAMPLE)
+    const e2 = await log.append(SAMPLE)
+    const e3 = await log.append(SAMPLE)
+    const e4 = await log.append(SAMPLE)
+    expect(await log.size()).toBe(3)
+    const remaining = await log.query()
+    expect(remaining[0]?.seq).toBe(2) // e1 evicted
+    expect(remaining[2]?.seq).toBe(4)
+    void e1
+    void e2
+    void e3
+    void e4
+  })
+
+  test('tip + tipHash reflect the most recent entry', async () => {
+    const log = inMemoryAuditLog()
+    await log.append(SAMPLE)
+    const e2 = await log.append(SAMPLE)
+    expect(await log.tip()).toBe(2)
+    expect(await log.tipHash()).toBe(e2.hash)
+  })
+
+  test('reset() clears entries + resets the seq counter to 1', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 5; i++) await log.append(SAMPLE)
+    await log.reset()
+    expect(await log.size()).toBe(0)
+    expect(await log.tip()).toBe(0)
+    expect(await log.tipHash()).toBe(GENESIS_HASH)
+    const fresh = await log.append(SAMPLE)
+    expect(fresh.seq).toBe(1)
+    expect(fresh.prevHash).toBe(GENESIS_HASH)
+  })
+
+  test('verify() across the ring boundary works for the retained window', async () => {
+    // After eviction, the first retained entry has prev_hash =
+    // the EVICTED entry's hash. The chain is still internally valid
+    // for the retained slice — verify() walks from the retained
+    // first entry, using its own prev_hash as the starting baseline.
+    const log = inMemoryAuditLog({ maxEntries: 3 })
+    for (let i = 0; i < 5; i++) await log.append(SAMPLE)
+    const result = await log.verify()
+    expect(result.ok).toBe(true)
+  })
+
+  test('rejects maxEntries < 1', () => {
+    expect(() => inMemoryAuditLog({ maxEntries: 0 })).toThrow(/maxEntries must be/)
+  })
+
+  test('useAuditLog falls back to a process-wide singleton when no cap installed', async () => {
+    const log = useAuditLog()
+    const sizeBefore = await log.size()
+    await log.append({ ...SAMPLE, actor: 'fallback-singleton-check' })
+    const log2 = useAuditLog()
+    expect(await log2.size()).toBe(sizeBefore + 1)
+  })
+
+  test('useAuditLog returns the installed cap impl', async () => {
+    const mock = inMemoryAuditLog({ maxEntries: 5 })
+    const dispose = AuditLogCap.install(mock)
+    try {
+      expect(useAuditLog()).toBe(mock)
+    } finally {
+      dispose()
+    }
+  })
+
+  test('canonical entry encoding: JSON-string-encoded values resist injection', async () => {
+    const log = inMemoryAuditLog()
+    // Try to smuggle a fake line via an embedded newline in `action`.
+    const malicious: typeof SAMPLE = {
+      ...SAMPLE,
+      action: 'bad\nseq=99\nactor=fake',
+    }
+    const entry = await log.append(malicious)
+    // The action line still appears as ONE line in the canonical
+    // form; the `\n` is JSON-escaped to `\\n` inside the JSON-encoded
+    // value.
+    const actionLines = entry.canonical.split('\n').filter((l) => l.startsWith('action='))
+    expect(actionLines.length).toBe(1)
+    expect(actionLines[0]).toContain('\\n')
+  })
+
+  test('two logs with same input produce different hashes (ts is bound)', async () => {
+    const log1 = inMemoryAuditLog()
+    const log2 = inMemoryAuditLog()
+    const e1 = await log1.append(SAMPLE)
+    // Sleep so the ts differs.
+    await new Promise((r) => setTimeout(r, 2))
+    const e2 = await log2.append(SAMPLE)
+    expect(e1.hash).not.toBe(e2.hash)
+  })
+
+  test('verify(from, to) partial range works', async () => {
+    const log = inMemoryAuditLog()
+    for (let i = 0; i < 10; i++) await log.append(SAMPLE)
+    const result = await log.verify(3, 7)
+    expect(result.ok).toBe(true)
+  })
+
+  test('AuditLog type matches the interface contract', async () => {
+    const log: AuditLog = inMemoryAuditLog()
+    expect(typeof log.append).toBe('function')
+    expect(typeof log.query).toBe('function')
+    expect(typeof log.size).toBe('function')
+    expect(typeof log.tip).toBe('function')
+    expect(typeof log.tipHash).toBe('function')
+    expect(typeof log.verify).toBe('function')
+    expect(typeof log.reset).toBe('function')
   })
 })
