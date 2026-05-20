@@ -2,7 +2,7 @@
 // runtime, does `splitting: true` extract a shared chunk and shrink
 // the total bytes a page with N islands ships?
 
-import { gzipSync } from 'zlib'
+import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 

@@ -8,7 +8,7 @@
 //      constructor, prototype) are stripped at serialization
 //   6. Security: invalid island names rejected at factory time
 
-import { gzipSync } from 'zlib'
+import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 

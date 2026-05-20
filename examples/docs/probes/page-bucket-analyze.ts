@@ -6,8 +6,8 @@
 // Run from project root:
 //   bun examples/docs/probes/page-bucket-analyze.ts
 
-import { mkdir, writeFile } from 'fs/promises'
-import { gzipSync } from 'zlib'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { gzipSync } from 'node:zlib'
 
 const PROBE_DIR = `${import.meta.dir}/.tmp/page-only`
 const PROBE_ENTRY = `${PROBE_DIR}/entry.ts`

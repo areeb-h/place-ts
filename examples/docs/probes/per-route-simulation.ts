@@ -13,9 +13,9 @@
 // If the win is large, per-route splitting is a slam-dunk prerequisite
 // to T5-B/C.
 
-import { mkdir, readdir, writeFile } from 'fs/promises'
-import { join, resolve } from 'path'
-import { gzipSync } from 'zlib'
+import { mkdir, readdir, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { gzipSync } from 'node:zlib'
 
 const ROOT = resolve(import.meta.dir, '../../..')
 const PAGES_DIR = resolve(import.meta.dir, '../src/pages')

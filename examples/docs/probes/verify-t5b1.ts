@@ -2,8 +2,8 @@
 // `serve()` now calls when `clientEntries` is provided) over the
 // docs app's per-route entry map. Measures each bundle.
 
-import { gzipSync } from 'zlib'
-import { resolve } from 'path'
+import { gzipSync } from 'node:zlib'
+import { resolve } from 'node:path'
 
 import { buildRouteSplitBundles } from '../../../systems/component/src/build/route-splitter.ts'
 import { placeAutoImport } from '../../../systems/component/src/auto-import-plugin.ts'

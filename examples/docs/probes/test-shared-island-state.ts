@@ -6,7 +6,7 @@
 // new framework primitive — just put the shared state in its own
 // module and import from both islands.
 
-import { gzipSync } from 'zlib'
+import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
