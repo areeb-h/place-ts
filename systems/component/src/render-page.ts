@@ -379,8 +379,16 @@ export async function renderPage(
       return renderRouteError(e, req, 'render')
     }
     _endIslandCollection()
-    _endInlineStyleCollection()
     _endHeadingCollection()
+    // NOTE: do NOT end the inline-style collector here. The hooks
+    // below (`ssrProps` resolvers + `transformBody`) re-render island
+    // markers and run app-level body transforms — both can emit
+    // inline `style="…"` attributes through the same JSX path that
+    // records them into the collector. Closing the collector here
+    // would silently drop those hashes from the response's
+    // `style-src 'unsafe-hashes' 'sha256-…'` directive; strict CSP
+    // then blocks the style at first paint with no warning at
+    // render time. Closed at the end of the SSR write path instead.
     // **Auto-title from first `<h1>`.** Content pages without an
     // explicit `meta.title` get their rendered `<h1>` text promoted to
     // the document title. The page author writes `<h1>Why place</h1>`
@@ -444,6 +452,7 @@ export async function renderPage(
           }
         }
       } catch (e) {
+        _endInlineStyleCollection()
         return renderRouteError(e, req, 'render')
       }
     }
@@ -457,9 +466,16 @@ export async function renderPage(
       try {
         body = options.transformBody(body, { req, url })
       } catch (e) {
+        _endInlineStyleCollection()
         return renderRouteError(e, req, 'render')
       }
     }
+    // Now safe to close the collector — every code path that can emit
+    // inline `style="…"` attributes through the JSX pipeline has run.
+    // The collected hash list is read by `renderSecurityHeaders` via
+    // the `X-Place-Inline-Style-Hashes` private response header and
+    // folded into the `style-src` CSP directive.
+    _endInlineStyleCollection()
     // Resolve each used island's bundle URL via the registry. Per-
     // island fetch strategy depends on which `client=` strategies the
     // page's instances declared (see `_beginIslandCollection` JSDoc

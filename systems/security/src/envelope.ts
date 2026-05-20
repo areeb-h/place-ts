@@ -213,12 +213,32 @@ function parseCanonical(text: string): EnvelopeFields {
   return {
     actionId: JSON.parse(get(1, 'action_id')) as string,
     bodyHash: JSON.parse(get(2, 'body_hash')) as string,
-    counter: Number(get(3, 'counter')),
-    iat: Number(get(4, 'iat')),
+    counter: parseCanonicalInt(get(3, 'counter'), 'counter'),
+    iat: parseCanonicalInt(get(4, 'iat'), 'iat'),
     origin: JSON.parse(get(5, 'origin')) as string,
     sessionId: JSON.parse(get(6, 'session_id')) as string,
     keyId: JSON.parse(get(7, 'key_id')) as string,
   }
+}
+
+// Strict canonical-integer parse. `Number()` accepts scientific
+// notation (`1e15` parses to a valid `Number.isInteger` value far
+// past anything a real client should emit), hex (`0x10`), and
+// whitespace — any of which would let a confused or malicious
+// client desync the canonical form server-side vs. client-side,
+// or blow out the replay-window's right edge so legitimate later
+// counters fall outside. Lock the wire format to non-negative
+// decimal integers ≤ 2^53 - 1.
+const CANONICAL_INT = /^(?:0|[1-9][0-9]*)$/
+function parseCanonicalInt(raw: string, field: string): number {
+  if (!CANONICAL_INT.test(raw)) {
+    throw new Error(`invalid ${field}: not a canonical non-negative integer`)
+  }
+  const n = Number(raw)
+  if (!Number.isSafeInteger(n)) {
+    throw new Error(`invalid ${field}: outside safe integer range`)
+  }
+  return n
 }
 
 function base64urlEncode(bytes: Uint8Array): string {

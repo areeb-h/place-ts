@@ -61,6 +61,11 @@ interface StoredKey {
   readonly keyId: string
   /** When the daily root rotates — re-provision before this. */
   readonly expiresAt: number
+  /** Session id — bound into the envelope's `session_id` field.
+   *  Sourced from the auth response (NOT `document.cookie`) so the
+   *  session cookie stays HttpOnly and JS can't pivot via duplicate-
+   *  cookie writes. */
+  readonly sessionId: string
 }
 
 interface IdbKeyRecord {
@@ -71,6 +76,7 @@ interface IdbKeyRecord {
   readonly cryptoKey: CryptoKey
   readonly keyId: string
   readonly expiresAt: number
+  readonly sessionId: string
   /** Highest counter sent. Persists across reloads. */
   readonly counter: number
 }
@@ -108,7 +114,14 @@ export async function installActionKey(provisioned: {
   keyBytes: string
   keyId: string
   expiresAt: number
+  sessionId: string
 }): Promise<void> {
+  if (typeof provisioned.sessionId !== 'string' || provisioned.sessionId.length === 0) {
+    throw new Error(
+      'installActionKey: provisioned.sessionId is required. Re-provision via ' +
+        '`provisionActionKey()` server-side — it now returns sessionId in the response.',
+    )
+  }
   const raw = base64urlDecode(provisioned.keyBytes)
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
@@ -122,13 +135,19 @@ export async function installActionKey(provisioned: {
   // closure; apps are advised to call this immediately after
   // receiving the response + not retain the raw bytes.
   raw.fill(0)
-  _cached = { cryptoKey, keyId: provisioned.keyId, expiresAt: provisioned.expiresAt }
+  _cached = {
+    cryptoKey,
+    keyId: provisioned.keyId,
+    expiresAt: provisioned.expiresAt,
+    sessionId: provisioned.sessionId,
+  }
   _counter = 1
   await idbPut({
     id: KEY_RECORD_ID,
     cryptoKey,
     keyId: provisioned.keyId,
     expiresAt: provisioned.expiresAt,
+    sessionId: provisioned.sessionId,
     counter: 1,
   })
 }
@@ -228,7 +247,6 @@ export async function signClientEnvelope(args: {
 
   // Compute body hash + canonical envelope, then sign.
   const bodyHash = await sha256Base64url(args.body)
-  const session = readSessionIdFromCookie()
   const origin = typeof location !== 'undefined' ? location.origin : ''
   const iat = Math.floor(Date.now() / 1000)
   const lines = [
@@ -238,7 +256,7 @@ export async function signClientEnvelope(args: {
     `counter=${counter}`,
     `iat=${iat}`,
     `origin=${JSON.stringify(origin)}`,
-    `session_id=${JSON.stringify(session)}`,
+    `session_id=${JSON.stringify(stored.sessionId)}`,
     `key_id=${JSON.stringify(stored.keyId)}`,
     '',
   ]
@@ -254,13 +272,32 @@ async function loadKey(): Promise<StoredKey | null> {
   if (_cached !== null) return _cached
   const rec = await idbGetKey(KEY_RECORD_ID)
   if (!rec) return null
-  _cached = { cryptoKey: rec.cryptoKey, keyId: rec.keyId, expiresAt: rec.expiresAt }
+  // Records persisted before sessionId-in-IDB landed lack the field.
+  // Treat them as not-installed so apps re-provision through the new
+  // path; trying to sign envelopes with sessionId="" would 403 anyway.
+  if (typeof rec.sessionId !== 'string' || rec.sessionId.length === 0) return null
+  _cached = {
+    cryptoKey: rec.cryptoKey,
+    keyId: rec.keyId,
+    expiresAt: rec.expiresAt,
+    sessionId: rec.sessionId,
+  }
   _counter = rec.counter
   return _cached
 }
 
+// One open IDBDatabase, reused across every helper. Each helper
+// previously called `indexedDB.open` per invocation and never closed
+// the result — every criticalAction().call() leaked at least two
+// connections (`idbGetKey` from loadKey + `idbUpdateCounter` from
+// the counter bump), and unclosed connections block `versionchange`
+// upgrades on the page. Memoising the promise gives one connection
+// per page lifetime, closed on `versionchange` so a parallel tab can
+// upgrade.
+let _dbPromise: Promise<IDBDatabase> | null = null
 function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  if (_dbPromise !== null) return _dbPromise
+  _dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(IDB_DB, 1)
     req.onupgradeneeded = () => {
       const db = req.result
@@ -268,9 +305,35 @@ function openDb(): Promise<IDBDatabase> {
         db.createObjectStore(IDB_STORE, { keyPath: 'id' })
       }
     }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
+    req.onsuccess = () => {
+      const db = req.result
+      // If another tab requests an upgrade, drop this connection so
+      // the upgrade can proceed; next call re-opens with the new
+      // schema. The current Promise stays settled to this db (callers
+      // mid-transaction won't crash); subsequent calls go through the
+      // re-open path.
+      db.onversionchange = () => {
+        try {
+          db.close()
+        } catch (_) {
+          // ignore — best-effort close on upgrade signal
+        }
+        _dbPromise = null
+      }
+      resolve(db)
+    }
+    req.onerror = () => {
+      _dbPromise = null
+      reject(req.error)
+    }
+    req.onblocked = () => {
+      // Another tab holds an older version with onversionchange not
+      // honored. Re-resolve to allow retry on next call.
+      _dbPromise = null
+      reject(new Error('criticalAction: IndexedDB open blocked'))
+    }
   })
+  return _dbPromise
 }
 
 async function idbGetKey(id: typeof KEY_RECORD_ID): Promise<IdbKeyRecord | null> {
@@ -368,14 +431,4 @@ function base64urlDecode(s: string): Uint8Array {
 async function sha256Base64url(body: Uint8Array): Promise<string> {
   const hash = await crypto.subtle.digest('SHA-256', body as BufferSource)
   return base64urlEncode(new Uint8Array(hash))
-}
-
-function readSessionIdFromCookie(): string {
-  // Apps may store the session id in different cookies; the
-  // canonical default is `place_sid` (set by `setCookieHeader`).
-  // Override by passing an `options.sessionIdReader` to a future
-  // helper — for v0.1, the default cookie name is hardcoded.
-  if (typeof document === 'undefined') return ''
-  const match = document.cookie.match(/(?:^|; )place_sid=([^;]+)/)
-  return match ? decodeURIComponent(match[1] ?? '') : ''
 }

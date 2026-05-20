@@ -82,6 +82,11 @@ import {
 const enc = new TextEncoder()
 const dec = new TextDecoder()
 
+// ISO-8601 UTC: `YYYY-MM-DDTHH:MM:SS[.fff]Z`. Anchored both ends so
+// stray prefix/suffix bytes don't sneak past. `expires=` caveats MUST
+// use this canonical form — see verifyMacaroon for why.
+const ISO_8601_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/
+
 /** A macaroon ready for verification or attenuation. */
 export interface Macaroon {
   /** Stable identifier. v0.1: the session id. */
@@ -289,6 +294,15 @@ export async function verifyMacaroon(
     const key = c.slice(0, eq)
     const value = c.slice(eq + 1)
     if (key === 'expires') {
+      // Strict ISO-8601 UTC only. `Date.parse` is implementation-
+      // defined for non-ISO inputs — V8 returns NaN for "tomorrow"
+      // but accepts "5/21/2026" with locale-dependent semantics,
+      // ambiguous two-digit years, etc. A macaroon minted on one
+      // runtime could parse to a different expiry on another. Pin
+      // the grammar so a caveat is binary-identical across nodes.
+      if (!ISO_8601_UTC.test(value)) {
+        return { ok: false, reason: 'malformed', caveatIndex: i }
+      }
       const expiry = Date.parse(value)
       if (Number.isNaN(expiry)) return { ok: false, reason: 'malformed', caveatIndex: i }
       if (now > expiry) return { ok: false, reason: 'expired', caveatIndex: i }

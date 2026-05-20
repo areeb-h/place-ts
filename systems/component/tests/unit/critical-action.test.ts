@@ -582,13 +582,16 @@ describe('criticalAction — audit log integration (Phase 4)', () => {
 })
 
 describe('provisionActionKey', () => {
-  test('returns base64url key + stable keyId + expiresAt', async () => {
+  test('returns base64url key + stable keyId + expiresAt + sessionId', async () => {
     installRoot()
     const out = await provisionActionKey('session-abc')
     expect(typeof out.keyBytes).toBe('string')
     expect(out.keyBytes.length).toBeGreaterThan(20)
     expect(out.keyId.startsWith('b')).toBe(true)
     expect(out.expiresAt).toBeGreaterThan(Date.now())
+    // sessionId echoed back so the browser binds it into envelopes
+    // (instead of reading the HttpOnly auth cookie, which JS can't see).
+    expect(out.sessionId).toBe('session-abc')
   })
 
   test('rejects empty sessionId', async () => {

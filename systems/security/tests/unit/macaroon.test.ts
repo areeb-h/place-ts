@@ -206,6 +206,20 @@ describe('verifyMacaroon — expires', () => {
     expect(r.ok).toBe(false)
     expect((r as { reason: string }).reason).toBe('malformed')
   })
+
+  test('rejects non-ISO-8601 expires forms even when Date.parse would accept them', async () => {
+    const m0 = await mintMacaroon(rootKey, SID)
+    // Forms `Date.parse` accepts but our grammar pins out — locale
+    // ambiguous, missing timezone, slash separator. Lock the wire so
+    // a macaroon's expiry is binary-identical across nodes.
+    const nonIso = ['5/21/2030', '2030/05/21', '2030-05-21', '2030-05-21T00:00:00', '2030-05-21 00:00:00Z']
+    for (const value of nonIso) {
+      const m = await attenuate(m0, `expires=${value}`)
+      const r = await verifyMacaroon(m, rootKey, { op: 'x', origin: ORIGIN })
+      expect(r.ok).toBe(false)
+      expect((r as { reason: string }).reason).toBe('malformed')
+    }
+  })
 })
 
 describe('verifyMacaroon — origin', () => {

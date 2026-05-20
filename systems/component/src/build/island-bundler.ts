@@ -255,9 +255,21 @@ function readStrategy(el: HTMLElement): string {
 // In production builds the HMR runtime DCEs to zero bytes; the
 // registry still exists but is only used as the SPA-nav cleanup map.
 var registry = (window as any).__placeIslandRegistry || ((window as any).__placeIslandRegistry = {});
-var entry = registry[NAME] || (registry[NAME] = { markers: new Set(), disposers: new WeakMap() });
+var entry = registry[NAME] || (registry[NAME] = { markers: new Set(), disposers: new WeakMap(), pending: new Map() });
+if (!entry.pending) entry.pending = new Map();
 var mountedDisposers = entry.disposers as WeakMap<HTMLElement, () => void>;
 var mountedMarkers = entry.markers as Set<HTMLElement>;
+// Pre-hydration cleanups: an island scheduled for \`visible\`,
+// \`idle\`, or \`interaction\` parks resources (IntersectionObserver,
+// setTimeout / requestIdleCallback handle, event listeners) until
+// the trigger fires. If the marker is detached BEFORE the trigger
+// (typical: SPA nav while a below-the-fold visible-island never
+// scrolled into view), those resources leak — IO holds a strong
+// ref to \`el\` through \`obs.observe(el)\`, the IO is held by the
+// page's IO root, neither GCs. The pending registry pairs each
+// scheduled marker with a teardown closure; \`disposeDetached\` runs
+// it when the marker leaves the document.
+var pendingCleanups = entry.pending as Map<HTMLElement, () => void>;
 // HMR dispose hook (ADR 0028). Called by the HMR runtime before
 // injecting the next bundle. Disposes every live mount + clears the
 // \`viewMounted\` sentinel so the new bundle's \`scanAndSchedule()\`
@@ -328,6 +340,15 @@ function disposeDetached(): void {
       mountedMarkers.delete(el)
     }
   })
+  // And the pre-hydration pending registry — disconnect any
+  // IntersectionObserver / clear any ric/setTimeout / detach any
+  // interaction listeners parked for a marker that's now detached.
+  pendingCleanups.forEach(function(cleanup: () => void, el: HTMLElement){
+    if (!document.contains(el as Node)) {
+      try { cleanup() } catch (_) {}
+      pendingCleanups.delete(el)
+    }
+  })
 }
 
 function scheduleForStrategy(el: HTMLElement, strategy: string): void {
@@ -345,10 +366,24 @@ function scheduleForStrategy(el: HTMLElement, strategy: string): void {
     const ric = (
       window as Window & {
         requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number
+        cancelIdleCallback?: (handle: number) => void
       }
     ).requestIdleCallback
-    if (ric) ric(() => hydrateOne(el), { timeout: 2000 })
-    else setTimeout(() => hydrateOne(el), 200)
+    let handle: number | null = null
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const run = (): void => {
+      pendingCleanups.delete(el)
+      hydrateOne(el)
+    }
+    if (ric) handle = ric(run, { timeout: 2000 })
+    else timer = setTimeout(run, 200)
+    pendingCleanups.set(el, function(): void {
+      if (handle !== null) {
+        const cic = (window as Window & { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback
+        if (cic) cic(handle)
+      }
+      if (timer !== null) clearTimeout(timer)
+    })
     return
   }
   if (strategy === 'visible') {
@@ -357,12 +392,14 @@ function scheduleForStrategy(el: HTMLElement, strategy: string): void {
         for (const entry of entries) {
           if (entry.isIntersecting) {
             o.disconnect()
+            pendingCleanups.delete(el)
             hydrateOne(el)
             return
           }
         }
       }, { rootMargin: '64px' })
       obs.observe(el)
+      pendingCleanups.set(el, function(): void { obs.disconnect() })
     } else {
       hydrateOne(el)
     }
@@ -372,11 +409,15 @@ function scheduleForStrategy(el: HTMLElement, strategy: string): void {
     const events = ['pointerenter', 'focusin', 'click', 'touchstart']
     const onTrigger = (): void => {
       for (const e of events) el.removeEventListener(e, onTrigger)
+      pendingCleanups.delete(el)
       hydrateOne(el)
     }
     for (const e of events) {
       el.addEventListener(e, onTrigger, { once: true, passive: true })
     }
+    pendingCleanups.set(el, function(): void {
+      for (const e of events) el.removeEventListener(e, onTrigger)
+    })
     return
   }
   // Unknown strategy — should not happen given validation; fall back to load.

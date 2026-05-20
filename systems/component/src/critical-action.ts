@@ -366,6 +366,7 @@ export async function provisionActionKey(sessionId: string): Promise<{
   keyBytes: string // base64url
   keyId: string
   expiresAt: number // epoch ms; the daily-rotation boundary
+  sessionId: string // echoed back so the browser binds it into envelopes
 }> {
   if (typeof sessionId !== 'string' || sessionId.length === 0) {
     throw new Error('provisionActionKey: sessionId must be a non-empty string')
@@ -377,7 +378,20 @@ export async function provisionActionKey(sessionId: string): Promise<{
   const nowMs = Date.now()
   const dayMs = 24 * 60 * 60 * 1000
   const expiresAt = Math.ceil(nowMs / dayMs) * dayMs
-  return { keyBytes: base64urlEncode(key), keyId, expiresAt }
+  // The session id rides ALONGSIDE the key, not in `document.cookie`.
+  // Apps set the session cookie HttpOnly (the security default for
+  // `setCookieHeader`), so the browser can't read it from JS; instead
+  // we echo the id back in the provision response. The browser stores
+  // it in IndexedDB next to the non-extractable CryptoKey and uses it
+  // when signing envelopes. Two wins:
+  //   1. envelope `session_id` is now sourced from IDB, not from
+  //      `document.cookie` — the HttpOnly auth cookie stays HttpOnly.
+  //   2. closes the XSS pivot where an attacker writes
+  //      `document.cookie = "place_sid=victim"` to spoof a different
+  //      user's session id into envelopes (HttpOnly blocks reads of the
+  //      legit cookie but does NOT block JS-set duplicates with the
+  //      same name — a real cross-site bug, see browser cookie spec).
+  return { keyBytes: base64urlEncode(key), keyId, expiresAt, sessionId }
 }
 
 // ===== Factory =====

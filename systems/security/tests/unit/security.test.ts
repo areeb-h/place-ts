@@ -737,6 +737,84 @@ describe('HMAC envelope — Phase 2b', () => {
     // The actionId line contains the escaped form, not a raw newline.
     expect(lines[1]).toContain('\\n')
   })
+
+  test('rejects envelope with scientific-notation counter (canonical-int parser)', async () => {
+    // A malicious or confused client encoding `counter=1e10` would
+    // parse as a valid `Number.isInteger` value but blow out the
+    // nonce store's sliding window — all legitimate later counters
+    // would fall outside the right edge. The canonical-int parser
+    // pins the wire to `^(?:0|[1-9][0-9]*)$`.
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    const fields = validFields({ bodyHash })
+    // Build a hand-crafted canonical with `counter=1e10`. We use
+    // signEnvelope's internal canonicalise + hmac path via the
+    // public sign helper, then patch the encoded canonical line.
+    // Simpler: build the wire ourselves with the bad counter.
+    const enc = new TextEncoder()
+    const provider = bunCryptoProvider
+    const lines = [
+      'v=1',
+      `action_id=${JSON.stringify(fields.actionId)}`,
+      `body_hash=${JSON.stringify(fields.bodyHash)}`,
+      `counter=1e10`,
+      `iat=${fields.iat}`,
+      `origin=${JSON.stringify(fields.origin)}`,
+      `session_id=${JSON.stringify(fields.sessionId)}`,
+      `key_id=${JSON.stringify(fields.keyId)}`,
+      '',
+    ]
+    const canonical = enc.encode(lines.join('\n'))
+    const tagBuf = await crypto.subtle.importKey(
+      'raw',
+      KEY as BufferSource,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    )
+    const sig = await crypto.subtle.sign('HMAC', tagBuf, canonical as BufferSource)
+    const b64u = (bytes: Uint8Array): string =>
+      btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    const wire = `${b64u(canonical)}.${b64u(new Uint8Array(sig))}`
+    const result = await verifyEnvelope(wire, baseOpts(body), provider)
+    expect(result.ok).toBe(false)
+    // parseCanonical throws on the bad counter → verifyEnvelope
+    // catches and surfaces 'malformed'.
+    if (!result.ok) expect(result.reason).toBe('malformed')
+  })
+
+  test('rejects envelope with hex counter (canonical-int parser)', async () => {
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    const fields = validFields({ bodyHash })
+    const enc = new TextEncoder()
+    const lines = [
+      'v=1',
+      `action_id=${JSON.stringify(fields.actionId)}`,
+      `body_hash=${JSON.stringify(fields.bodyHash)}`,
+      `counter=0x10`,
+      `iat=${fields.iat}`,
+      `origin=${JSON.stringify(fields.origin)}`,
+      `session_id=${JSON.stringify(fields.sessionId)}`,
+      `key_id=${JSON.stringify(fields.keyId)}`,
+      '',
+    ]
+    const canonical = enc.encode(lines.join('\n'))
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      KEY as BufferSource,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    )
+    const sig = await crypto.subtle.sign('HMAC', cryptoKey, canonical as BufferSource)
+    const b64u = (bytes: Uint8Array): string =>
+      btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    const wire = `${b64u(canonical)}.${b64u(new Uint8Array(sig))}`
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('malformed')
+  })
 })
 
 describe('Audit log — Phase 4', () => {
