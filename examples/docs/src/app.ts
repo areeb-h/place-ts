@@ -18,13 +18,27 @@
 //     `viewTransitions: false` (default), so they don't need to be
 //     listed.
 
+import type { IslandComponent } from '@place/component'
 import { app, discoverPages } from '@place/component/server'
 import { styles as designStyles } from '@place/design'
 import { pathRouter } from '@place/routing'
 
+import devtoolsIsland from './islands/_devtools.tsx'
 import { docsLayout } from './layouts/docs.layout.tsx'
 import { styles as appStyles } from './styles.ts'
 import { tokens } from './theme.ts'
+
+// Devtools is a dev-only island. Living at `_devtools.tsx` keeps it out
+// of `discoverIslands` (the `_`-prefix is the documented skip
+// convention). We register it explicitly only when running outside
+// production — that way `bun run build` (`NODE_ENV=production`) doesn't
+// bundle it, shrinking BOTH the on-disk output AND the shared chunk
+// that's the union of every BUILT island's imports.
+const isDev = (typeof process !== 'undefined' ? process.env['NODE_ENV'] : undefined) !== 'production'
+// Cast through `unknown` because the `islands:` field accepts a
+// covariant `readonly IslandComponent<never>[]` (every IslandComponent
+// flows into that slot regardless of its own props type).
+const devOnlyIslands = (isDev ? [devtoolsIsland] : []) as readonly IslandComponent<never>[]
 
 // Theme persistence is framework-owned: passing `theme` makes
 // `serve()` / `app().build()` auto-inject `themeEarlyScript()` into
@@ -39,6 +53,7 @@ const docsApp = app({
   styles: [designStyles, appStyles],
   router: pathRouter,
   islandsDir: './src/islands',
+  islands: devOnlyIslands,
   // Cloudflare Pages serves `/path/index.html` and 301-redirects bare
   // `/path` to `/path/`. Emitting canonical trailing-slash hrefs from
   // `<Link>` avoids that redirect entirely — a +37 ms-per-nav penalty

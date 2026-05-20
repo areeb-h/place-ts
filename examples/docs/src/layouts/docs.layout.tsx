@@ -8,7 +8,7 @@ import { Sidebar } from '../components/sidebar.tsx'
 // component; the framework auto-discovers them via `app({ islandsDir })`
 // so no manual registration is needed in `app.ts`. We still import
 // the values here to use as JSX.
-import Devtools from '../islands/devtools.tsx'
+import Devtools from '../islands/_devtools.tsx'
 import MobileNavButton from '../islands/mobile-nav-button.tsx'
 import MobileNavDrawer from '../islands/mobile-nav-drawer.tsx'
 import PageNav from '../islands/page-nav.tsx'

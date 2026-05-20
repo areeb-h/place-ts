@@ -1195,13 +1195,41 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // `<div data-place-island="<name>">` markers. Pages without any
   // `<Island>` element ship zero island scripts.
   //
-  // Two registration forms:
-  //   - Record: `islands: { Counter: { component, src } }` (verbose)
-  //   - Array:  `islands: [Counter]` (recommended; uses metadata
-  //             attached by the `island()` factory)
+  // Two registration forms (merged additively when both are passed):
+  //   - `islandsDir: './src/islands'` — filesystem auto-discovery.
+  //   - `islands: [Counter]` — explicit list (recommended; uses
+  //     metadata attached by the `island()` factory).
+  //   - `islands: { Counter: { component, src } }` — verbose record form.
+  //
+  // When both `islandsDir` AND `islands` are passed, the discovered
+  // registry is computed first, then explicit entries are merged on top
+  // (last-write-wins by island name). The pattern is for conditional
+  // islands like dev-only devtools:
+  //
+  //   import devtools from './islands/_devtools.tsx'
+  //   app({
+  //     islandsDir: './src/islands',  // auto-discovers the always-on set
+  //     islands: process.env.NODE_ENV !== 'production' ? [devtools] : [],
+  //   })
+  //
+  // A devtools file lives outside discovery (prefix `_` skips it) and is
+  // wired in explicitly only in dev — so the prod build doesn't even
+  // bundle it, shrinking both the on-disk output AND the shared chunk
+  // that's the union of every BUILT island's imports.
   let islandRegistry: Readonly<Record<string, IslandRegistration>> = {}
+  const mergedMap: Record<string, IslandRegistration> = {}
+  // 1. Discover from islandsDir first (if set) — these are the base.
+  if (options.islandsDir) {
+    // T5-D phase 2 DX: auto-discover islands. Specifier opacity via
+    // `_serverDynImport`.
+    const { discoverIslands } = (await _serverDynImport(
+      './build/discover-islands.ts',
+    )) as typeof import('./build/discover-islands.ts')
+    const discovered = await discoverIslands(options.islandsDir)
+    for (const [name, reg] of Object.entries(discovered)) mergedMap[name] = reg
+  }
+  // 2. Layer explicit `islands` on top — overrides discovery by name.
   if (Array.isArray(options.islands)) {
-    const map: Record<string, IslandRegistration> = {}
     for (const fn of options.islands as readonly IslandComponent<never>[]) {
       if (typeof fn !== 'function' || typeof fn.__islandName !== 'string') {
         throw new Error(
@@ -1212,23 +1240,20 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       const ssrProps = fn.__islandSsrProps as
         | IslandSsrPropsResolver<Record<string, unknown>>
         | undefined
-      map[fn.__islandName] = {
+      mergedMap[fn.__islandName] = {
         component: fn as never,
         src: fn.__islandSrc,
         ...(ssrProps ? { ssrProps } : {}),
       }
     }
-    islandRegistry = map
   } else if (options.islands) {
-    islandRegistry = options.islands as Readonly<Record<string, IslandRegistration>>
-  } else if (options.islandsDir) {
-    // T5-D phase 2 DX: auto-discover islands. Skipped if explicit
-    // `islands` is set above. Specifier opacity via `_serverDynImport`.
-    const { discoverIslands } = (await _serverDynImport(
-      './build/discover-islands.ts',
-    )) as typeof import('./build/discover-islands.ts')
-    islandRegistry = await discoverIslands(options.islandsDir)
+    for (const [name, reg] of Object.entries(
+      options.islands as Readonly<Record<string, IslandRegistration>>,
+    )) {
+      mergedMap[name] = reg
+    }
   }
+  islandRegistry = mergedMap
   // **`rebuildIslands` closure** — captures the entire island-build
   // pipeline so the dev-mode file watcher (set up further down) can
   // re-run it WITHOUT restarting the server when a file under
