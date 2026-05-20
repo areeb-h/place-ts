@@ -9,8 +9,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { placeAutoImport } from '../../../systems/component/src/auto-import-plugin.ts'
-import { buildIslandBundles } from '../../../systems/component/src/build/island-bundler.ts'
+import { placeAutoImport } from '@place/component/auto-import-plugin'
+import { buildIslandBundles } from '@place/component/build'
 
 const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)
 

@@ -12,6 +12,7 @@
     "./client": "./src/client.ts",
     "./server": "./src/server.ts",
     "./islands": "./src/islands.ts",
+    "./build": "./src/build.ts",
     "./internal": "./src/internal.ts",
     "./jsx-runtime": "./src/jsx-runtime.ts",
     "./jsx-dev-runtime": "./src/jsx-runtime.ts",

@@ -17,9 +17,9 @@
 //   6. Page-level `revalidate` at the framework boundary
 //   7. Codegen allowed only when it doesn't hide intent
 
+import { div, page, renderPage, span } from '@place/component'
+import { app } from '@place/component/server'
 import { describe, expect, test } from 'vitest'
-import { div, page, renderPage, span } from '../../systems/component/src/index.ts'
-import { app } from '../../systems/component/src/server.ts'
 
 describe('component charter conformance — architectural commitments', () => {
   // ── Charter clause #1: Routes are values, not files ──────────────────

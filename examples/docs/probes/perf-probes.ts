@@ -19,17 +19,9 @@
 //   - performance.now() resolution under Bun is ~1µs; sample sizes are
 //     chosen so total time per probe is in the 50-500 ms range.
 
+import type { Child, View } from '@place/component'
+import { div, hydrate, li, p, renderToString, span, ul } from '@place/component'
 import { Window } from 'happy-dom'
-import {
-  div,
-  hydrate,
-  li,
-  p,
-  renderToString,
-  span,
-  ul,
-} from '../../../systems/component/src/index.ts'
-import type { Child, View } from '../../../systems/component/src/types.ts'
 
 // ─── DOM bootstrap ─────────────────────────────────────────────────────
 // happy-dom Window installs document/window globals so the framework's

@@ -15,9 +15,9 @@
 //      layout pragmatic
 //   7. The tokenizer subsystem is part of the charter (Tier 13 ADR)
 
+import { renderToString } from '@place/component'
+import { Badge, Button, CodeBlock } from '@place/design'
 import { describe, expect, test } from 'vitest'
-import { renderToString } from '../../systems/component/src/index.ts'
-import { Badge, Button, CodeBlock } from '../../systems/design/src/index.ts'
 
 describe('@place/design charter conformance — architectural commitments', () => {
   // ── Commitment #1: No copy-paste — components are imported ───────────

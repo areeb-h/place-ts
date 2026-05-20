@@ -12,10 +12,10 @@
 //   4. The URL is reactive state
 //   5. SSR is read-only
 
+import { div, page } from '@place/component'
+import { routes } from '@place/component/server'
+import { memoryRouter, parsePath, route, serverRouter } from '@place/routing'
 import { describe, expect, test } from 'vitest'
-import { div, page } from '../../systems/component/src/index.ts'
-import { routes } from '../../systems/component/src/server.ts'
-import { memoryRouter, parsePath, route, serverRouter } from '../../systems/routing/src/index.ts'
 
 describe('routing charter conformance — architectural commitments', () => {
   // ── Commitment #1: Routes are values, not file paths ─────────────────
