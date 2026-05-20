@@ -198,8 +198,8 @@ export default page('/motion', {
         <code>motion</code>
       </h1>
       <p>
-        <code>@place/reactivity/motion</code> ships four primitives. Each takes a target signal
-        (or keyframes), and returns a <code>Derived&lt;number&gt;</code>. The framework treats the
+        <code>@place/reactivity/motion</code> ships four primitives. Each takes a target signal (or
+        keyframes), and returns a <code>Derived&lt;number&gt;</code>. The framework treats the
         returned signal exactly like any other reactive value — there is no parallel "motion
         components" runtime, no <code>&lt;motion.div&gt;</code>, no two-API split between
         declarative and imperative.
@@ -207,11 +207,13 @@ export default page('/motion', {
 
       <CodeBlock code={IMPORT} />
 
-      <h2><code>animate(target, opts)</code></h2>
+      <h2>
+        <code>animate(target, opts)</code>
+      </h2>
       <p>
-        Spring-driven derived state. The returned signal tracks the target through a spring
-        solver (semi-implicit Euler integrator) — so changing the target re-targets the spring
-        from its current velocity.
+        Spring-driven derived state. The returned signal tracks the target through a spring solver
+        (semi-implicit Euler integrator) — so changing the target re-targets the spring from its
+        current velocity.
       </p>
       <CodeBlock code={ANIMATE} />
 
@@ -222,8 +224,8 @@ export default page('/motion', {
         <code>animate.values()</code> / <code>tween.values()</code>
       </h2>
       <p>
-        Multi-property animation in one call. Returns the same shape
-        with each value as a <code>Derived&lt;number&gt;</code>.
+        Multi-property animation in one call. Returns the same shape with each value as a{' '}
+        <code>Derived&lt;number&gt;</code>.
       </p>
       <CodeBlock code={MULTI_VALUE} />
 
@@ -231,9 +233,8 @@ export default page('/motion', {
         <code>motionValue(initial, opts)</code>
       </h2>
       <p>
-        Writable + spring-animated signal — combines{' '}
-        <code>state()</code> + <code>animate()</code> for imperative
-        drive (pointer / scroll / gesture handlers).
+        Writable + spring-animated signal — combines <code>state()</code> + <code>animate()</code>{' '}
+        for imperative drive (pointer / scroll / gesture handlers).
       </p>
       <CodeBlock code={MOTION_VALUE} />
 
@@ -241,30 +242,35 @@ export default page('/motion', {
         <code>delay(source, ms)</code>
       </h2>
       <p>
-        Debounced reactive read. Useful for "show after a beat"
-        patterns without <code>setTimeout</code> ceremony.
+        Debounced reactive read. Useful for "show after a beat" patterns without{' '}
+        <code>setTimeout</code> ceremony.
       </p>
       <CodeBlock code={DELAY} />
 
-      <h2><code>tween(target, opts)</code></h2>
+      <h2>
+        <code>tween(target, opts)</code>
+      </h2>
       <p>Duration + easing instead of physics. Same return shape.</p>
       <CodeBlock code={TWEEN} />
 
-      <h2><code>sequence(keyframes, opts)</code></h2>
+      <h2>
+        <code>sequence(keyframes, opts)</code>
+      </h2>
       <CodeBlock code={SEQUENCE} />
 
-      <h2><code>curve(source, fn)</code></h2>
+      <h2>
+        <code>curve(source, fn)</code>
+      </h2>
       <CodeBlock code={CURVE} />
 
       <h2>
         <code>colorMix(a, b, t)</code>
       </h2>
       <p>
-        Native <code>color-mix()</code> wrapper for color interpolation.
-        Works on any CSS color (hex, rgb, oklch, named, <code>var()</code>,
-        <code>currentColor</code>, <code>transparent</code>). Always
-        interpolates in <code>oklch</code> by default for perceptual
-        uniformity.
+        Native <code>color-mix()</code> wrapper for color interpolation. Works on any CSS color
+        (hex, rgb, oklch, named, <code>var()</code>,<code>currentColor</code>,{' '}
+        <code>transparent</code>). Always interpolates in <code>oklch</code> by default for
+        perceptual uniformity.
       </p>
       <CodeBlock code={COLOR_MIX} />
 
@@ -272,10 +278,9 @@ export default page('/motion', {
         <code>motion(when, opts)</code> — lifecycle bridge
       </h2>
       <p>
-        Delay unmount + emit a phase signal so CSS transitions complete
-        before the DOM is torn down. Bridges <code>&lt;Show&gt;</code> /
-        <code>&lt;Activity&gt;</code> with CSS-driven enter / exit
-        animations.
+        Delay unmount + emit a phase signal so CSS transitions complete before the DOM is torn down.
+        Bridges <code>&lt;Show&gt;</code> /<code>&lt;Activity&gt;</code> with CSS-driven enter /
+        exit animations.
       </p>
       <CodeBlock code={MOTION_LIFECYCLE} />
 
@@ -283,9 +288,8 @@ export default page('/motion', {
         <code>flip(container, opts)</code> — layout animations
       </h2>
       <p>
-        FLIP-style layout animation for list reorders. Runs on the
-        compositor via Web Animations API; respects{' '}
-        <code>prefers-reduced-motion</code> automatically.
+        FLIP-style layout animation for list reorders. Runs on the compositor via Web Animations
+        API; respects <code>prefers-reduced-motion</code> automatically.
       </p>
       <CodeBlock code={FLIP} />
 

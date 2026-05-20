@@ -34,7 +34,7 @@ describe('routing charter conformance — architectural commitments', () => {
   })
 
   // ── Commitment #2: Params typed from the path string ─────────────────
-  test('charter: ParamsOf<\'/posts/:id\'> = { id: string } (TS-level only — runtime check via shape)', () => {
+  test("charter: ParamsOf<'/posts/:id'> = { id: string } (TS-level only — runtime check via shape)", () => {
     const r = route('/posts/:id/comments/:cid')
     // ParamsOf is a type-level inference; runtime check: r() accepts
     // the typed keys and produces the substituted URL.

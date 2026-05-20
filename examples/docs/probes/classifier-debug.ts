@@ -11,13 +11,7 @@ import * as ts from 'typescript'
 import { findConfigFile, sys } from 'typescript'
 
 const islandName = process.argv[2] ?? 'code-block'
-const islandPath = resolve(
-  import.meta.dir,
-  '..',
-  'src',
-  'islands',
-  `${islandName}.tsx`,
-)
+const islandPath = resolve(import.meta.dir, '..', 'src', 'islands', `${islandName}.tsx`)
 
 const configPath = findConfigFile(islandPath, sys.fileExists, 'tsconfig.json')
 if (!configPath) {
@@ -67,7 +61,9 @@ const visit = (node: ts.Node): void => {
     ) {
       seen.add(name)
       const t = checker.getTypeAtLocation(node)
-      console.log(`\n${name} (identifier at line ${sf.getLineAndCharacterOfPosition(node.getStart()).line + 1}):`)
+      console.log(
+        `\n${name} (identifier at line ${sf.getLineAndCharacterOfPosition(node.getStart()).line + 1}):`,
+      )
       console.log('  type:', checker.typeToString(t))
       const props = t.getProperties()
       console.log('  property count:', props.length)
@@ -91,7 +87,9 @@ const visit = (node: ts.Node): void => {
     ) {
       seen.add(`${callee}()`)
       const t = checker.getTypeAtLocation(node)
-      console.log(`\n${callee}() (call at line ${sf.getLineAndCharacterOfPosition(node.getStart()).line + 1}):`)
+      console.log(
+        `\n${callee}() (call at line ${sf.getLineAndCharacterOfPosition(node.getStart()).line + 1}):`,
+      )
       console.log('  return type:', checker.typeToString(t))
       const effectProp = t.getProperty('__effect')
       if (effectProp) {

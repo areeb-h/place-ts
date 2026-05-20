@@ -22,9 +22,7 @@ describe('CodeBlock — base rendering', () => {
   })
 
   test('header shows filename + lang label + copy button by default', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'x', lang: 'tsx', filename: 'src/app.tsx' }),
-    )
+    const html = renderToString(CodeBlock({ code: 'x', lang: 'tsx', filename: 'src/app.tsx' }))
     expect(html).toContain('src/app.tsx')
     expect(html).toContain('tsx')
     expect(html).toContain('data-place-copy')
@@ -65,9 +63,7 @@ describe('CodeBlock — base rendering', () => {
   })
 
   test('copyLabels customizes the idle/copied text', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'x', copyLabels: { idle: '⎘', copied: '✓' } }),
-    )
+    const html = renderToString(CodeBlock({ code: 'x', copyLabels: { idle: '⎘', copied: '✓' } }))
     expect(html).toContain('⎘')
     expect(html).toContain('✓')
   })
@@ -111,9 +107,7 @@ describe('CodeBlock — variants', () => {
 
 describe('CodeBlock — line features', () => {
   test('lineNumbers=true renders a gutter with sequential numbers', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'a\nb\nc', lang: 'ts', lineNumbers: true }),
-    )
+    const html = renderToString(CodeBlock({ code: 'a\nb\nc', lang: 'ts', lineNumbers: true }))
     expect(html).toContain('place-code-ln')
     expect(html).toContain('>1<')
     expect(html).toContain('>2<')
@@ -121,18 +115,14 @@ describe('CodeBlock — line features', () => {
   })
 
   test('lineNumbers={ start: 10 } starts at the given number', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'a\nb', lineNumbers: { start: 10 } }),
-    )
+    const html = renderToString(CodeBlock({ code: 'a\nb', lineNumbers: { start: 10 } }))
     expect(html).toContain('>10<')
     expect(html).toContain('>11<')
     expect(html).not.toContain('>1<')
   })
 
   test('highlightLines marks the right rows with data-hl', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'a\nb\nc\nd\ne', highlightLines: [2, [4, 5]] }),
-    )
+    const html = renderToString(CodeBlock({ code: 'a\nb\nc\nd\ne', highlightLines: [2, [4, 5]] }))
     // Count data-hl="1" occurrences — should be 3 (lines 2, 4, 5) for
     // the content rows. No gutter (lineNumbers absent), so each
     // highlighted line = 1 marker.
@@ -141,9 +131,7 @@ describe('CodeBlock — line features', () => {
   })
 
   test('diff mode tags lines with data-diff', () => {
-    const html = renderToString(
-      CodeBlock({ code: '+ added\n- removed\n  context', diff: true }),
-    )
+    const html = renderToString(CodeBlock({ code: '+ added\n- removed\n  context', diff: true }))
     expect(html).toContain('data-diff="+"')
     expect(html).toContain('data-diff="-"')
   })
@@ -166,9 +154,7 @@ describe('CodeBlock — line features', () => {
 describe('CodeBlock — tokenizer pluggability', () => {
   test('custom `tokenize` prop overrides the registry resolution', () => {
     const everythingIsKeyword: Tokenizer = (src) => [{ kind: 'keyword', text: src }]
-    const html = renderToString(
-      CodeBlock({ code: 'whatever 123', tokenize: everythingIsKeyword }),
-    )
+    const html = renderToString(CodeBlock({ code: 'whatever 123', tokenize: everythingIsKeyword }))
     expect(html).toContain('tok-keyword')
     // No number token despite the digits in the source.
     expect(html).not.toContain('tok-number')
@@ -237,16 +223,12 @@ describe('CodeBlock — composition escape hatches', () => {
   })
 
   test('style as object renders CSS variables for token color overrides', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'x', style: { '--cb-tok-keyword': '#ff79c6' } }),
-    )
+    const html = renderToString(CodeBlock({ code: 'x', style: { '--cb-tok-keyword': '#ff79c6' } }))
     expect(html).toContain('--cb-tok-keyword:#ff79c6')
   })
 
   test('aria-label propagates to the region', () => {
-    const html = renderToString(
-      CodeBlock({ code: 'x', 'aria-label': 'Snippet for example' }),
-    )
+    const html = renderToString(CodeBlock({ code: 'x', 'aria-label': 'Snippet for example' }))
     // <section> has implicit role="region" when given an aria-label —
     // the semantic-elements lint rule prefers the native element over
     // a div with an explicit role.

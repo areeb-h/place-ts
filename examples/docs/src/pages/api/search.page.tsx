@@ -60,8 +60,8 @@ export default page('/search', {
       <p>
         Reactive search over <code>@place/reactivity</code> collections. v0.1 ships exactly one
         primitive — <code>searchable()</code>. It takes a reactive list plus a field extractor and
-        returns a function that, given a reactive query, yields a reactive filtered list.
-        Substring match, case-insensitive, AND of whitespace-separated tokens.
+        returns a function that, given a reactive query, yields a reactive filtered list. Substring
+        match, case-insensitive, AND of whitespace-separated tokens.
       </p>
 
       <Callout kind="note" title="Search is a separate concern">

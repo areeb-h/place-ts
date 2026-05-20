@@ -101,9 +101,7 @@ export interface InputProps {
 }
 
 export const Input = (props: InputProps): View => {
-  const baseClasses = inputRecipe(
-    props.size !== undefined ? { size: props.size } : {},
-  )
+  const baseClasses = inputRecipe(props.size !== undefined ? { size: props.size } : {})
   const finalClass = props.class ? cls(baseClasses, props.class) : baseClasses
   // Build the props object conditionally so `exactOptionalPropertyTypes`
   // doesn't reject `ref: undefined` / `pattern: undefined` etc. The
@@ -140,9 +138,7 @@ export interface TextareaProps extends Omit<InputProps, 'type' | 'pattern' | 're
 }
 
 export const Textarea = (props: TextareaProps): View => {
-  const baseClasses = inputRecipe(
-    props.size !== undefined ? { size: props.size } : {},
-  )
+  const baseClasses = inputRecipe(props.size !== undefined ? { size: props.size } : {})
   // **`field-sizing: content`** (Tier 17-E v2 fix) — Chromium 129+
   // auto-grows the textarea to fit its content with zero JS or
   // ResizeObserver. Browsers without `field-sizing` see the
@@ -325,10 +321,7 @@ export const Field = (props: FieldProps): View => {
   }
 
   return (
-    <div
-      class={wrapperClass}
-      ref={(el: HTMLElement) => wireChildAttrs(el)}
-    >
+    <div class={wrapperClass} ref={(el: HTMLElement) => wireChildAttrs(el)}>
       <label for={fieldId} class={labelClass}>
         {props.label}
       </label>

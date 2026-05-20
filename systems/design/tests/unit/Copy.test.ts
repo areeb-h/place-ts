@@ -34,9 +34,7 @@ describe('Copy — generic click-to-copy primitive', () => {
   })
 
   test('children override the idle/copied labels (consumer owns content)', () => {
-    const html = renderToString(
-      Copy({ text: 'x', children: 'Custom button text' }),
-    )
+    const html = renderToString(Copy({ text: 'x', children: 'Custom button text' }))
     expect(html).toContain('Custom button text')
     // No default data-copy-idle / done spans when children provided.
     expect(html).not.toContain('data-copy-idle')

@@ -17,7 +17,9 @@ describe('Button — variants + base behavior', () => {
   test('intent variants change visual classes', () => {
     expect(renderToString(Button({ intent: 'secondary', children: 'x' }))).toContain('bg-card')
     expect(renderToString(Button({ intent: 'ghost', children: 'x' }))).toContain('text-muted')
-    expect(renderToString(Button({ intent: 'destructive', children: 'x' }))).toContain('bg-destructive')
+    expect(renderToString(Button({ intent: 'destructive', children: 'x' }))).toContain(
+      'bg-destructive',
+    )
   })
 
   test('size variants change padding/text classes', () => {

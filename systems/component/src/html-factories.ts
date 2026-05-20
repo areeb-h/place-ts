@@ -38,9 +38,7 @@ type ElementArg<E extends HTMLElement> =
  * `HTMLButtonElement` rather than `HTMLElement`. Props can be any
  * `ElementProps` subset; arrays/children pass through to `el()`.
  */
-export type HtmlFactory<E extends HTMLElement = HTMLElement> = (
-  ...args: ElementArg<E>[]
-) => View
+export type HtmlFactory<E extends HTMLElement = HTMLElement> = (...args: ElementArg<E>[]) => View
 
 const make =
   <E extends HTMLElement>(tag: string): HtmlFactory<E> =>

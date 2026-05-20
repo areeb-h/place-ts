@@ -120,19 +120,21 @@ export default page('/auth', {
         primitive for signing. place's contribution is the composition story — the crypto is yours.
       </Callout>
 
-      <h2 id="rbac">RBAC: <code>&lt;Can&gt;</code></h2>
+      <h2 id="rbac">
+        RBAC: <code>&lt;Can&gt;</code>
+      </h2>
       <p>
-        Once a session is installed, gate UI on a per-action predicate. <code>&lt;Can&gt;</code> reads{' '}
-        <code>SessionCap.tryUse()?.can?.(action)</code> at render time and fails closed — if there's
-        no session, no <code>.can</code>, or the predicate doesn't return strictly{' '}
-        <code>true</code>, the denied content is never emitted. Because the check is synchronous, the
-        gate works pre-hydration; unauthorized content stays out of <em>view-source</em>, not just
-        hidden via CSS.
+        Once a session is installed, gate UI on a per-action predicate. <code>&lt;Can&gt;</code>{' '}
+        reads <code>SessionCap.tryUse()?.can?.(action)</code> at render time and fails closed — if
+        there's no session, no <code>.can</code>, or the predicate doesn't return strictly{' '}
+        <code>true</code>, the denied content is never emitted. Because the check is synchronous,
+        the gate works pre-hydration; unauthorized content stays out of <em>view-source</em>, not
+        just hidden via CSS.
       </p>
       <CodeBlock code={CAN_EX} />
       <p>
-        <code>&lt;Can&gt;</code> lives in <code>@place/security</code> (data lives there, not in
-        the design library). The framework doesn't ship a policy DSL — apps wire any authorization
+        <code>&lt;Can&gt;</code> lives in <code>@place/security</code> (data lives there, not in the
+        design library). The framework doesn't ship a policy DSL — apps wire any authorization
         engine (Cerbos, Permify, hand-rolled) into <code>Session.can</code> at install time. See{' '}
         <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0044-can-rbac-gate.md">
           ADR 0044

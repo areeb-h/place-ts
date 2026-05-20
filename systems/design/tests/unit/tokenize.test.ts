@@ -17,9 +17,7 @@ import {
 // assertions don't depend on exact spacing.
 
 const kt = (toks: readonly Tok[]): Array<[string, string]> =>
-  toks
-    .filter((t) => !(t.kind === 'plain' && t.text.trim() === ''))
-    .map((t) => [t.kind, t.text])
+  toks.filter((t) => !(t.kind === 'plain' && t.text.trim() === '')).map((t) => [t.kind, t.text])
 
 const findToken = (toks: readonly Tok[], text: string): Tok | undefined =>
   toks.find((t) => t.text === text)

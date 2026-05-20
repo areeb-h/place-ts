@@ -47,10 +47,10 @@ export default page('/define-capability', {
         <code>defineCapability()</code>
       </h1>
       <p>
-        Declares a typed slot. The returned <code>Capability</code> has{' '}
-        <code>.use()</code>, <code>.tryUse()</code>, <code>.provide()</code>, and{' '}
-        <code>.install()</code> methods. <code>install(impl)</code> returns a disposer — call it to
-        remove that installation; there is no <code>uninstall</code>.
+        Declares a typed slot. The returned <code>Capability</code> has <code>.use()</code>,{' '}
+        <code>.tryUse()</code>, <code>.provide()</code>, and <code>.install()</code> methods.{' '}
+        <code>install(impl)</code> returns a disposer — call it to remove that installation; there
+        is no <code>uninstall</code>.
       </p>
 
       <h2 id="signature">Signature</h2>

@@ -208,7 +208,13 @@ describe('motion / animate (spring)', () => {
     // all five presets to get within 0.5 of target. Stricter
     // tolerances per preset live in the dedicated overshoot/molasses
     // tests above.
-    const presets: (keyof typeof SPRING_PRESETS)[] = ['gentle', 'wobbly', 'stiff', 'molasses', 'snap']
+    const presets: (keyof typeof SPRING_PRESETS)[] = [
+      'gentle',
+      'wobbly',
+      'stiff',
+      'molasses',
+      'snap',
+    ]
     for (const preset of presets) {
       resetClock()
       const target = state(0)
@@ -274,17 +280,22 @@ describe('motion / sequence', () => {
   })
 
   test('throws on out-of-order keyframes', () => {
-    expect(() => sequence([
-      { at: 100, value: 0 },
-      { at: 50, value: 1 },
-    ])).toThrow(/sorted/i)
+    expect(() =>
+      sequence([
+        { at: 100, value: 0 },
+        { at: 50, value: 1 },
+      ]),
+    ).toThrow(/sorted/i)
   })
 })
 
 describe('motion / curve', () => {
   test('passes source through the curve function', () => {
     const src = state(0)
-    const c = curve(() => src(), (x) => x * x)
+    const c = curve(
+      () => src(),
+      (x) => x * x,
+    )
     expect(c()).toBe(0)
     src.set(3)
     expect(c()).toBe(9)
@@ -496,18 +507,12 @@ describe('motion / colorMix', () => {
   })
 
   test('t=0.5 emits a balanced color-mix() in oklch by default', () => {
-    expect(colorMix('red', 'blue', 0.5)).toBe(
-      'color-mix(in oklch, red 50%, blue 50%)',
-    )
+    expect(colorMix('red', 'blue', 0.5)).toBe('color-mix(in oklch, red 50%, blue 50%)')
   })
 
   test('arbitrary t emits the right percent split', () => {
-    expect(colorMix('red', 'blue', 0.25)).toBe(
-      'color-mix(in oklch, red 75%, blue 25%)',
-    )
-    expect(colorMix('red', 'blue', 0.75)).toBe(
-      'color-mix(in oklch, red 25%, blue 75%)',
-    )
+    expect(colorMix('red', 'blue', 0.25)).toBe('color-mix(in oklch, red 75%, blue 25%)')
+    expect(colorMix('red', 'blue', 0.75)).toBe('color-mix(in oklch, red 25%, blue 75%)')
   })
 
   test('out-of-range t clamps to [0,1]', () => {
@@ -523,21 +528,13 @@ describe('motion / colorMix', () => {
 
   test('t quantization keeps output stable across sub-millis flicker', () => {
     // 0.5001 → 0.5 (3-decimal quantization)
-    expect(colorMix('red', 'blue', 0.5001)).toBe(
-      'color-mix(in oklch, red 50%, blue 50%)',
-    )
-    expect(colorMix('red', 'blue', 0.4999)).toBe(
-      'color-mix(in oklch, red 50%, blue 50%)',
-    )
+    expect(colorMix('red', 'blue', 0.5001)).toBe('color-mix(in oklch, red 50%, blue 50%)')
+    expect(colorMix('red', 'blue', 0.4999)).toBe('color-mix(in oklch, red 50%, blue 50%)')
   })
 
   test('explicit space arg flows through to the CSS string', () => {
-    expect(colorMix('red', 'blue', 0.5, 'srgb')).toBe(
-      'color-mix(in srgb, red 50%, blue 50%)',
-    )
-    expect(colorMix('red', 'blue', 0.5, 'oklab')).toBe(
-      'color-mix(in oklab, red 50%, blue 50%)',
-    )
+    expect(colorMix('red', 'blue', 0.5, 'srgb')).toBe('color-mix(in srgb, red 50%, blue 50%)')
+    expect(colorMix('red', 'blue', 0.5, 'oklab')).toBe('color-mix(in oklab, red 50%, blue 50%)')
   })
 
   test('accepts var(...) + currentColor + transparent + oklch literals', () => {
@@ -562,10 +559,8 @@ describe('motion / lifecycle (motion())', () => {
   type RafShim = (cb: () => void) => ReturnType<typeof setTimeout>
   const shimRaf = ((cb: () => void) => setTimeout(cb, 0)) as unknown as RafShim
   const shimCaf = ((h: number) => clearTimeout(h)) as unknown as (handle: number) => void
-  ;(globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame =
-    shimRaf
-  ;(globalThis as { cancelAnimationFrame?: unknown }).cancelAnimationFrame =
-    shimCaf
+  ;(globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame = shimRaf
+  ;(globalThis as { cancelAnimationFrame?: unknown }).cancelAnimationFrame = shimCaf
 
   test('initial phase = "entered" when when()=true at creation', () => {
     const open = state(true)
@@ -620,12 +615,10 @@ describe('motion / lifecycle (motion())', () => {
 
   // Restore real rAF if it existed.
   if (origRaf !== undefined) {
-    ;(globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame =
-      origRaf
+    ;(globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame = origRaf
   }
   if (origCaf !== undefined) {
-    ;(globalThis as { cancelAnimationFrame?: unknown }).cancelAnimationFrame =
-      origCaf
+    ;(globalThis as { cancelAnimationFrame?: unknown }).cancelAnimationFrame = origCaf
   }
 })
 

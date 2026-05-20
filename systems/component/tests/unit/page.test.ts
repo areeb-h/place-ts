@@ -471,7 +471,7 @@ describe('page({onError, onNotFound}) — per-page error views', () => {
 
   // ----- meta DX improvements (page-directive fundamentals) -----
 
-  test('meta string shorthand: meta: \'X\' is equivalent to meta: { title: \'X\' }', async () => {
+  test("meta string shorthand: meta: 'X' is equivalent to meta: { title: 'X' }", async () => {
     const p = page('/why', {
       meta: 'Why place',
       view: () => div({}, ['body']),
@@ -488,7 +488,9 @@ describe('page({onError, onNotFound}) — per-page error views', () => {
       view: () => div({}, ['body']),
     })
     // Manually provide params; the test bypasses serve()'s router.
-    const body = await (await renderPage(p, new Request('http://x/posts/abc'), { id: 'abc' })).text()
+    const body = await (
+      await renderPage(p, new Request('http://x/posts/abc'), { id: 'abc' })
+    ).text()
     expect(body).toContain('<title>Post abc</title>')
   })
 

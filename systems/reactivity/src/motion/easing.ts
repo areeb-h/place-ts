@@ -18,8 +18,7 @@ export const linear: EasingFn = (t) => t
 // Quadratic
 export const easeInQuad: EasingFn = (t) => t * t
 export const easeOutQuad: EasingFn = (t) => 1 - (1 - t) * (1 - t)
-export const easeInOutQuad: EasingFn = (t) =>
-  t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t)
+export const easeInOutQuad: EasingFn = (t) => (t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t))
 
 // Cubic
 export const easeInCubic: EasingFn = (t) => t * t * t
@@ -27,8 +26,7 @@ export const easeOutCubic: EasingFn = (t) => {
   const u = 1 - t
   return 1 - u * u * u
 }
-export const easeInOutCubic: EasingFn = (t) =>
-  t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+export const easeInOutCubic: EasingFn = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 
 // Quartic
 export const easeInQuart: EasingFn = (t) => t * t * t * t

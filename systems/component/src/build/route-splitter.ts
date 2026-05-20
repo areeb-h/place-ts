@@ -147,7 +147,10 @@ export async function buildRouteSplitBundles(
   const slugify = (key: string): string => {
     if (key === '__default__') return 'default'
     if (key === '/') return 'landing'
-    return key.replace(/^\/+/, '').replace(/\/+$/, '').replace(/[^a-zA-Z0-9/_-]/g, '-')
+    return key
+      .replace(/^\/+/, '')
+      .replace(/\/+$/, '')
+      .replace(/[^a-zA-Z0-9/_-]/g, '-')
   }
 
   // Bundles are raw UTF-8 bytes (Uint8Array<ArrayBuffer>) — same array
@@ -173,9 +176,7 @@ export async function buildRouteSplitBundles(
       plugins: [...(options.plugins ?? [])] as never,
     })
     if (!build.success) {
-      throw new Error(
-        `route-splitter: build failed for ${entry.source}:\n${build.logs.join('\n')}`,
-      )
+      throw new Error(`route-splitter: build failed for ${entry.source}:\n${build.logs.join('\n')}`)
     }
     // Find the JS entry output (kind === 'entry-point') and any
     // sourcemap siblings. External-sourcemap mode emits the `.map`

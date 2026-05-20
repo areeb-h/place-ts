@@ -95,11 +95,7 @@ export function flip(
   // motion graph aware that FLIP exists in the dependency surface
   // even when this particular call site isn't doing work.
   // (Reading clock() in `untrack` would lie about reactivity shape.)
-  if (
-    !container ||
-    typeof MutationObserver === 'undefined' ||
-    typeof HTMLElement === 'undefined'
-  ) {
+  if (!container || typeof MutationObserver === 'undefined' || typeof HTMLElement === 'undefined') {
     return () => {}
   }
 
@@ -123,9 +119,7 @@ export function flip(
     if (childSelector !== null) {
       return Array.from(container.querySelectorAll<HTMLElement>(childSelector))
     }
-    return Array.from(container.children).filter(
-      (c): c is HTMLElement => c instanceof HTMLElement,
-    )
+    return Array.from(container.children).filter((c): c is HTMLElement => c instanceof HTMLElement)
   }
 
   const measureBox = (child: HTMLElement, cr: DOMRect): Box => {
@@ -168,10 +162,7 @@ export function flip(
         // Native Web Animations API. Runs on the compositor; pauses
         // on `prefers-reduced-motion` honor via the reduced() check above.
         child.animate(
-          [
-            { transform: `translate(${dx}px, ${dy}px)` },
-            { transform: 'translate(0, 0)' },
-          ],
+          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
           { duration, easing, fill: 'none' },
         )
       }

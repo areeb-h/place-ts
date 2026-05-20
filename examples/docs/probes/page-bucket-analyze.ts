@@ -71,7 +71,9 @@ const codeEnd = bundleText.lastIndexOf(mapMarkerEarly)
 const codeText = codeEnd > 0 ? bundleText.slice(0, codeEnd) : bundleText
 const totalRaw = new TextEncoder().encode(codeText).byteLength
 const totalGz = gzipSync(codeText).byteLength
-console.log(`page-only bundle (code only, no source map): ${totalRaw.toLocaleString()} B raw, ${totalGz.toLocaleString()} B gzipped\n`)
+console.log(
+  `page-only bundle (code only, no source map): ${totalRaw.toLocaleString()} B raw, ${totalGz.toLocaleString()} B gzipped\n`,
+)
 
 // ---------- Source-map extraction ----------
 //
@@ -196,9 +198,9 @@ rows.sort((a, b) => b.bytes - a.bytes)
 // Group: framework systems / devalue / app / other
 type Bucket = { name: string; bytes: number; rows: Row[] }
 const buckets: Record<string, Bucket> = {
-  'reactivity': { name: 'reactivity', bytes: 0, rows: [] },
-  'routing': { name: 'routing', bytes: 0, rows: [] },
-  'capability': { name: 'capability', bytes: 0, rows: [] },
+  reactivity: { name: 'reactivity', bytes: 0, rows: [] },
+  routing: { name: 'routing', bytes: 0, rows: [] },
+  capability: { name: 'capability', bytes: 0, rows: [] },
   'component/index.ts': { name: 'component/index.ts', bytes: 0, rows: [] },
   'component/app.ts': { name: 'component/app.ts', bytes: 0, rows: [] },
   'component/action.ts': { name: 'component/action.ts', bytes: 0, rows: [] },
@@ -215,9 +217,9 @@ const buckets: Record<string, Bucket> = {
   'component/runtime': { name: 'component/__place_runtime.ts', bytes: 0, rows: [] },
   'component/build-static.ts': { name: 'component/build-static.ts', bytes: 0, rows: [] },
   'component/form.ts': { name: 'component/form.ts', bytes: 0, rows: [] },
-  'devalue': { name: 'devalue (vendored)', bytes: 0, rows: [] },
-  'app': { name: 'probe app code', bytes: 0, rows: [] },
-  'other': { name: 'other', bytes: 0, rows: [] },
+  devalue: { name: 'devalue (vendored)', bytes: 0, rows: [] },
+  app: { name: 'probe app code', bytes: 0, rows: [] },
+  other: { name: 'other', bytes: 0, rows: [] },
 }
 
 const classify = (src: string): keyof typeof buckets => {
@@ -273,4 +275,6 @@ console.log('-'.repeat(56))
 console.log(
   `${'attributed total'.padEnd(36)} ${fmt(attributed).padStart(10)} ${pct(attributed).padStart(7)}`,
 )
-console.log(`${'unattributed (minifier glue)'.padEnd(36)} ${fmt(totalRaw - attributed).padStart(10)}`)
+console.log(
+  `${'unattributed (minifier glue)'.padEnd(36)} ${fmt(totalRaw - attributed).padStart(10)}`,
+)

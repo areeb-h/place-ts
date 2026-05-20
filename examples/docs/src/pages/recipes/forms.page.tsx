@@ -150,18 +150,21 @@ export default page('/forms', {
       <h3 id="field-errors">Field-level errors</h3>
       <p>
         On validation failure, <code>fromStandard</code> throws{' '}
-        <code>ActionError(400, 'Validation failed', {`{ fields }`})</code>. The{' '}
-        <code>fields</code> map is keyed by dotted path (<code>email</code>,{' '}
-        <code>profile.age</code>, <code>items.0.name</code>) → message. Narrow the payload via{' '}
+        <code>ActionError(400, 'Validation failed', {`{ fields }`})</code>. The <code>fields</code>{' '}
+        map is keyed by dotted path (<code>email</code>, <code>profile.age</code>,{' '}
+        <code>items.0.name</code>) → message. Narrow the payload via{' '}
         <code>isValidationFailure</code> and route each path to its{' '}
         <code>{`<Field error={...}>`}</code> state cell.
       </p>
       <CodeBlock code={FIELD_ERRORS} />
 
       <Callout kind="note" title="No bundled DSL">
-        We don't ship a <code>definePolicy()</code> / form-state DSL on top.
-        Standard Schema is the contract; apps wire whichever validator they
-        already use. See <Link to="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0045-from-standard-schema-interop.md">ADR 0045</Link> for the rationale.
+        We don't ship a <code>definePolicy()</code> / form-state DSL on top. Standard Schema is the
+        contract; apps wire whichever validator they already use. See{' '}
+        <Link to="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0045-from-standard-schema-interop.md">
+          ADR 0045
+        </Link>{' '}
+        for the rationale.
       </Callout>
 
       <h2 id="security">Security pipeline</h2>

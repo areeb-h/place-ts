@@ -178,7 +178,9 @@ describe('__place runtime — pre-boot capture + replay', () => {
     a.setAttribute('data-place-link', '')
     document.body.appendChild(a)
     // Cmd-click → open in new tab; runtime must NOT preventDefault.
-    const click = trusted(new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true }))
+    const click = trusted(
+      new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true }),
+    )
     a.dispatchEvent(click)
     expect(click.defaultPrevented).toBe(false)
     expect(globalThis.__place.q.length).toBe(0)
@@ -244,7 +246,11 @@ describe('__place runtime — pre-boot capture + replay', () => {
     // direct (this is the contract the runtime must keep).
     const removed: Array<{ type: string; capture: boolean }> = []
     const orig = document.removeEventListener.bind(document)
-    document.removeEventListener = ((type: string, listener: EventListener, opts?: EventListenerOptions | boolean) => {
+    document.removeEventListener = ((
+      type: string,
+      listener: EventListener,
+      opts?: EventListenerOptions | boolean,
+    ) => {
       const capture = typeof opts === 'boolean' ? opts : !!opts?.capture
       removed.push({ type, capture })
       return orig(type, listener, opts)

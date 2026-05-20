@@ -100,8 +100,13 @@ describe('cls — class composition', () => {
 
     test('Card raised intent keeps both shadow utilities', () => {
       // Exact repro from the bug report — `<Card intent="raised">`.
-      expect(cls('rounded-xl bg-card border border-border text-fg', 'border-border/60 shadow-lg shadow-bg/30', 'p-5'))
-        .toBe('rounded-xl bg-card border text-fg border-border/60 shadow-lg shadow-bg/30 p-5')
+      expect(
+        cls(
+          'rounded-xl bg-card border border-border text-fg',
+          'border-border/60 shadow-lg shadow-bg/30',
+          'p-5',
+        ),
+      ).toBe('rounded-xl bg-card border text-fg border-border/60 shadow-lg shadow-bg/30 p-5')
     })
   })
 })

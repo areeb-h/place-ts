@@ -242,9 +242,9 @@ export default page('/why', {
       <Callout kind="note">
         place ships an islands hydration model: a page with no interactive island ships{' '}
         <strong>zero</strong> framework JavaScript — a "hello world" content page is literally 0 KB
-        on the client. Pages that need interactivity ship only their islands' bundles (typically
-        3–8 KB each), never a whole-app runtime. Competitor numbers are a minimal "hello world" with
-        the default router; the relative gap widens, not narrows, as apps grow.
+        on the client. Pages that need interactivity ship only their islands' bundles (typically 3–8
+        KB each), never a whole-app runtime. Competitor numbers are a minimal "hello world" with the
+        default router; the relative gap widens, not narrows, as apps grow.
       </Callout>
 
       <h2 id="when-not-to">When not to pick place</h2>

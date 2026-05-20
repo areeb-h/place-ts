@@ -135,9 +135,7 @@ const ReactivityDemoImpl = () => {
         </div>
         <ul class="list-none p-3 m-0 rounded-lg bg-bg border border-border flex-1 min-h-[160px] font-mono text-[12px] leading-[1.55] text-muted">
           {() =>
-            log().map((line, i) => (
-              <li class={`py-0.5 ${i === 0 ? 'text-fg' : ''}`}>{line}</li>
-            ))
+            log().map((line, i) => <li class={`py-0.5 ${i === 0 ? 'text-fg' : ''}`}>{line}</li>)
           }
         </ul>
       </div>

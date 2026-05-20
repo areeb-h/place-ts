@@ -250,9 +250,7 @@ export const Toaster = (props: ToasterProps = {}): View => {
     toasterEl.style.setProperty('pointer-events', has ? 'auto' : 'none')
   })
 
-  const baseClass = anchorRecipe(
-    props.anchor !== undefined ? { anchor: props.anchor } : {},
-  )
+  const baseClass = anchorRecipe(props.anchor !== undefined ? { anchor: props.anchor } : {})
   const finalClass = props.class ? cls(baseClass, props.class) : baseClass
 
   return (

@@ -20,7 +20,15 @@
 //     chosen so total time per probe is in the 50-500 ms range.
 
 import { Window } from 'happy-dom'
-import { div, hydrate, li, p, renderToString, span, ul } from '../../../systems/component/src/index.ts'
+import {
+  div,
+  hydrate,
+  li,
+  p,
+  renderToString,
+  span,
+  ul,
+} from '../../../systems/component/src/index.ts'
 import type { Child, View } from '../../../systems/component/src/types.ts'
 
 // ─── DOM bootstrap ─────────────────────────────────────────────────────
@@ -108,11 +116,7 @@ for (const [label, view] of [
   ['nested (d=7, f=3)', makeNestedTree(7, 3)],
 ] as const) {
   const nodes = nodeCountOf(view)
-  const perCall = time(
-    { name: label, body: () => void renderToString(view) },
-    100,
-    5,
-  )
+  const perCall = time({ name: label, body: () => void renderToString(view) }, 100, 5)
   const rps = Math.round(1000 / perCall)
   console.log(
     `${pad(label, 22, 'l')} ${pad(String(nodes), 7)} ${pad(fmt(perCall), 12)} ${pad(rps.toLocaleString(), 14)}`,
@@ -233,9 +237,7 @@ for (const [label, view] of [
 if (typeof process !== 'undefined' && typeof process.memoryUsage === 'function') {
   console.log('\n[5] heap growth trend (leak smoke — linear growth = leak)')
   console.log('-'.repeat(70))
-  console.log(
-    `${pad('tree', 22, 'l')} ${pad('Δ@100', 12)} ${pad('Δ@1000', 12)} ${pad('ratio', 8)}`,
-  )
+  console.log(`${pad('tree', 22, 'l')} ${pad('Δ@100', 12)} ${pad('Δ@1000', 12)} ${pad('ratio', 8)}`)
   for (const [label, view] of [
     ['flat list (50)', makeFlatList(50)],
     ['nested (d=5, f=3)', makeNestedTree(5, 3)],
@@ -253,8 +255,7 @@ if (typeof process !== 'undefined' && typeof process.memoryUsage === 'function')
     }
     const d100 = measureCycles(100)
     const d1000 = measureCycles(1000)
-    const fmtMB = (n: number): string =>
-      `${n >= 0 ? '+' : ''}${(n / 1024 / 1024).toFixed(2)} MB`
+    const fmtMB = (n: number): string => `${n >= 0 ? '+' : ''}${(n / 1024 / 1024).toFixed(2)} MB`
     // Ratio close to 10 → linear growth (red flag). Negative deltas
     // (GC ran during measurement) collapse to "—" because the ratio
     // isn't meaningful.

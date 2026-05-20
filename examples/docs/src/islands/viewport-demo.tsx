@@ -27,7 +27,9 @@ const ViewportDemoImpl = (): View => {
       </div>
       <div class="flex flex-col gap-0.5">
         <span class="text-xs text-muted uppercase tracking-wide">reduced motion</span>
-        <span class="text-fg text-base">{() => (viewport.prefersReducedMotion() ? 'yes' : 'no')}</span>
+        <span class="text-fg text-base">
+          {() => (viewport.prefersReducedMotion() ? 'yes' : 'no')}
+        </span>
       </div>
       <div class="flex flex-col gap-0.5">
         <span class="text-xs text-muted uppercase tracking-wide">prefers dark</span>

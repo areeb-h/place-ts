@@ -385,14 +385,10 @@ export function renderDocument(body: string, parts: DocumentParts): string {
   const charset = parts.meta?.charset ?? 'utf-8'
   const viewport = parts.meta?.viewport ?? 'width=device-width,initial-scale=1'
   const stylesHtml = renderStyles(parts.styles)
-  const nonceAttr = parts.scriptNonce
-    ? ` nonce="${escapeHtmlAttrFull(parts.scriptNonce)}"`
-    : ''
+  const nonceAttr = parts.scriptNonce ? ` nonce="${escapeHtmlAttrFull(parts.scriptNonce)}"` : ''
   const integrityFor = (url: string): string => {
     const hash = parts.scriptIntegrity?.[url]
-    return hash
-      ? ` integrity="sha384-${escapeHtmlAttrFull(hash)}" crossorigin="anonymous"`
-      : ''
+    return hash ? ` integrity="sha384-${escapeHtmlAttrFull(hash)}" crossorigin="anonymous"` : ''
   }
   const bootstrapTag = parts.bootstrap
     ? `<script type="module" src="${escapeHtmlAttrFull(parts.bootstrap)}"${nonceAttr}${integrityFor(parts.bootstrap)}></script>`

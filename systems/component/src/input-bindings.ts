@@ -5,13 +5,7 @@
 // from the main index so the file size shrinks without changing the
 // dependency graph.
 
-import {
-  type Disposer,
-  type State,
-  state,
-  untrack,
-  watch,
-} from '@place/reactivity'
+import { type Disposer, type State, state, untrack, watch } from '@place/reactivity'
 import { RouterCap } from '@place/routing'
 import { onCleanup } from './_internal/cleanup.ts'
 

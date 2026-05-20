@@ -35,14 +35,7 @@
  *
  * The lub is computed by `lubEffect` below; `'pure'` is bottom.
  */
-export type Effect =
-  | 'pure'
-  | 'state'
-  | 'lifecycle'
-  | 'timer'
-  | 'io'
-  | 'dom'
-  | 'suspense'
+export type Effect = 'pure' | 'state' | 'lifecycle' | 'timer' | 'io' | 'dom' | 'suspense'
 
 /**
  * Level the classifier picks from an effect set. Tier 8 ships these

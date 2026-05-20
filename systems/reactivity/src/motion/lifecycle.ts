@@ -86,10 +86,7 @@ export interface Motion {
  * @param when      Reactive boolean driving the visible state.
  * @param opts      `{ duration }` — exit linger time. Default 200ms.
  */
-export function motion(
-  when: () => boolean,
-  opts: MotionOptions = {},
-): Motion {
+export function motion(when: () => boolean, opts: MotionOptions = {}): Motion {
   const duration = opts.duration ?? 200
   // Initial: whatever `when()` says, render fully entered (avoids
   // animating on the very first paint — that's lifecycle for mounts

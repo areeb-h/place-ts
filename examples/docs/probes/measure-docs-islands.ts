@@ -42,7 +42,9 @@ const elapsed = performance.now() - t0
 console.log(`Built in ${elapsed.toFixed(0)}ms.`)
 
 console.log('')
-console.log(`${'island'.padEnd(28)} ${'url'.padEnd(36)} ${'raw'.padStart(11)} ${'gzip'.padStart(11)}`)
+console.log(
+  `${'island'.padEnd(28)} ${'url'.padEnd(36)} ${'raw'.padStart(11)} ${'gzip'.padStart(11)}`,
+)
 console.log('-'.repeat(90))
 for (const [name, url] of result.nameToBundleUrl) {
   const content = result.bundles.get(url)!

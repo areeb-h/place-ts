@@ -53,7 +53,8 @@ export const DEFAULT_SPRING = SPRING_PRESETS.gentle
 
 /** Resolve a preset name or raw params into a fully-populated SpringParams. */
 export function resolveSpring(s: SpringPreset | SpringParams | undefined): Required<SpringParams> {
-  const raw: SpringParams = s === undefined ? DEFAULT_SPRING : typeof s === 'string' ? SPRING_PRESETS[s] : s
+  const raw: SpringParams =
+    s === undefined ? DEFAULT_SPRING : typeof s === 'string' ? SPRING_PRESETS[s] : s
   return {
     mass: raw.mass ?? 1,
     tension: raw.tension ?? 170,

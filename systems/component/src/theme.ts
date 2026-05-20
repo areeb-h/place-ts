@@ -133,14 +133,14 @@ export interface ThemeTokensOptions<Themes extends Readonly<Record<string, Theme
  */
 export type TypographyScaleRatio =
   | number
-  | 'minor-second'    // 1.067
-  | 'major-second'    // 1.125
-  | 'minor-third'     // 1.2
-  | 'major-third'     // 1.25
-  | 'perfect-fourth'  // 1.333
+  | 'minor-second' // 1.067
+  | 'major-second' // 1.125
+  | 'minor-third' // 1.2
+  | 'major-third' // 1.25
+  | 'perfect-fourth' // 1.333
   | 'augmented-fourth' // 1.414
-  | 'perfect-fifth'   // 1.5
-  | 'golden'          // 1.618
+  | 'perfect-fifth' // 1.5
+  | 'golden' // 1.618
 
 const SCALE_RATIOS: Readonly<Record<Exclude<TypographyScaleRatio, number>, number>> = {
   'minor-second': 1.067,
@@ -150,7 +150,7 @@ const SCALE_RATIOS: Readonly<Record<Exclude<TypographyScaleRatio, number>, numbe
   'perfect-fourth': 1.333,
   'augmented-fourth': Math.SQRT2,
   'perfect-fifth': 1.5,
-  'golden': 1.618,
+  golden: 1.618,
 }
 
 /**
@@ -204,8 +204,7 @@ export interface TypographyOptions {
 // tasteful sans/mono stacks otherwise. All overridable.
 
 const DEFAULT_FAMILY: Readonly<Record<string, string>> = {
-  sans:
-    'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  sans: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   mono: 'ui-monospace, SFMono-Regular, Menlo, "JetBrains Mono", Consolas, "Liberation Mono", monospace',
 }
 const DEFAULT_WEIGHT: Readonly<Record<string, number>> = {
@@ -255,11 +254,7 @@ function modularSize(base: number, ratio: number, step: number): string {
  * or a signed step like `'+3'` / `'-1'` / numeric `0` (compute via the
  * modular scale).
  */
-function resolveRoleSize(
-  rawSize: string | number,
-  base: number,
-  ratio: number,
-): string {
+function resolveRoleSize(rawSize: string | number, base: number, ratio: number): string {
   if (typeof rawSize === 'number') return modularSize(base, ratio, rawSize)
   // String form: try step parse first (e.g. '+3', '-1', '0'); fall
   // back to using the string verbatim (e.g. '1.125rem', '18px').
@@ -282,26 +277,17 @@ function resolveRoleLeading(
   return raw
 }
 
-function resolveRoleTracking(
-  raw: string,
-  tracking: Readonly<Record<string, string>>,
-): string {
+function resolveRoleTracking(raw: string, tracking: Readonly<Record<string, string>>): string {
   return tracking[raw] ?? raw
 }
 
-function resolveRoleWeight(
-  raw: string | number,
-  weight: Readonly<Record<string, number>>,
-): string {
+function resolveRoleWeight(raw: string | number, weight: Readonly<Record<string, number>>): string {
   if (typeof raw === 'number') return String(raw)
   const fromScale = weight[raw]
   return fromScale !== undefined ? String(fromScale) : raw
 }
 
-function resolveRoleFamily(
-  raw: string,
-  family: Readonly<Record<string, string>>,
-): string {
+function resolveRoleFamily(raw: string, family: Readonly<Record<string, string>>): string {
   return family[raw] ?? raw
 }
 
@@ -322,9 +308,7 @@ function buildTypographySections(opts: TypographyOptions): {
 } {
   const base = opts.base ?? 16
   const ratio =
-    typeof opts.scale === 'number'
-      ? opts.scale
-      : SCALE_RATIOS[opts.scale ?? 'major-third']
+    typeof opts.scale === 'number' ? opts.scale : SCALE_RATIOS[opts.scale ?? 'major-third']
   const family = opts.family ?? DEFAULT_FAMILY
   const weight = opts.weight ?? DEFAULT_WEIGHT
   const leading = opts.leading ?? DEFAULT_LEADING
@@ -611,10 +595,7 @@ export function themeTokens<Themes extends Readonly<Record<string, ThemeMap>>>(
   // 2. @theme block — registers the default theme's color tokens +
   //    typography scale tokens with v4. These also serve as `:root`
   //    defaults: pages with no theme class get this theme.
-  const themeBlockLines = [
-    ...tokensToLines(defaultTokens),
-    ...(typo?.themeAdditions ?? []),
-  ]
+  const themeBlockLines = [...tokensToLines(defaultTokens), ...(typo?.themeAdditions ?? [])]
   sections.push(`@theme {\n${indent(themeBlockLines)}\n}`)
 
   // 3. Per-theme override classes — emitted for EVERY theme, including
@@ -817,10 +798,7 @@ export function themeEarlyScript(
   const classes = tokens.names.map((n) => tokens.htmlClass(n))
   const removeArgs = classes.map((c) => JSON.stringify(c)).join(',')
   const applyChecks = tokens.names
-    .map(
-      (n, i) =>
-        `if(v===${JSON.stringify(n)})r.classList.add(${JSON.stringify(classes[i])});`,
-    )
+    .map((n, i) => `if(v===${JSON.stringify(n)})r.classList.add(${JSON.stringify(classes[i])});`)
     .join('')
   return (
     '(function(){try{' +

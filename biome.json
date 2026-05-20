@@ -51,6 +51,22 @@
           }
         }
       }
+    },
+    {
+      "includes": [
+        "examples/docs/probes/**",
+        "**/tests/**",
+        "tests/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
     }
   ],
   "javascript": {

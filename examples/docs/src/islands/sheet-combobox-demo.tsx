@@ -31,7 +31,17 @@ const FRAMEWORKS: readonly Framework[] = [
 ]
 
 const SearchIcon = (): View => (
-  <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 20 20"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
     <circle cx="9" cy="9" r="6" />
     <path d="M14 14l3 3" />
   </svg>
@@ -51,9 +61,7 @@ const SheetComboboxDemoImpl = (): View => {
     <div class="not-prose my-4 flex flex-col gap-6 p-4 rounded-lg border border-border bg-card/60">
       {/* Demo 1: in-Sheet combobox with default styling */}
       <div class="flex flex-col gap-3">
-        <div class="text-xs uppercase tracking-wide text-muted">
-          Default styling, in a Sheet
-        </div>
+        <div class="text-xs uppercase tracking-wide text-muted">Default styling, in a Sheet</div>
         <div class="flex items-center gap-3">
           <Button intent="primary" onClick={() => open.set(true)}>
             Open sheet
@@ -72,9 +80,7 @@ const SheetComboboxDemoImpl = (): View => {
             does the job. Custom render hooks should ADD visual
             information, not duplicate framework affordances. */}
       <div class="flex flex-col gap-2">
-        <div class="text-xs uppercase tracking-wide text-muted">
-          Custom renderOption + leftIcon
-        </div>
+        <div class="text-xs uppercase tracking-wide text-muted">Custom renderOption + leftIcon</div>
         <div style="max-width: 24rem">
           <Combobox
             options={FRAMEWORKS}
@@ -128,8 +134,7 @@ const SheetComboboxDemoImpl = (): View => {
             aria-label="Framework"
           />
           <p class="mt-3 text-sm">
-            Selected:{' '}
-            <span class="font-mono text-accent">{() => labelOf(pick1())}</span>
+            Selected: <span class="font-mono text-accent">{() => labelOf(pick1())}</span>
           </p>
         </Sheet.Body>
         <Sheet.Footer>

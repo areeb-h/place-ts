@@ -52,11 +52,7 @@ export { _setHydrated }
  * View that scopes a single cap (e.g. swapping a router impl for a
  * test render).
  */
-export function withCapability<T>(
-  capability: Capability<T>,
-  impl: T,
-  child: View,
-): View {
+export function withCapability<T>(capability: Capability<T>, impl: T, child: View): View {
   return {
     mount(parent, anchor) {
       const uninstall = capability.install(impl)
@@ -81,10 +77,7 @@ export function withCapability<T>(
  * `[Router, Theme, Session]` reads top-down as "router-outermost
  * then theme then session-innermost").
  */
-export function withCapabilities(
-  provisions: readonly Provision[],
-  view: View,
-): View {
+export function withCapabilities(provisions: readonly Provision[], view: View): View {
   // Wrap from innermost (last in array) to outermost (first) so the
   // FIRST listed capability is the outermost in the install order —
   // matches the natural reading order.
@@ -114,10 +107,7 @@ export function mount(
   container: Element | string,
   options?: { provide?: readonly Provision[] },
 ): Disposer {
-  const target =
-    typeof container === 'string'
-      ? document.querySelector(container)
-      : container
+  const target = typeof container === 'string' ? document.querySelector(container) : container
   if (target === null) {
     throw new Error(
       typeof container === 'string'
@@ -126,10 +116,7 @@ export function mount(
     )
   }
   const provisions = options?.provide
-  const wrapped =
-    provisions && provisions.length > 0
-      ? withCapabilities(provisions, view)
-      : view
+  const wrapped = provisions && provisions.length > 0 ? withCapabilities(provisions, view) : view
   return wrapped.mount(target, null)
 }
 

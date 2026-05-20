@@ -22,10 +22,7 @@
 import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import type {
-  IslandRegistration,
-  IslandSsrPropsResolver,
-} from '../index.ts'
+import type { IslandRegistration, IslandSsrPropsResolver } from '../index.ts'
 
 const ISLAND_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'] as const
 
@@ -63,10 +60,7 @@ export async function discoverIslands(
       )
     }
     const island = def as IslandLike & ((...args: never[]) => unknown)
-    if (
-      typeof island.__islandName !== 'string' ||
-      typeof island.__islandSrc !== 'string'
-    ) {
+    if (typeof island.__islandName !== 'string' || typeof island.__islandSrc !== 'string') {
       throw new Error(
         `discoverIslands: '${file}' default export is not an island. ` +
           `Wrap with \`island(import.meta.url, fn)\` so the framework knows the bundle source.`,

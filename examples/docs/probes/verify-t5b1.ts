@@ -113,8 +113,12 @@ const sharedBundles = [...result.bundles.entries()]
   .map(([url, content]) => ({ url, gz: gzipSync(content).length }))
 const sharedTotalGz = sharedBundles.reduce((a, b) => a + b.gz, 0)
 
-console.log(`Route bundles (just route's own code): avg ${fmt(avgGz)}, min ${fmt(minGz)}, max ${fmt(maxGz)}`)
-console.log(`Shared chunks (loaded once, cached): ${sharedBundles.length} chunks, ${fmt(sharedTotalGz)} total`)
+console.log(
+  `Route bundles (just route's own code): avg ${fmt(avgGz)}, min ${fmt(minGz)}, max ${fmt(maxGz)}`,
+)
+console.log(
+  `Shared chunks (loaded once, cached): ${sharedBundles.length} chunks, ${fmt(sharedTotalGz)} total`,
+)
 console.log(`First-load (route + all shared): ~${fmt(avgGz + sharedTotalGz)} avg per page`)
 console.log(`Compare: pre-T5-B-1 single-bundle: 62.20 KB per page`)
 const winPct = (((62 * 1024 - (avgGz + sharedTotalGz)) / (62 * 1024)) * 100).toFixed(0)

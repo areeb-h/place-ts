@@ -96,8 +96,8 @@ export default page('/data', {
 
       <h2 id="compose">Composing with persistence</h2>
       <p>
-        Because the collection wraps a plain <code>State&lt;T[]&gt;</code>, wrapping that state
-        with <code>persistedState</code> makes every mutation durable — no special integration.
+        Because the collection wraps a plain <code>State&lt;T[]&gt;</code>, wrapping that state with{' '}
+        <code>persistedState</code> makes every mutation durable — no special integration.
       </p>
       <CodeBlock code={COMPOSE} />
 

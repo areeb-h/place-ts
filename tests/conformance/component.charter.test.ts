@@ -74,9 +74,7 @@ describe('component charter conformance — architectural commitments', () => {
     expect(matches.length).toBe(1)
     // It's `type="application/json"` (not executable, not a wire format
     // requiring a parser to inspect).
-    expect(html).toMatch(
-      /<script type="application\/json"[^>]*id="__place_load__"[^>]*>/,
-    )
+    expect(html).toMatch(/<script type="application\/json"[^>]*id="__place_load__"[^>]*>/)
     // The data is right there in plaintext.
     expect(html).toContain('"greeting":"hello"')
   })

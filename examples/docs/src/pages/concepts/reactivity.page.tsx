@@ -125,7 +125,6 @@ batch(() => {
   a.set(10)
   b.set(20)
 })  // watchers run once, after the batch`}
-       
       />
 
       <h2 id="viewport">viewport — reactive screen size</h2>
@@ -154,9 +153,8 @@ viewport.matches('(min-width: 800px)')  // (q) => () => boolean
       <Callout kind="note" title="When to use which">
         <code>viewport.*</code> is for <strong>behavioural</strong> responsiveness — picking a
         component to render based on screen size. Tailwind utilities (<code>sm:</code> /{' '}
-        <code>md:</code> / <code>lg:</code>) are for <strong>stylistic</strong> responsiveness —
-        the CSS itself is media-query-based so there's no JS-driven flash on hydrate. Combine
-        freely.
+        <code>md:</code> / <code>lg:</code>) are for <strong>stylistic</strong> responsiveness — the
+        CSS itself is media-query-based so there's no JS-driven flash on hydrate. Combine freely.
       </Callout>
 
       <h2 id="see-also">See also</h2>

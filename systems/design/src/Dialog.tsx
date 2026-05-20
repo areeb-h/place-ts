@@ -217,9 +217,7 @@ const DialogImpl = (props: DialogProps): View => {
     }
   })
 
-  const baseClasses = dialogRecipe(
-    props.size !== undefined ? { size: props.size } : {},
-  )
+  const baseClasses = dialogRecipe(props.size !== undefined ? { size: props.size } : {})
   // Resolve `class` (root) + `classNames.backdrop` (Tier 17-D
   // contract; ADR 0050). The backdrop tokens are auto-prefixed
   // with Tailwind's `[&::backdrop]:` variant so the call site reads
@@ -273,9 +271,7 @@ const Header = (props: SlotProps): View => (
 )
 
 const Body = (props: SlotProps): View => (
-  <div class={cls('px-5 py-4 overflow-y-auto', props.class ?? '')}>
-    {props.children}
-  </div>
+  <div class={cls('px-5 py-4 overflow-y-auto', props.class ?? '')}>{props.children}</div>
 )
 
 const Footer = (props: SlotProps): View => (

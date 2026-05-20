@@ -283,7 +283,6 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       // Pull the base from either an explicit tailwind.base or the
       // theme. The theme's `.base` is the canonical Tailwind starter
       // (with @import + @theme). The caller can override either.
-      // biome-ignore lint/suspicious/noExplicitAny: theme shape varies; we only need `.base`.
       const themeBase = (config.theme as { base?: string } | undefined)?.base
       const explicit = tw === true || tw === undefined ? undefined : tw
       const explicitBase = explicit?.base

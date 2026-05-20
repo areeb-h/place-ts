@@ -310,20 +310,12 @@ export namespace StandardSchemaV1 {
     readonly path?: ReadonlyArray<PropertyKey | { readonly key: PropertyKey }>
   }
   /** Infer the validated output type from a Standard Schema. */
-  export type InferOutput<S extends StandardSchemaV1> = S extends StandardSchemaV1<
-    unknown,
-    infer O
-  >
-    ? O
-    : never
+  export type InferOutput<S extends StandardSchemaV1> =
+    S extends StandardSchemaV1<unknown, infer O> ? O : never
   /** Infer the accepted input type (rarely needed; usually inferred
    *  from the runtime call site). */
-  export type InferInput<S extends StandardSchemaV1> = S extends StandardSchemaV1<
-    infer I,
-    unknown
-  >
-    ? I
-    : never
+  export type InferInput<S extends StandardSchemaV1> =
+    S extends StandardSchemaV1<infer I, unknown> ? I : never
 }
 
 /**

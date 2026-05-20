@@ -104,8 +104,7 @@ const badgeRecipe = recipe({
       // values that lived inline here previously violated NN#6.
       success: 'bg-success/12 text-success border border-success/40',
       warn: 'bg-warn/12 text-warn border border-warn/40',
-      destructive:
-        'bg-destructive/12 text-destructive border border-destructive/40',
+      destructive: 'bg-destructive/12 text-destructive border border-destructive/40',
     },
     size: {
       sm: 'px-1.5 py-0 text-xs',

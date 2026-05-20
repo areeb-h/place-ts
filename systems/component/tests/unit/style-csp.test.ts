@@ -67,10 +67,9 @@ describe('CSP-safe style writes — behavior', () => {
 
   test('object style applies camelCase → kebab-case and supports custom props', () => {
     const root = document.createElement('div')
-    const dispose = div(
-      { style: { backgroundColor: 'blue', '--ring-color': 'gold' } },
-      ['x'],
-    ).mount(root, null)
+    const dispose = div({ style: { backgroundColor: 'blue', '--ring-color': 'gold' } }, [
+      'x',
+    ]).mount(root, null)
     try {
       const node = root.firstElementChild as HTMLElement
       expect(node.style.getPropertyValue('background-color')).toBe('blue')

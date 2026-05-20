@@ -46,9 +46,6 @@ const docsApp = app({
 // `bun run build` for the Cloudflare Pages deploy. Unset → normal
 // dev/prod server (or client-side hydrate, which `run()` dispatches
 // to via the `__PLACE_BROWSER__` build define).
-const buildOutDir =
-  typeof process !== 'undefined' ? process.env['PLACE_BUILD'] : undefined
+const buildOutDir = typeof process !== 'undefined' ? process.env['PLACE_BUILD'] : undefined
 
-export default buildOutDir
-  ? await docsApp.build({ outDir: buildOutDir })
-  : docsApp.run()
+export default buildOutDir ? await docsApp.build({ outDir: buildOutDir }) : docsApp.run()

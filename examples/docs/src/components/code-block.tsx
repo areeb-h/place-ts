@@ -223,9 +223,7 @@ export const CodeBlock = (props: CodeBlockProps) => {
     // visual styling is all Tailwind utilities on the elements here.
     <div class="code-block group relative my-4 mb-6 border border-border rounded-[10px] overflow-hidden bg-card/95">
       <div class="flex items-center gap-2 py-2 px-3.5 border-b border-border/60 bg-bg/60 font-mono text-[11px] leading-none text-muted">
-        {props.filename ? (
-          <span class="mr-auto text-fg">{props.filename}</span>
-        ) : null}
+        {props.filename ? <span class="mr-auto text-fg">{props.filename}</span> : null}
         <span class="ml-auto lowercase tracking-[0.05em]">{props.lang ?? 'ts'}</span>
         <button
           type="button"

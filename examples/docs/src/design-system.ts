@@ -30,8 +30,7 @@ export const button = recipe({
     intent: {
       primary:
         'bg-accent text-accent-fg shadow-md shadow-accent/25 hover:shadow-lg hover:shadow-accent/35 hover:-translate-y-px active:translate-y-0',
-      secondary:
-        'bg-card border border-border text-fg hover:border-accent hover:bg-card/80',
+      secondary: 'bg-card border border-border text-fg hover:border-accent hover:bg-card/80',
       ghost: 'text-muted hover:text-fg',
     },
     size: {

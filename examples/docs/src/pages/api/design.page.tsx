@@ -324,18 +324,16 @@ export default page('/design', {
       </h1>
       <p>
         A curated component library shipped <em>with</em> the platform — Button, Field / Input /
-        Textarea, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card. Native-first composition is
-        a charter principle: every primitive sits on a real browser primitive (<code>
-          &lt;dialog&gt;
-        </code>
-        , the Popover API, <code>:user-invalid</code>, <code>@starting-style</code>) so the
-        framework adds behavior, not infrastructure.
+        Textarea, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card. Native-first composition is a
+        charter principle: every primitive sits on a real browser primitive (
+        <code>&lt;dialog&gt;</code>, the Popover API, <code>:user-invalid</code>,{' '}
+        <code>@starting-style</code>) so the framework adds behavior, not infrastructure.
       </p>
 
       <Callout kind="note" title="A package, not a 10th system">
         <code>@place/design</code> is a curated package built on top of the existing systems —{' '}
-        <code>recipe()</code>, <code>themeTokens()</code>, the component runtime. The platform
-        map keeps nine systems; the design library is one of the curated packages on top. See{' '}
+        <code>recipe()</code>, <code>themeTokens()</code>, the component runtime. The platform map
+        keeps nine systems; the design library is one of the curated packages on top. See{' '}
         <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0016-design-library-as-package.md">
           ADR 0016
         </a>{' '}
@@ -344,55 +342,42 @@ export default page('/design', {
       </Callout>
 
       <h2 id="customization">Customization</h2>
-      <p>
-        Every component is highly customizable on four axes — without
-        forking the source:
-      </p>
+      <p>Every component is highly customizable on four axes — without forking the source:</p>
       <ol>
         <li>
-          <strong>Theme tokens.</strong> Components reference theme
-          tokens (<code>bg-card</code>, <code>text-fg</code>,{' '}
-          <code>bg-accent</code>, …) which resolve to your theme's
-          CSS variables. Swap the theme and every component re-skins
-          atomically. See <Link to="/recipes/theming">Theming</Link>.
+          <strong>Theme tokens.</strong> Components reference theme tokens (<code>bg-card</code>,{' '}
+          <code>text-fg</code>, <code>bg-accent</code>, …) which resolve to your theme's CSS
+          variables. Swap the theme and every component re-skins atomically. See{' '}
+          <Link to="/recipes/theming">Theming</Link>.
         </li>
         <li>
-          <strong>Typed recipe variants.</strong> Each component's
-          public surface IS its variant ladder — <code>intent</code>,{' '}
-          <code>size</code>, <code>side</code>, etc. The variants
-          ARE the override channel; charter non-negotiable #4 (no{' '}
-          <code>className</code>-as-override).
+          <strong>Typed recipe variants.</strong> Each component's public surface IS its variant
+          ladder — <code>intent</code>, <code>size</code>, <code>side</code>, etc. The variants ARE
+          the override channel; charter non-negotiable #4 (no <code>className</code>-as-override).
         </li>
         <li>
-          <strong>Two-channel additive contract.</strong> Every
-          component accepts <code>class</code> (additive on the
-          root). Multi-part components additionally accept{' '}
-          <code>classNames=&#123;&#123; ...parts &#125;&#125;</code> — a typed map for
-          targeted sub-part overrides. Combobox's{' '}
-          <code>classNames=&#123;&#123; popover, option, leftIcon, ... &#125;&#125;</code>,
-          Dialog's <code>classNames=&#123;&#123; backdrop &#125;&#125;</code>,
-          CodeBlock's{' '}
-          <code>classNames=&#123;&#123; header, pre, line &#125;&#125;</code>. The
-          part keys are typed — unknown keys are compile errors, no
-          silent ignores. <code>root</code> is not a valid key —
-          use <code>class</code> for the root (one spelling per
-          concept).
+          <strong>Two-channel additive contract.</strong> Every component accepts <code>class</code>{' '}
+          (additive on the root). Multi-part components additionally accept{' '}
+          <code>classNames=&#123;&#123; ...parts &#125;&#125;</code> — a typed map for targeted
+          sub-part overrides. Combobox's{' '}
+          <code>classNames=&#123;&#123; popover, option, leftIcon, ... &#125;&#125;</code>, Dialog's{' '}
+          <code>classNames=&#123;&#123; backdrop &#125;&#125;</code>, CodeBlock's{' '}
+          <code>classNames=&#123;&#123; header, pre, line &#125;&#125;</code>. The part keys are
+          typed — unknown keys are compile errors, no silent ignores. <code>root</code> is not a
+          valid key — use <code>class</code> for the root (one spelling per concept).
         </li>
         <li>
-          <strong>Render slots.</strong> Components with structural
-          variability (Combobox, CodeBlock, Toast) expose
-          render-function props (<code>renderOption</code>,{' '}
-          <code>renderEmpty</code>, <code>headerSlot</code>) so
-          consumers replace per-item content without rebuilding the
-          surrounding behavior (keyboard nav, popover wiring, a11y
+          <strong>Render slots.</strong> Components with structural variability (Combobox,
+          CodeBlock, Toast) expose render-function props (<code>renderOption</code>,{' '}
+          <code>renderEmpty</code>, <code>headerSlot</code>) so consumers replace per-item content
+          without rebuilding the surrounding behavior (keyboard nav, popover wiring, a11y
           attributes).
         </li>
       </ol>
       <p>
-        What we deliberately don't have: Radix-style{' '}
-        <code>asChild</code> polymorphism (NN#2 — typed slot props
-        instead) and the copy-paste-shadcn model (NN#1 — components
-        are imported, not pasted). See{' '}
+        What we deliberately don't have: Radix-style <code>asChild</code> polymorphism (NN#2 — typed
+        slot props instead) and the copy-paste-shadcn model (NN#1 — components are imported, not
+        pasted). See{' '}
         <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0016-design-library-as-package.md">
           ADR 0016
         </a>{' '}
@@ -435,13 +420,11 @@ export default page('/design', {
         <code>Sheet</code>
       </h2>
       <p>
-        Edge-anchored drawer for filter sidebars, mobile-nav drawers,
-        quick-edit panels, notification streams. Same native foundation
-        as <code>Dialog</code> (<code>&lt;dialog&gt;</code> +{' '}
-        <code>showModal()</code>) — top-layer rendering, focus trap,{' '}
-        <code>Esc</code>-to-close, <code>::backdrop</code> overlay.
-        The variant ladder (<code>side</code> + <code>size</code>) is
-        the only difference at the API level.
+        Edge-anchored drawer for filter sidebars, mobile-nav drawers, quick-edit panels,
+        notification streams. Same native foundation as <code>Dialog</code> (
+        <code>&lt;dialog&gt;</code> + <code>showModal()</code>) — top-layer rendering, focus trap,{' '}
+        <code>Esc</code>-to-close, <code>::backdrop</code> overlay. The variant ladder (
+        <code>side</code> + <code>size</code>) is the only difference at the API level.
       </p>
       <CodeBlock code={SHEET_EX} />
 
@@ -449,31 +432,25 @@ export default page('/design', {
         <code>Combobox</code>
       </h2>
       <p>
-        Typeahead select with filter + WAI-ARIA Combobox v1.2 keyboard
-        nav. Generic over the option value type — selection returns
-        the original <code>T</code>, not a stringified ID.{' '}
-        <code>options</code> and <code>value</code> are both
-        reactive-or-static; the default case-insensitive label filter
-        is overrideable via <code>filter</code>. Ships with a chevron
-        indicator, a clear (×) button, and a checkmark on the
-        selected row.
+        Typeahead select with filter + WAI-ARIA Combobox v1.2 keyboard nav. Generic over the option
+        value type — selection returns the original <code>T</code>, not a stringified ID.{' '}
+        <code>options</code> and <code>value</code> are both reactive-or-static; the default
+        case-insensitive label filter is overrideable via <code>filter</code>. Ships with a chevron
+        indicator, a clear (×) button, and a checkmark on the selected row.
       </p>
       <CodeBlock code={COMBOBOX_EX} />
 
       <p>
-        Customization hooks — every visual surface (input class,
-        popover class, option class, left icon, chevron, clear
-        button), every render slot (<code>renderOption</code>,{' '}
-        <code>renderEmpty</code>), the filter, and the size variant
-        are all exposed. No need to fork the source.
+        Customization hooks — every visual surface (input class, popover class, option class, left
+        icon, chevron, clear button), every render slot (<code>renderOption</code>,{' '}
+        <code>renderEmpty</code>), the filter, and the size variant are all exposed. No need to fork
+        the source.
       </p>
       <CodeBlock code={COMBOBOX_CUSTOM} />
 
       <p>
-        Both primitives, live. The first Combobox (inside the Sheet)
-        uses the defaults; the second uses{' '}
-        <code>leftIcon</code> + <code>renderOption</code> to show
-        emoji-prefixed rows:
+        Both primitives, live. The first Combobox (inside the Sheet) uses the defaults; the second
+        uses <code>leftIcon</code> + <code>renderOption</code> to show emoji-prefixed rows:
       </p>
       <SheetComboboxDemo />
 
@@ -496,14 +473,11 @@ export default page('/design', {
         <code>Disclosure</code>
       </h2>
       <p>
-        Collapsible content built on native{' '}
-        <code>&lt;details&gt;</code> + <code>&lt;summary&gt;</code>.
-        Browser owns the open / close state and keyboard activation;
-        exclusive accordions work via the native <code>name</code>{' '}
-        attribute (no JS coordinator). Height animates to / from{' '}
-        <code>auto</code> via <code>interpolate-size</code> +{' '}
-        <code>::details-content</code> on modern browsers; older
-        browsers get instant open / close.
+        Collapsible content built on native <code>&lt;details&gt;</code> +{' '}
+        <code>&lt;summary&gt;</code>. Browser owns the open / close state and keyboard activation;
+        exclusive accordions work via the native <code>name</code> attribute (no JS coordinator).
+        Height animates to / from <code>auto</code> via <code>interpolate-size</code> +{' '}
+        <code>::details-content</code> on modern browsers; older browsers get instant open / close.
       </p>
       <CodeBlock code={DISCLOSURE_EX} />
 
@@ -511,30 +485,23 @@ export default page('/design', {
         <code>CodeBlock</code>
       </h2>
       <p>
-        Syntax-highlighted code with a pluggable tokenizer, line
-        numbers, line highlights, diff mode, and every visual axis
-        controlled by typed variants. Pure SSR — no island bundle.
-        The copy button uses a single inline runtime emitted once per
-        page (~250 B raw, dedupes at gzip across multiple blocks).
+        Syntax-highlighted code with a pluggable tokenizer, line numbers, line highlights, diff
+        mode, and every visual axis controlled by typed variants. Pure SSR — no island bundle. The
+        copy button uses a single inline runtime emitted once per page (~250 B raw, dedupes at gzip
+        across multiple blocks).
       </p>
       <CodeBlock code={CODEBLOCK_EX} />
 
       <p>
-        Customization for the long tail: token colors via CSS
-        variables, per-instance tokenizers, or globally registered
-        languages.
+        Customization for the long tail: token colors via CSS variables, per-instance tokenizers, or
+        globally registered languages.
       </p>
       <CodeBlock code={CODEBLOCK_CUSTOM} />
 
-      <p>
-        Slot composition for cases where the default header isn't the
-        right shape.
-      </p>
+      <p>Slot composition for cases where the default header isn't the right shape.</p>
       <CodeBlock code={CODEBLOCK_SLOT} />
 
-      <p>
-        Live example with line numbers + highlights + a custom slot:
-      </p>
+      <p>Live example with line numbers + highlights + a custom slot:</p>
       <CodeBlock
         code={`function fib(n: number): number {
   if (n < 2) return n
@@ -559,9 +526,7 @@ console.log(fib(10))  // 55`}
         {Card({ intent: 'accent', padding: 'md', children: 'Accent card' })}
       </div>
 
-      <p>
-        Card supports named slots — same pattern as Dialog / Sheet:
-      </p>
+      <p>Card supports named slots — same pattern as Dialog / Sheet:</p>
       <div class="my-4">
         {Card({
           intent: 'raised',
@@ -584,8 +549,7 @@ console.log(fib(10))  // 55`}
           <code>:modal</code> pseudo-class
         </li>
         <li>
-          <strong>Toast / Tooltip / Menu</strong> —{' '}
-          <code>popover="manual"</code> /{' '}
+          <strong>Toast / Tooltip / Menu</strong> — <code>popover="manual"</code> /{' '}
           <code>popover="auto"</code> top-layer rendering
         </li>
         <li>

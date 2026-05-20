@@ -57,10 +57,7 @@ import type { Effect, ViewLevel } from '@place/reactivity/effects'
 import { levelOf, lubEffect } from '@place/reactivity/effects'
 import type * as TS from 'typescript'
 import * as ts from 'typescript'
-import type {
-  ClassifierFinding,
-  ClassifierResult,
-} from './view-classifier.ts'
+import type { ClassifierFinding, ClassifierResult } from './view-classifier.ts'
 import { classifyIslandSource } from './view-classifier.ts'
 
 // `typescript` is statically imported above. This file is reachable
@@ -320,10 +317,7 @@ function resolveImplBody(
     const decl = symbol.valueDeclaration ?? symbol.declarations?.[0]
     if (!decl) return null
     if (ts.isVariableDeclaration(decl) && decl.initializer) {
-      if (
-        ts.isArrowFunction(decl.initializer) ||
-        ts.isFunctionExpression(decl.initializer)
-      ) {
+      if (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer)) {
         return decl.initializer
       }
       // Could be `const X = otherIdentifier` — recurse one level.
@@ -373,10 +367,7 @@ function findIslandCallExpression(
  * The callee identifier name for a CallExpression, used as the
  * report's identifier when a return-type brand is detected.
  */
-function getCalleeName(
-  ts: typeof import('typescript'),
-  call: TS.CallExpression,
-): string | null {
+function getCalleeName(ts: typeof import('typescript'), call: TS.CallExpression): string | null {
   const e = call.expression
   if (ts.isIdentifier(e)) return e.text
   if (ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.name)) return e.name.text
@@ -387,10 +378,7 @@ function getCalleeName(
  * Filter out identifier nodes that appear in declaration position
  * (e.g. `const onMount = ...`) — we want references, not declarations.
  */
-function isDeclarationName(
-  ts: typeof import('typescript'),
-  node: TS.Identifier,
-): boolean {
+function isDeclarationName(ts: typeof import('typescript'), node: TS.Identifier): boolean {
   const parent = node.parent
   if (!parent) return false
   if (ts.isVariableDeclaration(parent) && parent.name === node) return true
@@ -418,10 +406,7 @@ function explainLevel(level: ViewLevel, findings: readonly ClassifierFinding[]):
   }
   const promoter = findings.find(
     (x) =>
-      x.effect === 'lifecycle' ||
-      x.effect === 'timer' ||
-      x.effect === 'io' ||
-      x.effect === 'dom',
+      x.effect === 'lifecycle' || x.effect === 'timer' || x.effect === 'io' || x.effect === 'dom',
   )
   const suspense = findings.find((x) => x.effect === 'suspense')
   if (level === 'island+stream') {

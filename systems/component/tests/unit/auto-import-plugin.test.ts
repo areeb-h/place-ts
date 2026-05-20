@@ -24,7 +24,9 @@ describe('autoImportTransform', () => {
       state: '@place/component',
       cookie: '@place/component',
     })
-    expect(out.startsWith(`import { Activity, cookie, state } from '@place/component'\n`)).toBe(true)
+    expect(out.startsWith(`import { Activity, cookie, state } from '@place/component'\n`)).toBe(
+      true,
+    )
     expect(out.endsWith(src)).toBe(true)
   })
 

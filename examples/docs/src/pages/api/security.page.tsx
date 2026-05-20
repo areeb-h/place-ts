@@ -145,8 +145,7 @@ export default page('/security', {
         Primitives the framework's <code>security: 'standard'</code> default builds on: signed
         tokens, double-submit CSRF, rate limiting, a capability-typed session slot, secure-by-
         default cookie helpers, strict CSP. <strong>Not an auth library</strong> — no OAuth dance,
-        no JWT, no password hashing. The substrate every auth library needs, exposed as one
-        package.
+        no JWT, no password hashing. The substrate every auth library needs, exposed as one package.
       </p>
 
       <Callout kind="note" title="Charter: secure-by-default">
@@ -190,8 +189,8 @@ export default page('/security', {
         Schema interop for <code>action()</code> inputs. Adapts any{' '}
         <a href="https://standardschema.dev">Standard Schema v1</a> validator (Zod 3.24+, Valibot
         0.36+, ArkType, Effect Schema) into an <code>ActionSchema&lt;T&gt;</code>. On validation
-        failure, throws <code>ActionError(400, 'Validation failed', {`{ fields }`})</code>. Lives
-        in <code>@place/component</code> (it's part of the action surface); re-documented here for
+        failure, throws <code>ActionError(400, 'Validation failed', {`{ fields }`})</code>. Lives in{' '}
+        <code>@place/component</code> (it's part of the action surface); re-documented here for
         discoverability.
       </p>
       <CodeBlock code={FROM_STANDARD_EX} />

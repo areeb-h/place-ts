@@ -699,8 +699,7 @@ export function pathRouter(): RouterHandle {
   // + signal write, which is correct for static apps where every
   // route is a fresh document load anyway.
   const spaNavActive = (): boolean =>
-    typeof window !== 'undefined' &&
-    (window as Window & { __place_spa?: number }).__place_spa === 1
+    typeof window !== 'undefined' && (window as Window & { __place_spa?: number }).__place_spa === 1
   const { router, path } = buildRouter(readPath(), {
     hrefForLink: (to) => to,
     urlFor: (to) => absoluteUrl(to),

@@ -58,8 +58,7 @@ import { getTokenizer, type Tok, type Tokenizer } from './code/tokenize.ts'
 
 const codeBlockRecipe = recipe({
   base:
-    'place-code relative my-4 mb-6 overflow-hidden font-mono ' +
-    'transition-shadow duration-150',
+    'place-code relative my-4 mb-6 overflow-hidden font-mono ' + 'transition-shadow duration-150',
   variants: {
     density: {
       // Tokenized type scale (Tailwind defaults). `text-xs/sm/base`
@@ -203,9 +202,7 @@ export interface CodeBlockProps {
 
 // ===== Line-range expansion =====
 
-function expandHighlights(
-  hl: CodeBlockProps['highlightLines'] | undefined,
-): ReadonlySet<number> {
+function expandHighlights(hl: CodeBlockProps['highlightLines'] | undefined): ReadonlySet<number> {
   const set = new Set<number>()
   if (hl === undefined) return set
   const ranges: readonly LineRange[] = Array.isArray(hl)
@@ -332,8 +329,7 @@ export const CodeBlock = (props: CodeBlockProps): View => {
   // `headerSlot`) — they get to decide whether to opt in to the
   // inline copy runtime by passing `showCopy: true` explicitly. The
   // runtime is emitted iff `showCopy` is true.
-  const showCopy =
-    props.showCopy ?? (chrome !== 'none' && props.headerSlot === undefined)
+  const showCopy = props.showCopy ?? (chrome !== 'none' && props.headerSlot === undefined)
   const wrap: CodeBlockWrap = props.wrap ?? 'scroll'
   const langLabel = props.lang ?? 'ts'
   // Signal renderPage that this page needs the copy runtime — the
@@ -353,8 +349,9 @@ export const CodeBlock = (props: CodeBlockProps): View => {
   // Per-subpart classNames (Tier 17-D / ADR 0050). Replaces the
   // previous `headerClass` / `preClass` / `lineClass` props.
   const headerClass = props.classNames?.header ?? headerRecipe({ chrome })
-  const preClass = props.classNames?.pre
-    ?? 'place-code-pre m-0 py-[var(--cb-py,1rem)] px-[var(--cb-px,1.25rem)] overflow-x-auto bg-transparent border-0'
+  const preClass =
+    props.classNames?.pre ??
+    'place-code-pre m-0 py-[var(--cb-py,1rem)] px-[var(--cb-px,1.25rem)] overflow-x-auto bg-transparent border-0'
 
   // Tokenize + lay out lines.
   const toks = tokenize(props)
@@ -363,8 +360,7 @@ export const CodeBlock = (props: CodeBlockProps): View => {
 
   // Line-numbers configuration.
   const numbersOn = props.lineNumbers !== undefined && props.lineNumbers !== false
-  const numbersStart =
-    typeof props.lineNumbers === 'object' ? (props.lineNumbers.start ?? 1) : 1
+  const numbersStart = typeof props.lineNumbers === 'object' ? (props.lineNumbers.start ?? 1) : 1
 
   // Inline style merge (object → CSS string).
   const inlineStyle = ((): string | undefined => {
@@ -392,17 +388,11 @@ export const CodeBlock = (props: CodeBlockProps): View => {
   const renderHeader = (): View | null => {
     if (chrome === 'none') return null
     if (props.headerSlot !== undefined) {
-      return (
-        <div class={headerClass}>
-          {props.headerSlot}
-        </div>
-      )
+      return <div class={headerClass}>{props.headerSlot}</div>
     }
     return (
       <div class={headerClass}>
-        {props.filename ? (
-          <span class="mr-auto text-fg">{props.filename}</span>
-        ) : null}
+        {props.filename ? <span class="mr-auto text-fg">{props.filename}</span> : null}
         <span class={`${props.filename ? '' : 'ml-auto'} lowercase tracking-[0.05em]`}>
           {langLabel}
         </span>

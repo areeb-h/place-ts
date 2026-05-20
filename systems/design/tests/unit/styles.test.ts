@@ -40,7 +40,9 @@ describe('design library base stylesheet', () => {
   })
 
   test('text-wrap: pretty applied to paragraph-like elements', () => {
-    expect(styles).toMatch(/p,\s*li,\s*dd,\s*dt,\s*blockquote,\s*figcaption\s*\{[^}]*text-wrap:\s*pretty/)
+    expect(styles).toMatch(
+      /p,\s*li,\s*dd,\s*dt,\s*blockquote,\s*figcaption\s*\{[^}]*text-wrap:\s*pretty/,
+    )
   })
 
   test('scrollbar-gutter: stable on <html> to prevent modal-open layout shift', () => {

@@ -66,12 +66,7 @@ export type ColorSpace = 'oklch' | 'oklab' | 'srgb'
  * @param t    Mix fraction in [0,1]. NaN / out-of-range values clamp to [0,1].
  * @param space Interpolation color space. Default `'oklch'`.
  */
-export function colorMix(
-  a: string,
-  b: string,
-  t: number,
-  space: ColorSpace = 'oklch',
-): string {
+export function colorMix(a: string, b: string, t: number, space: ColorSpace = 'oklch'): string {
   // Clamp + quantize. NaN, ±Infinity, and out-of-range values fall
   // into [0,1]. The Math.round-to-thousandths step keeps the output
   // string stable across sub-pixel reactive updates so the browser's

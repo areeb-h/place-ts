@@ -41,8 +41,7 @@ const DOCS_ENTRY = resolve(import.meta.dir, '../src/app.ts')
 const TMP = resolve(import.meta.dir, '.tmp/audit')
 await mkdir(TMP, { recursive: true })
 
-const fmt = (n: number): string =>
-  n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`
+const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)
 
 const EXTERNAL = [
   '@tailwindcss/node',
@@ -58,9 +57,7 @@ const EXTERNAL = [
 // Dynamically import the auto-import plugin so the build matches what
 // `serve()` actually emits in production. `placeAutoImport()` is the
 // plugin factory.
-const { placeAutoImport } = (await import(
-  '@place/component/auto-import-plugin'
-).catch(async () => {
+const { placeAutoImport } = (await import('@place/component/auto-import-plugin').catch(async () => {
   // Fallback: load via project-relative path if the package export isn't
   // declared yet.
   return await import(resolve(ROOT, 'systems/component/src/auto-import-plugin.ts'))
@@ -182,14 +179,7 @@ const reactivity = await buildAndMeasure({
   notes: 'The signals primitive surface — the IRREDUCIBLE reactive core',
 })
 
-const results = [
-  docsBuild,
-  docsNoAutoImport,
-  contentOnly,
-  floor,
-  appOnly,
-  reactivity,
-]
+const results = [docsBuild, docsNoAutoImport, contentOnly, floor, appOnly, reactivity]
 
 // ---- 7. Inspect the auto-import plugin's effective surface ----
 const AUTO_IMPORT_NAMES = [
@@ -212,9 +202,7 @@ const AUTO_IMPORT_NAMES = [
 ]
 
 console.log('\\n=== T5-A audit results ===\\n')
-console.log(
-  `${'name'.padEnd(56)}  ${'raw'.padStart(11)}  ${'gzip'.padStart(11)}  notes`,
-)
+console.log(`${'name'.padEnd(56)}  ${'raw'.padStart(11)}  ${'gzip'.padStart(11)}  notes`)
 console.log('-'.repeat(120))
 for (const r of results) {
   console.log(
@@ -311,12 +299,12 @@ attribution would give the precise picture; it's listed under
 ### Q2: Does the auto-import plugin defeat tree-shaking?
 
 ${deltaNote}. ${
-    delta > 200
-      ? '**This is a real leak.** The plugin is pulling primitives into the bundle that the docs app does not actually use.'
-      : delta > 0
-        ? 'The plugin has a small but measurable cost — within tolerable range. Tree-shaking is mostly working.'
-        : '**Plugin is tree-shaking-safe in the docs app build.** Watch on other apps.'
-  }
+  delta > 200
+    ? '**This is a real leak.** The plugin is pulling primitives into the bundle that the docs app does not actually use.'
+    : delta > 0
+      ? 'The plugin has a small but measurable cost — within tolerable range. Tree-shaking is mostly working.'
+      : '**Plugin is tree-shaking-safe in the docs app build.** Watch on other apps.'
+}
 
 The auto-import plugin's registered primitives (${AUTO_IMPORT_NAMES.length} names):
 

@@ -197,12 +197,12 @@ export default page('/theming', {
     <article class="prose max-w-3xl">
       <h1>Theming &amp; dark mode</h1>
       <p>
-        place ships a typed theming primitive. <code>theme()</code> is the canonical
-        entry-point — bare color keys, auto-derived sibling tokens, and (for the common 2-mode
-        case) automatic <code>light-dark()</code> emission. It produces a Tailwind v4{' '}
-        <code>@theme</code> block, per-theme CSS-variable classes, and a typed JS object exposing
-        the raw values. <code>themeTokens()</code> is the low-level primitive underneath — reach
-        for it only when you need non-color <code>--*</code> variables.
+        place ships a typed theming primitive. <code>theme()</code> is the canonical entry-point —
+        bare color keys, auto-derived sibling tokens, and (for the common 2-mode case) automatic{' '}
+        <code>light-dark()</code> emission. It produces a Tailwind v4 <code>@theme</code> block,
+        per-theme CSS-variable classes, and a typed JS object exposing the raw values.{' '}
+        <code>themeTokens()</code> is the low-level primitive underneath — reach for it only when
+        you need non-color <code>--*</code> variables.
       </p>
 
       <h2>1. Declare your theme</h2>
@@ -210,8 +210,8 @@ export default page('/theming', {
 
       <Callout kind="tip" title="Why oklch?">
         Themes that use perceptual color (oklch / oklab) interpolate cleanly across hue and
-        lightness. <code>theme()</code> derives siblings via <code>color-mix(in oklab, …)</code>{' '}
-        — staying in gamut and looking correct in light + dark from the same anchor values.
+        lightness. <code>theme()</code> derives siblings via <code>color-mix(in oklab, …)</code> —
+        staying in gamut and looking correct in light + dark from the same anchor values.
       </Callout>
 
       <Callout kind="note" title="Auto light-dark() mode">
@@ -226,11 +226,11 @@ export default page('/theming', {
 
       <h2>2. Typography</h2>
       <p>
-        <code>theme()</code> and <code>themeTokens()</code> take an optional{' '}
-        <code>typography</code> config — a modular type scale, font families / weights, leading
-        and tracking scales, plus semantic role utility classes (<code>.text-display</code>,{' '}
-        <code>.text-h1</code> … <code>.text-body</code>, <code>.text-meta</code>) emitted into the
-        same stylesheet as the color tokens.
+        <code>theme()</code> and <code>themeTokens()</code> take an optional <code>typography</code>{' '}
+        config — a modular type scale, font families / weights, leading and tracking scales, plus
+        semantic role utility classes (<code>.text-display</code>, <code>.text-h1</code> …{' '}
+        <code>.text-body</code>, <code>.text-meta</code>) emitted into the same stylesheet as the
+        color tokens.
       </p>
       <CodeBlock code={TYPOGRAPHY} />
 
@@ -242,11 +242,11 @@ export default page('/theming', {
       <h2>4. No-flash persistence is automatic</h2>
       <p>
         When <code>theme</code> is passed to <code>app()</code>, the framework injects{' '}
-        <code>themeEarlyScript()</code> into every page's <code>&lt;head&gt;</code>{' '}
-        automatically — apps get no-flash theme persistence for free. It runs before{' '}
-        <code>&lt;body&gt;</code> parses, reads the theme cookie, and applies the matching class.
-        Works on a live server <em>and</em> on a static export from <code>app().build()</code>,
-        where there's no per-request cookie read at SSR time.
+        <code>themeEarlyScript()</code> into every page's <code>&lt;head&gt;</code> automatically —
+        apps get no-flash theme persistence for free. It runs before <code>&lt;body&gt;</code>{' '}
+        parses, reads the theme cookie, and applies the matching class. Works on a live server{' '}
+        <em>and</em> on a static export from <code>app().build()</code>, where there's no
+        per-request cookie read at SSR time.
       </p>
       <CodeBlock code={EARLY_SCRIPT} />
 
@@ -255,9 +255,9 @@ export default page('/theming', {
         <code>setTheme(tokens, theme, options?)</code> flips the active theme: it strips every{' '}
         <code>theme-*</code> class, adds the chosen one, mirrors the choice onto{' '}
         <code>&lt;html data-place-theme&gt;</code>, and writes the cookie. The <code>theme</code>{' '}
-        argument accepts a mode name or the special string <code>'system'</code> (which clears
-        every class so the OS preference drives appearance). There is no <code>activeTheme</code>{' '}
-        export — read the current choice off <code>&lt;html data-place-theme&gt;</code>.
+        argument accepts a mode name or the special string <code>'system'</code> (which clears every
+        class so the OS preference drives appearance). There is no <code>activeTheme</code> export —
+        read the current choice off <code>&lt;html data-place-theme&gt;</code>.
       </p>
       <CodeBlock code={SWITCH} />
 
@@ -277,11 +277,11 @@ export default page('/theming', {
         The low-level primitive: <code>themeTokens()</code>
       </h2>
       <p>
-        <code>theme()</code> wraps <code>themeTokens()</code>. Reach for the primitive directly
-        only when you need to emit arbitrary <code>--*</code> CSS variables that aren't colors
-        (custom <code>--shadow-*</code>, <code>--radius-*</code>) or when you're authoring your own{' '}
+        <code>theme()</code> wraps <code>themeTokens()</code>. Reach for the primitive directly only
+        when you need to emit arbitrary <code>--*</code> CSS variables that aren't colors (custom{' '}
+        <code>--shadow-*</code>, <code>--radius-*</code>) or when you're authoring your own{' '}
         <code>theme()</code>-shaped helper. It has the same return shape, so it drops into{' '}
-        <code>app({ '{ theme }' })</code> unchanged.
+        <code>app({'{ theme }'})</code> unchanged.
       </p>
       <CodeBlock code={PRIMITIVE} />
 
@@ -295,16 +295,16 @@ export default page('/theming', {
           <code>&lt;html&gt;</code> plus a cookie.
         </li>
         <li>
-          No JS theme prop on every component. Components use semantic Tailwind classes
-          (<code>bg-accent</code>); the variables behind them are theme-dependent.
+          No JS theme prop on every component. Components use semantic Tailwind classes (
+          <code>bg-accent</code>); the variables behind them are theme-dependent.
         </li>
         <li>
-          No CSS-in-JS runtime. Tokens compile to CSS variables at build; theme switching is a
-          class swap (or, in <code>light-dark()</code> mode, a single CSS property).
+          No CSS-in-JS runtime. Tokens compile to CSS variables at build; theme switching is a class
+          swap (or, in <code>light-dark()</code> mode, a single CSS property).
         </li>
         <li>
-          No hand-written pre-paint script. <code>themeEarlyScript()</code> is injected for you
-          when <code>theme</code> is passed to <code>app()</code>.
+          No hand-written pre-paint script. <code>themeEarlyScript()</code> is injected for you when{' '}
+          <code>theme</code> is passed to <code>app()</code>.
         </li>
       </ul>
 

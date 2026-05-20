@@ -138,26 +138,25 @@ export default page('/action', {
       </h1>
       <p>
         <code>action()</code> declares a server-only function that the client can call by name with
-        an inferred input shape and an inferred return type. No Babel pass, no encrypted action
-        IDs, no <code>'use server'</code> directive — the function lives in a file with a
-        server-only type and the framework strips it from the client bundle.
+        an inferred input shape and an inferred return type. No Babel pass, no encrypted action IDs,
+        no <code>'use server'</code> directive — the function lives in a file with a server-only
+        type and the framework strips it from the client bundle.
       </p>
 
       <h2>Signature</h2>
       <CodeBlock code={SIG} />
       <p>
-        <code>I</code> is the validated-input type (output of <code>input</code>);{' '}
-        <code>O</code> is the return type of <code>fn</code>. The handler validates the body,
-        enforces same-origin + body-size + prototype-pollution defaults, then runs{' '}
-        <code>fn</code>.
+        <code>I</code> is the validated-input type (output of <code>input</code>); <code>O</code> is
+        the return type of <code>fn</code>. The handler validates the body, enforces same-origin +
+        body-size + prototype-pollution defaults, then runs <code>fn</code>.
       </p>
 
       <h2>Defining an action</h2>
       <CodeBlock code={SHAPE} />
       <p>
         <code>shape({})</code> is the schema-agnostic validator the framework ships;{' '}
-        <code>input</code> accepts any{' '}
-        <code>(raw: unknown) =&gt; T</code> function, so plug in Zod, Valibot, or yours.
+        <code>input</code> accepts any <code>(raw: unknown) =&gt; T</code> function, so plug in Zod,
+        Valibot, or yours.
       </p>
 
       <h2>Registering</h2>
@@ -200,18 +199,15 @@ export default page('/action', {
 
       <h2>Request-scoped caches</h2>
       <p>
-        Caps installed during a request are isolated via{' '}
-        <code>runWithCapabilityScope</code> — concurrent requests can't see each other's caps.
-        That means <code>cache(fn)</code> is auth-bleed-proof by construction; the per-request
-        cap stack is part of the cache key.
+        Caps installed during a request are isolated via <code>runWithCapabilityScope</code> —
+        concurrent requests can't see each other's caps. That means <code>cache(fn)</code> is
+        auth-bleed-proof by construction; the per-request cap stack is part of the cache key.
       </p>
       <CodeBlock code={CACHE} />
       <p>
         This closes the class of footguns documented in{' '}
-        <a href="https://github.com/vercel/next.js/discussions/86538">
-          Next.js issue #86538
-        </a>{' '}
-        (auth context bleeding between concurrent cached requests) by structure, not by linting.
+        <a href="https://github.com/vercel/next.js/discussions/86538">Next.js issue #86538</a> (auth
+        context bleeding between concurrent cached requests) by structure, not by linting.
       </p>
 
       <h2>Security defaults that apply</h2>
@@ -227,8 +223,8 @@ export default page('/action', {
           <code>'strict'</code>
         </li>
         <li>
-          <strong>Prototype-pollution guard</strong> — JSON keys{' '}
-          <code>__proto__</code>/<code>constructor</code>/<code>prototype</code> rejected
+          <strong>Prototype-pollution guard</strong> — JSON keys <code>__proto__</code>/
+          <code>constructor</code>/<code>prototype</code> rejected
         </li>
       </ul>
       <p>

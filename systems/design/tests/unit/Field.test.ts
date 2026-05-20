@@ -25,9 +25,7 @@ describe('Input — native-first form control', () => {
   })
 
   test('pattern, minlength, maxlength forward', () => {
-    const html = renderToString(
-      Input({ pattern: '\\d{4}', minLength: 4, maxLength: 8 }),
-    )
+    const html = renderToString(Input({ pattern: '\\d{4}', minLength: 4, maxLength: 8 }))
     expect(html).toContain('pattern="\\d{4}"')
     expect(html).toContain('minlength="4"')
     expect(html).toContain('maxlength="8"')
@@ -92,7 +90,10 @@ describe('Textarea', () => {
 describe('Field — labeled wrapper', () => {
   test('renders <label> + children with the for/id linkage', () => {
     const root = document.createElement('div')
-    mount(Field({ id: 'email', label: 'Email', children: Input({ id: 'email', type: 'email' }) }), root)
+    mount(
+      Field({ id: 'email', label: 'Email', children: Input({ id: 'email', type: 'email' }) }),
+      root,
+    )
     const label = root.querySelector('label') as HTMLLabelElement
     const input = root.querySelector('input') as HTMLInputElement
     expect(label.getAttribute('for')).toBe('email')
@@ -288,10 +289,7 @@ describe('Field — labeled wrapper', () => {
   test('reactive hint — pass a function for live updates', () => {
     const root = document.createElement('div')
     const hint = state('initial')
-    mount(
-      Field({ label: 'X', hint: () => hint(), children: Input({}) }),
-      root,
-    )
+    mount(Field({ label: 'X', hint: () => hint(), children: Input({}) }), root)
     expect(root.querySelector('.place-field-hint')?.textContent).toBe('initial')
     hint.set('changed')
     expect(root.querySelector('.place-field-hint')?.textContent).toBe('changed')

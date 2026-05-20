@@ -142,7 +142,15 @@ describe('Card', () => {
   test('onClick fires when clicked', () => {
     let clicked = false
     const root = document.createElement('div')
-    mount(Card({ onClick: () => { clicked = true }, children: 'x' }), root)
+    mount(
+      Card({
+        onClick: () => {
+          clicked = true
+        },
+        children: 'x',
+      }),
+      root,
+    )
     const el = root.firstChild as HTMLElement
     el.click()
     expect(clicked).toBe(true)

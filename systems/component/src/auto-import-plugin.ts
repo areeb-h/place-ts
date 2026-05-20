@@ -148,11 +148,7 @@ export function autoImportTransform(
     // The transform also needs `island` in scope — promote it into the
     // grouped imports if it isn't already. (User-explicit imports stay
     // unchanged; this only matters for the auto-import case.)
-    if (
-      !alreadyImported.has('island') &&
-      !inScope.has('island') &&
-      /\bisland\b/.test(scannable)
-    ) {
+    if (!alreadyImported.has('island') && !inScope.has('island') && /\bisland\b/.test(scannable)) {
       const set = grouped.get('@place/component') ?? new Set<string>()
       set.add('island')
       grouped.set('@place/component', set)

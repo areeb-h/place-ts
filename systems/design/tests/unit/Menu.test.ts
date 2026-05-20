@@ -28,10 +28,7 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [
-          { label: 'Edit' },
-          { label: 'Delete' },
-        ],
+        items: [{ label: 'Edit' }, { label: 'Delete' }],
       }),
       root,
     )
@@ -67,11 +64,7 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [
-          { label: 'Edit' },
-          { label: 'Duplicate' },
-          { label: 'Delete', destructive: true },
-        ],
+        items: [{ label: 'Edit' }, { label: 'Duplicate' }, { label: 'Delete', destructive: true }],
       }),
       root,
     )
@@ -100,10 +93,7 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [
-          { label: 'Edit' },
-          { label: 'Archive', disabled: true },
-        ],
+        items: [{ label: 'Edit' }, { label: 'Archive', disabled: true }],
       }),
       root,
     )
@@ -132,7 +122,14 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [{ label: 'Go', onSelect: () => { clicked = true } }],
+        items: [
+          {
+            label: 'Go',
+            onSelect: () => {
+              clicked = true
+            },
+          },
+        ],
       }),
       root,
     )
@@ -147,7 +144,15 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [{ label: 'Go', disabled: true, onSelect: () => { clicked = true } }],
+        items: [
+          {
+            label: 'Go',
+            disabled: true,
+            onSelect: () => {
+              clicked = true
+            },
+          },
+        ],
       }),
       root,
     )
@@ -187,11 +192,7 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [
-          { label: 'Edit' },
-          { kind: 'separator' },
-          { label: 'Delete' },
-        ],
+        items: [{ label: 'Edit' }, { kind: 'separator' }, { label: 'Delete' }],
       }),
       root,
     )
@@ -210,11 +211,7 @@ describe('Menu — render + items + keyboard', () => {
     const root = document.createElement('div')
     mount(
       Menu({
-        items: [
-          { kind: 'group', label: 'Files' },
-          { label: 'New' },
-          { label: 'Open' },
-        ],
+        items: [{ kind: 'group', label: 'Files' }, { label: 'New' }, { label: 'Open' }],
       }),
       root,
     )

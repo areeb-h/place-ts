@@ -50,13 +50,7 @@
 import type { Children, View } from '@place/component'
 import { cls, onMount, recipe } from '@place/component'
 import { state, watch } from '@place/reactivity'
-import {
-  anchorStyle,
-  closePopover,
-  nextAnchorName,
-  openPopover,
-  popoverStyle,
-} from './_popover.ts'
+import { anchorStyle, closePopover, nextAnchorName, openPopover, popoverStyle } from './_popover.ts'
 
 let _comboboxIdCounter = 0
 const nextComboboxId = (): string => `place-combobox-${++_comboboxIdCounter}`
@@ -174,7 +168,9 @@ export interface ComboboxProps<T> {
    * there is no `root` key — use the standalone `class` prop above.
    */
   readonly classNames?: Partial<{
-    [K in ComboboxPart]: K extends 'option' ? string | ((state: ComboboxItemState<T>) => string) : string
+    [K in ComboboxPart]: K extends 'option'
+      ? string | ((state: ComboboxItemState<T>) => string)
+      : string
   }>
   /** Show a clear (×) button when a value is selected. Default: `true`. */
   readonly clearable?: boolean
@@ -520,13 +516,16 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
     return typeof v === 'string' ? v : ''
   }
 
-  const shellBase = shellRecipe(
-    props.size !== undefined ? { size: props.size } : {},
-  )
+  const shellBase = shellRecipe(props.size !== undefined ? { size: props.size } : {})
   const shellClass = cls(shellBase, props.class ?? '')
 
   const size = props.size ?? 'md'
-  const inputClass = cls(inputBaseClass, inputSizeClass[size], 'place-combobox-input', resolveStatic('input'))
+  const inputClass = cls(
+    inputBaseClass,
+    inputSizeClass[size],
+    'place-combobox-input',
+    resolveStatic('input'),
+  )
 
   // Popover chrome only — positioning comes from the inline
   // `style` via `popoverStyle()`. No `fixed`, `m-0`, `top`, `left`
@@ -554,7 +553,12 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
   const defaultRenderOption = (st: ComboboxItemState<T>): Children => (
     <>
       {st.selected ? (
-        <span class={cls('shrink-0 inline-flex items-center text-accent', resolveStatic('chevron') /* slot reused for check */)}>
+        <span
+          class={cls(
+            'shrink-0 inline-flex items-center text-accent',
+            resolveStatic('chevron') /* slot reused for check */,
+          )}
+        >
           <CheckIcon />
         </span>
       ) : (
@@ -652,13 +656,10 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
         }}
       />
       <span
-        class={cls(
-          'flex items-center gap-0.5 pr-2 shrink-0',
-          resolveStatic('rightAffordance'),
-        )}
+        class={cls('flex items-center gap-0.5 pr-2 shrink-0', resolveStatic('rightAffordance'))}
       >
         {clearable
-          ? (() => {
+          ? () => {
               if (readValue() === null) return null
               return (
                 <button
@@ -679,7 +680,7 @@ export function Combobox<T>(props: ComboboxProps<T>): View {
                   <ClearIcon />
                 </button>
               )
-            })
+            }
           : null}
         {showChevron ? (
           <span

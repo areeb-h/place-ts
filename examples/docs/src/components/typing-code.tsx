@@ -81,11 +81,14 @@ function renderTokenChars(t: Tok, startIndex: number): { view: Child; nextIndex:
   // characters (em-dash, emoji) render as one visual unit. Most TS
   // sources stay in the BMP but defense-in-depth costs nothing.
   for (const ch of t.text) {
-    chars.push(<span class="char" style={`--i:${i}`}>{ch}</span>)
+    chars.push(
+      <span class="char" style={`--i:${i}`}>
+        {ch}
+      </span>,
+    )
     i++
   }
-  const view: Child =
-    t.kind === 'plain' ? chars : <span class={`tok-${t.kind}`}>{chars}</span>
+  const view: Child = t.kind === 'plain' ? chars : <span class={`tok-${t.kind}`}>{chars}</span>
   return { view, nextIndex: i }
 }
 
@@ -102,9 +105,7 @@ export const TypingCode = (props: TypingCodeProps) => {
   return (
     <div class="typing-code-reveal code-block group relative my-4 mb-6 border border-border rounded-[10px] overflow-hidden bg-card/95">
       <div class="flex items-center gap-2 py-2 px-3.5 border-b border-border/60 bg-bg/60 font-mono text-[11px] leading-none text-muted">
-        {props.filename ? (
-          <span class="mr-auto text-fg">{props.filename}</span>
-        ) : null}
+        {props.filename ? <span class="mr-auto text-fg">{props.filename}</span> : null}
         <span class="ml-auto lowercase tracking-[0.05em]">{lang}</span>
       </div>
       <pre class="code-block-pre m-0 py-4 px-5 overflow-x-auto font-mono text-[13px] leading-[1.65] bg-transparent border-0">

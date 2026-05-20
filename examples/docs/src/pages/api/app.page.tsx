@@ -178,9 +178,9 @@ export default page('/app', {
       <Callout kind="tip" title="The server entry — islands are the client entries">
         Your <code>app.ts</code> runs only on the server. There is no client-side <code>app</code>{' '}
         runtime: each interactive island ships and mounts its own bundle, so a page with no island
-        ships zero framework JavaScript. Client-side capability factories (from{' '}
-        <code>router</code> / <code>caps</code>) are forwarded to the island bundler, which wires
-        them into the island bundles automatically.
+        ships zero framework JavaScript. Client-side capability factories (from <code>router</code>{' '}
+        / <code>caps</code>) are forwarded to the island bundler, which wires them into the island
+        bundles automatically.
       </Callout>
 
       <h2 id="build">
@@ -214,8 +214,8 @@ export default page('/app', {
       <p>
         A pure value transform — prefixes every page's <code>path</code> and optionally applies a
         shared <code>layout</code> (pages with their own layout keep theirs). No registration, no
-        side effects; composes recursively. Use it to group feature folders, then spread the
-        groups into <code>app()</code>.
+        side effects; composes recursively. Use it to group feature folders, then spread the groups
+        into <code>app()</code>.
       </p>
       <CodeBlock code={ROUTES} />
 

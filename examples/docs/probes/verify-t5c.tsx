@@ -143,16 +143,16 @@ const content = new TextDecoder().decode(bytes)
 const gz = gzipSync(bytes).length
 console.log(`Bundle URL: ${url}`)
 console.log(`Bundle size: ${fmt(bytes.length)} raw / ${fmt(gz)} gzipped`)
-console.log(`Auto-mount marker query: ${content.includes('data-view="island"') ? '✓' : '✗ MISSING'}`)
+console.log(
+  `Auto-mount marker query: ${content.includes('data-view="island"') ? '✓' : '✗ MISSING'}`,
+)
 console.log(`Pollution-key sweep:     ${content.includes('__proto__') ? '✓' : '✗ MISSING'}`)
 
 // ----- Test E: client mount strategies -----
 console.log('\n=== Test E: client mount strategies ===')
 for (const strategy of ['load', 'idle', 'visible', 'interaction'] as const) {
   _beginIslandCollection()
-  const html = renderToString(
-    <main>{Counter({ start: 1, client: strategy } as never)}</main>,
-  )
+  const html = renderToString(<main>{Counter({ start: 1, client: strategy } as never)}</main>)
   _endIslandCollection()
   const attr = html.match(/data-view-strategy="([^"]*)"/)?.[1] ?? '(absent: load)'
   console.log(`  client="${strategy}" → marker carries strategy attr: ${attr}`)
@@ -160,13 +160,19 @@ for (const strategy of ['load', 'idle', 'visible', 'interaction'] as const) {
 
 console.log('\n=== Test F: hydrate() vs mount() in wrapper ===')
 console.log(`Wrapper imports hydrate: ${content.includes('hydrate') ? '✓' : '✗ MISSING'}`)
-console.log(`Strategy dispatch (4 paths): ${
-  ['load', 'idle', 'visible', 'interaction'].every((s) => content.includes(`'${s}'`))
-    ? '✓ all present'
-    : '✗ MISSING strategies'
-}`)
-console.log(`IntersectionObserver wired: ${content.includes('IntersectionObserver') ? '✓' : '✗ MISSING'}`)
-console.log(`requestIdleCallback wired: ${content.includes('requestIdleCallback') ? '✓' : '✗ MISSING'}`)
+console.log(
+  `Strategy dispatch (4 paths): ${
+    ['load', 'idle', 'visible', 'interaction'].every((s) => content.includes(`'${s}'`))
+      ? '✓ all present'
+      : '✗ MISSING strategies'
+  }`,
+)
+console.log(
+  `IntersectionObserver wired: ${content.includes('IntersectionObserver') ? '✓' : '✗ MISSING'}`,
+)
+console.log(
+  `requestIdleCallback wired: ${content.includes('requestIdleCallback') ? '✓' : '✗ MISSING'}`,
+)
 
 // ----- Test G: invalid name + invalid strategy rejected -----
 console.log('\n=== Test G: invalid input validation ===')

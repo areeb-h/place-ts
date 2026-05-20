@@ -281,8 +281,8 @@ describe('Combobox — filter', () => {
     const input = root.querySelector('[role="combobox"]') as HTMLInputElement
     input.value = 'a'
     input.dispatchEvent(new Event('input', { bubbles: true }))
-    const labels = Array.from(root.querySelectorAll('[role="option"]')).map((o) =>
-      o.textContent?.trim() ?? '',
+    const labels = Array.from(root.querySelectorAll('[role="option"]')).map(
+      (o) => o.textContent?.trim() ?? '',
     )
     expect(labels).toEqual(['Cherry'])
   })
@@ -479,9 +479,7 @@ describe('Combobox — customization hooks (typed per-subpart classNames)', () =
       }),
       root,
     )
-    const clearBtn = root.querySelector(
-      'button[aria-label="Clear"]',
-    ) as HTMLButtonElement | null
+    const clearBtn = root.querySelector('button[aria-label="Clear"]') as HTMLButtonElement | null
     expect(clearBtn).not.toBeNull()
     clearBtn?.click()
     expect(value()).toBe(null)

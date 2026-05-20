@@ -137,10 +137,10 @@ export default page('/ssr', {
       <h2>The lifecycle</h2>
       <CodeBlock code={FLOW} />
       <p>
-        The whole-page tree runs once on the server. On the client, only{' '}
-        <strong>islands</strong> rehydrate — each island's auto-mount wrapper scans for its marker,
-        reads the serialized props, and mounts the impl into the existing DOM nodes. There is no
-        virtual DOM, no reconciler walk over the document, and no whole-page boot step.
+        The whole-page tree runs once on the server. On the client, only <strong>islands</strong>{' '}
+        rehydrate — each island's auto-mount wrapper scans for its marker, reads the serialized
+        props, and mounts the impl into the existing DOM nodes. There is no virtual DOM, no
+        reconciler walk over the document, and no whole-page boot step.
       </p>
 
       <h2>Authoring an island</h2>
@@ -153,23 +153,23 @@ export default page('/ssr', {
       <CodeBlock code={ISLAND_AUTHORING} />
       <Callout kind="note" title="No 'use client', no magic strings">
         The island boundary is a typed function call discovered statically through{' '}
-        <code>import.meta.url</code> at build time — no compiler scan for special string
-        directives. See ADR 0019 for the rationale behind typed markers over string directives.
+        <code>import.meta.url</code> at build time — no compiler scan for special string directives.
+        See ADR 0019 for the rationale behind typed markers over string directives.
       </Callout>
 
       <h2>The wire format</h2>
       <p>
-        SSR emits a unified <code>data-view-*</code> marker around each island's output. The
-        marker is the contract between SSR and the auto-mount wrapper — the wrapper queries for
-        its name, reads the props, and attaches.
+        SSR emits a unified <code>data-view-*</code> marker around each island's output. The marker
+        is the contract between SSR and the auto-mount wrapper — the wrapper queries for its name,
+        reads the props, and attaches.
       </p>
       <CodeBlock code={WIRE} lang="html" />
       <p>
-        The bundle URL includes a <strong>signature suffix</strong> (a 12-char prefix of the
-        SHA-384 content hash) so prod deploys cache-bust cleanly and dev HMR can tell whether a
-        swap is shape-compatible. The <code>integrity="sha384-..."</code> attribute pins the exact
-        bytes — encoded once, hashed, and served as the same <code>Uint8Array</code>, so
-        sourcemap-bearing dev builds cannot drift from their declared hash.
+        The bundle URL includes a <strong>signature suffix</strong> (a 12-char prefix of the SHA-384
+        content hash) so prod deploys cache-bust cleanly and dev HMR can tell whether a swap is
+        shape-compatible. The <code>integrity="sha384-..."</code> attribute pins the exact bytes —
+        encoded once, hashed, and served as the same <code>Uint8Array</code>, so sourcemap-bearing
+        dev builds cannot drift from their declared hash.
       </p>
 
       <h2>Streaming with suspense()</h2>
@@ -195,11 +195,11 @@ export default page('/ssr', {
 
       <h2>The build-time classifier</h2>
       <p>
-        Every <code>island(...)</code> call is classified at build time. The classifier reads
-        effect brands off the inferred types — <code>state()</code> is{' '}
-        <code>'state'</code>, <code>watch()</code>/<code>onMount()</code> are{' '}
-        <code>'lifecycle'</code>, <code>Suspense</code> is <code>'suspense'</code> — and picks
-        the smallest runtime that satisfies the body:
+        Every <code>island(...)</code> call is classified at build time. The classifier reads effect
+        brands off the inferred types — <code>state()</code> is <code>'state'</code>,{' '}
+        <code>watch()</code>/<code>onMount()</code> are <code>'lifecycle'</code>,{' '}
+        <code>Suspense</code> is <code>'suspense'</code> — and picks the smallest runtime that
+        satisfies the body:
       </p>
       <ul>
         <li>
@@ -226,23 +226,23 @@ export default page('/ssr', {
       <h2>Why no hydration-mismatch warnings</h2>
       <p>
         Frameworks that use a virtual-DOM reconciler at hydration compare server HTML to a fresh
-        client render and warn (or worse, blow up) on differences. place doesn't do that — the
-        SSR'd HTML <em>is</em> the post-hydration DOM. Signal subscriptions attach to existing
-        nodes; event handlers attach to existing elements. If the server-rendered output is wrong,
-        the client output is equally wrong; there's no second source of truth to diff against.
+        client render and warn (or worse, blow up) on differences. place doesn't do that — the SSR'd
+        HTML <em>is</em> the post-hydration DOM. Signal subscriptions attach to existing nodes;
+        event handlers attach to existing elements. If the server-rendered output is wrong, the
+        client output is equally wrong; there's no second source of truth to diff against.
       </p>
       <p>
-        For accidental divergence (e.g., <code>Date.now()</code> at the top of an island's view
-        that renders differently per request), the dev hydration auditor logs attribute-level
-        diffs scoped to each marker.
+        For accidental divergence (e.g., <code>Date.now()</code> at the top of an island's view that
+        renders differently per request), the dev hydration auditor logs attribute-level diffs
+        scoped to each marker.
       </p>
 
       <h2>What about whole-page interactivity?</h2>
       <p>
-        Reach for an island. Anything that needs a click handler, a watch, a cookie-bound signal,
-        or a third-party widget that touches <code>document</code> in its constructor goes inside
-        an <code>island(...)</code> call. The framework will discover it, chunk it, mount it
-        without you wiring anything else. Pages that contain none ship none.
+        Reach for an island. Anything that needs a click handler, a watch, a cookie-bound signal, or
+        a third-party widget that touches <code>document</code> in its constructor goes inside an{' '}
+        <code>island(...)</code> call. The framework will discover it, chunk it, mount it without
+        you wiring anything else. Pages that contain none ship none.
       </p>
 
       <h2>Related</h2>

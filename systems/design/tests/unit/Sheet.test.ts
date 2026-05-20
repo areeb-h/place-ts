@@ -50,10 +50,7 @@ describe('Sheet — edge-anchored drawer', () => {
     patchDialog()
     const open = state(false)
     const root = document.createElement('div')
-    mount(
-      Sheet({ open: () => open(), side: 'left', 'aria-label': 'x', children: 'body' }),
-      root,
-    )
+    mount(Sheet({ open: () => open(), side: 'left', 'aria-label': 'x', children: 'body' }), root)
     const dialog = root.querySelector('dialog') as HTMLDialogElement
     expect(dialog.className).toContain('mr-auto')
     expect(dialog.className).toContain('rounded-r-xl')
@@ -63,19 +60,13 @@ describe('Sheet — edge-anchored drawer', () => {
     patchDialog()
     const open = state(false)
     const root = document.createElement('div')
-    mount(
-      Sheet({ open: () => open(), side: 'top', 'aria-label': 'x', children: 'body' }),
-      root,
-    )
+    mount(Sheet({ open: () => open(), side: 'top', 'aria-label': 'x', children: 'body' }), root)
     const top = root.querySelector('dialog') as HTMLDialogElement
     expect(top.className).toContain('mb-auto')
     expect(top.className).toContain('rounded-b-xl')
 
     const root2 = document.createElement('div')
-    mount(
-      Sheet({ open: () => open(), side: 'bottom', 'aria-label': 'x', children: 'body' }),
-      root2,
-    )
+    mount(Sheet({ open: () => open(), side: 'bottom', 'aria-label': 'x', children: 'body' }), root2)
     const bottom = root2.querySelector('dialog') as HTMLDialogElement
     expect(bottom.className).toContain('mt-auto')
     expect(bottom.className).toContain('rounded-t-xl')
@@ -86,11 +77,10 @@ describe('Sheet — edge-anchored drawer', () => {
     const open = state(false)
     // Side=right, size=sm → max-w
     const root1 = document.createElement('div')
-    mount(
-      Sheet({ open: () => open(), size: 'sm', 'aria-label': 'x', children: 'b' }),
-      root1,
+    mount(Sheet({ open: () => open(), size: 'sm', 'aria-label': 'x', children: 'b' }), root1)
+    expect((root1.querySelector('dialog') as HTMLElement).className).toContain(
+      'max-w-[min(320px,92vw)]',
     )
-    expect((root1.querySelector('dialog') as HTMLElement).className).toContain('max-w-[min(320px,92vw)]')
     // Side=top, size=lg → max-h
     const root2 = document.createElement('div')
     mount(
@@ -103,7 +93,9 @@ describe('Sheet — edge-anchored drawer', () => {
       }),
       root2,
     )
-    expect((root2.querySelector('dialog') as HTMLElement).className).toContain('max-h-[min(560px,80vh)]')
+    expect((root2.querySelector('dialog') as HTMLElement).className).toContain(
+      'max-h-[min(560px,80vh)]',
+    )
   })
 
   test('opens via showModal() + closes via close() on open-state flip', () => {
@@ -127,10 +119,7 @@ describe('Sheet — edge-anchored drawer', () => {
     const onClose = vi.fn()
     const root = document.createElement('div')
     document.body.appendChild(root)
-    mount(
-      Sheet({ open: () => open(), onClose, 'aria-label': 'x', children: 'b' }),
-      root,
-    )
+    mount(Sheet({ open: () => open(), onClose, 'aria-label': 'x', children: 'b' }), root)
     const dialog = root.querySelector('dialog') as HTMLDialogElement
     dialog.dispatchEvent(new Event('close'))
     expect(onClose).toHaveBeenCalled()

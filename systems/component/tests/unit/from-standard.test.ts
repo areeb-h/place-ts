@@ -82,9 +82,7 @@ function asyncSchema(): StandardSchemaV1<unknown, string> {
       version: 1,
       vendor: 'test',
       async validate(value) {
-        return typeof value === 'string'
-          ? { value }
-          : { issues: [{ message: 'expected string' }] }
+        return typeof value === 'string' ? { value } : { issues: [{ message: 'expected string' }] }
       },
     },
   }
@@ -145,9 +143,7 @@ describe('fromStandard()', () => {
         vendor: 'test',
         validate() {
           return {
-            issues: [
-              { message: 'bad', path: [{ key: 'a' }, { key: 0 }, 'b'] },
-            ],
+            issues: [{ message: 'bad', path: [{ key: 'a' }, { key: 0 }, 'b'] }],
           }
         },
       },

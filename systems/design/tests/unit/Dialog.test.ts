@@ -67,10 +67,7 @@ describe('Dialog — native <dialog> wrapper', () => {
     const onClose = vi.fn()
     const root = document.createElement('div')
     document.body.appendChild(root)
-    mount(
-      Dialog({ open: () => open(), 'aria-label': 'Test', onClose, children: 'Hi' }),
-      root,
-    )
+    mount(Dialog({ open: () => open(), 'aria-label': 'Test', onClose, children: 'Hi' }), root)
     open.set(false)
     expect(onClose).toHaveBeenCalled()
   })
@@ -78,10 +75,7 @@ describe('Dialog — native <dialog> wrapper', () => {
   test('aria-label forwards to the dialog element', () => {
     patchDialog()
     const root = document.createElement('div')
-    mount(
-      Dialog({ open: () => false, 'aria-label': 'Sign in', children: 'x' }),
-      root,
-    )
+    mount(Dialog({ open: () => false, 'aria-label': 'Sign in', children: 'x' }), root)
     const dialog = root.querySelector('dialog') as HTMLDialogElement
     expect(dialog.getAttribute('aria-label')).toBe('Sign in')
   })
@@ -89,10 +83,7 @@ describe('Dialog — native <dialog> wrapper', () => {
   test('size variant changes max-width class', () => {
     patchDialog()
     const root = document.createElement('div')
-    mount(
-      Dialog({ open: () => false, 'aria-label': 'X', size: 'lg', children: 'x' }),
-      root,
-    )
+    mount(Dialog({ open: () => false, 'aria-label': 'X', size: 'lg', children: 'x' }), root)
     const dialog = root.querySelector('dialog') as HTMLDialogElement
     expect(dialog.className).toContain('max-w-[min(720px,92vw)]')
   })
@@ -213,10 +204,7 @@ describe('Dialog — native <dialog> wrapper', () => {
     const onOpen = vi.fn()
     const root = document.createElement('div')
     document.body.appendChild(root)
-    mount(
-      Dialog({ open: () => open(), onOpen, 'aria-label': 'x', children: 'body' }),
-      root,
-    )
+    mount(Dialog({ open: () => open(), onOpen, 'aria-label': 'x', children: 'body' }), root)
     expect(onOpen).not.toHaveBeenCalled()
     open.set(true)
     expect(onOpen).toHaveBeenCalledTimes(1)

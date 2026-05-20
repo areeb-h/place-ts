@@ -27,12 +27,7 @@
 import type { Children, View } from '@place/component'
 import { cls, onMount } from '@place/component'
 import { state } from '@place/reactivity'
-import {
-  closePopover,
-  nextAnchorName,
-  openPopover,
-  popoverStyle,
-} from './_popover.ts'
+import { closePopover, nextAnchorName, openPopover, popoverStyle } from './_popover.ts'
 
 // **`popover="hint"` feature detect** (Tier 17-E v2 fix). The hint
 // stack (Chrome 133+ / Jan 2025) is the popover spec's answer to

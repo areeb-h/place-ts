@@ -97,10 +97,10 @@ export default page('/getting-started', {
       <h1>Getting started</h1>
       <p>
         Six steps from zero to a running place app — install, add a page, add typed data, add a
-        server action, add an interactive island, add a capability. The whole flow takes about
-        four minutes. If you've used Next or TanStack Start you'll recognize the shape; the
-        difference is in what's <em>missing</em>: no file-system routing, no codegen, no
-        encrypted action IDs, no <code>'use client'</code> markers, no per-page hydration bundle.
+        server action, add an interactive island, add a capability. The whole flow takes about four
+        minutes. If you've used Next or TanStack Start you'll recognize the shape; the difference is
+        in what's <em>missing</em>: no file-system routing, no codegen, no encrypted action IDs, no{' '}
+        <code>'use client'</code> markers, no per-page hydration bundle.
       </p>
 
       <h2>1. Install</h2>
@@ -152,15 +152,15 @@ export default page('/getting-started', {
       <p>
         Anything that needs JS in the browser — a click handler, reactive state, a timer — goes
         inside an <code>island(fn)</code> call. The wrapper makes the function a JSX-callable
-        component; the framework's Bun plugin discovers it at build time, bundles it per-island,
-        and inlines a <code>{`<script>`}</code> into pages that actually render the island.
+        component; the framework's Bun plugin discovers it at build time, bundles it per-island, and
+        inlines a <code>{`<script>`}</code> into pages that actually render the island.
       </p>
       <CodeBlock code={ADD_ISLAND} />
       <p>
         Pages with <strong>no islands</strong> ship zero framework JS. Pages with one island ship
-        ~1–2 KB gzipped for the island plus a 14 KB shared runtime chunk that's cached across
-        every interactive page in your app. The hydration boundary is typed — no{' '}
-        <code>'use client'</code> marker, no string convention. See{' '}
+        ~1–2 KB gzipped for the island plus a 14 KB shared runtime chunk that's cached across every
+        interactive page in your app. The hydration boundary is typed — no <code>'use client'</code>{' '}
+        marker, no string convention. See{' '}
         <Link to="/api/components">island, Tabs, Show, Suspense</Link> for the full primitive list.
       </p>
 

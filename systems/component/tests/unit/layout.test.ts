@@ -317,10 +317,7 @@ describe('layout() — composable wrappers around pages', () => {
     test('unfilled slot resolves to null (renders nothing)', async () => {
       const shell = layout<Record<string, never>, 'ghost'>({
         view: ({ children, slots }) =>
-          div({ class: 'shell' }, [
-            span({ class: 'before' }, [slots('ghost')]),
-            children,
-          ]),
+          div({ class: 'shell' }, [span({ class: 'before' }, [slots('ghost')]), children]),
       })
       const home = page({
         layout: shell,

@@ -90,8 +90,8 @@ export default page('/state', {
         <code>state(initial)</code> returns a callable cell — call it to read (the canonical form),
         and write with <code>.set(value)</code> or <code>.update(prev =&gt; next)</code>. Reading
         inside a tracking context subscribes that context to writes. <code>.read()</code> /{' '}
-        <code>.write()</code> are back-compat aliases for the callable read and{' '}
-        <code>.set</code> / <code>.update</code>; prefer the canonical forms in new code.
+        <code>.write()</code> are back-compat aliases for the callable read and <code>.set</code> /{' '}
+        <code>.update</code>; prefer the canonical forms in new code.
       </p>
 
       <h2 id="watch">watch()</h2>

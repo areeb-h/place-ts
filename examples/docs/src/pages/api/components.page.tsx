@@ -173,16 +173,16 @@ export default page('/components', {
       <h1>Component primitives</h1>
       <p>
         The typed components that compose pages: the island boundary, conditional rendering, the
-        streaming suspense boundary, the form helper, list keying, and the windowed list. Each
-        runs on both the server and the client; islands additionally chunk the client portion.
+        streaming suspense boundary, the form helper, list keying, and the windowed list. Each runs
+        on both the server and the client; islands additionally chunk the client portion.
       </p>
 
       <h2 id="island">island()</h2>
       <p>
         The hydration boundary. <code>island(fn)</code> wraps a render function as a JSX-callable
-        component; pages that render the result emit a typed{' '}
-        <code>data-view="island"</code> marker, and the framework's bundler produces a per-island
-        chunk that the marker's auto-mount wrapper hydrates into the existing DOM.
+        component; pages that render the result emit a typed <code>data-view="island"</code> marker,
+        and the framework's bundler produces a per-island chunk that the marker's auto-mount wrapper
+        hydrates into the existing DOM.
       </p>
       <CodeBlock code={ISLAND} />
       <p>
@@ -192,10 +192,10 @@ export default page('/components', {
       </p>
 
       <Callout kind="note" title="What the plugin does for you">
-        The framework's Bun plugin (registered via <code>preload</code> in{' '}
-        <code>bunfig.toml</code>) rewrites <code>island(fn)</code> to{' '}
-        <code>island(import.meta.url, fn)</code> at load time so the bundler can locate the
-        source. You write the sugar form; the build emits the typed shape.
+        The framework's Bun plugin (registered via <code>preload</code> in <code>bunfig.toml</code>)
+        rewrites <code>island(fn)</code> to <code>island(import.meta.url, fn)</code> at load time so
+        the bundler can locate the source. You write the sugar form; the build emits the typed
+        shape.
       </Callout>
 
       <h3 id="island-explicit">Without the plugin</h3>
@@ -205,16 +205,16 @@ export default page('/components', {
       <CodeBlock code={ISLAND_STRATEGIES} />
       <p>
         The <code>client</code> prop is reserved by the framework and stripped before props reach
-        the impl. The strategy controls when the auto-mount wrapper attaches; it never affects
-        SSR output.
+        the impl. The strategy controls when the auto-mount wrapper attaches; it never affects SSR
+        output.
       </p>
 
       <h2 id="show">Show</h2>
       <CodeBlock code={SHOW} />
       <p>
         Conditional render. <code>when</code> is a reactive predicate; truthy renders{' '}
-        <code>children()</code>, falsy renders <code>fallback</code> (or nothing). Both branches
-        are lazy — only the active branch evaluates.
+        <code>children()</code>, falsy renders <code>fallback</code> (or nothing). Both branches are
+        lazy — only the active branch evaluates.
       </p>
       <Callout kind="tip" title="Replaces the function-in-JSX pattern">
         Prefer <code>{`<Show when={...}>`}</code> over <code>{`{() => cond ? <X /> : null}`}</code>{' '}
@@ -227,13 +227,13 @@ export default page('/components', {
         Composable tabs primitive. Pass <code>&lt;Tab label="..."&gt;</code> children; each tab's
         label travels with its panel content (no parallel arrays to keep in sync). When{' '}
         <code>group</code> is set, the framework auto-wires a <code>place-tab-${'{group}'}</code>{' '}
-        cookie so the active tab persists across reloads. First paint shows the cookie-resolved
-        tab with no JS.
+        cookie so the active tab persists across reloads. First paint shows the cookie-resolved tab
+        with no JS.
       </p>
       <p>
-        Interactivity rides on a single document-level delegated click handler the framework
-        inlines once per page (when any <code>&lt;Tabs&gt;</code> renders) — no per-instance JS
-        bundle. Keyboard navigation (Arrow keys, Home, End) is included.
+        Interactivity rides on a single document-level delegated click handler the framework inlines
+        once per page (when any <code>&lt;Tabs&gt;</code> renders) — no per-instance JS bundle.
+        Keyboard navigation (Arrow keys, Home, End) is included.
       </p>
 
       <h3 id="tabs-variants">Variants &amp; customization</h3>
@@ -247,14 +247,14 @@ export default page('/components', {
       <p>
         Tabs without panel content work as a filter selector. Each tab click dispatches a{' '}
         <code>place:tabs</code> CustomEvent that bubbles to <code>document</code>, with{' '}
-        <code>detail.group</code> and <code>detail.value</code>. Subscribe from any island to
-        drive reactive state.
+        <code>detail.group</code> and <code>detail.value</code>. Subscribe from any island to drive
+        reactive state.
       </p>
       <CodeBlock code={TABS_FILTER} />
       <p>
-        Cookie persistence still applies — reload the page and the same filter tab stays active.
-        The framework's tabs runtime handles the click → cookie write → DOM swap atomically;
-        islands subscribe to the event for the reactive side.
+        Cookie persistence still applies — reload the page and the same filter tab stays active. The
+        framework's tabs runtime handles the click → cookie write → DOM swap atomically; islands
+        subscribe to the event for the reactive side.
       </p>
 
       <h2 id="suspense">Suspense</h2>
@@ -262,9 +262,9 @@ export default page('/components', {
       <p>
         Streaming SSR boundary. The fallback ships in the initial HTML; once the async children
         resolve, the framework streams a swap chunk that replaces the placeholder anchors. Works
-        pre-hydration; no client JS required for the swap itself. Views that read from an
-        unresolved Suspense get classified as <em>island+stream</em> — the auto-mount wrapper
-        subscribes to the Channel B state envelope on the client.
+        pre-hydration; no client JS required for the swap itself. Views that read from an unresolved
+        Suspense get classified as <em>island+stream</em> — the auto-mount wrapper subscribes to the
+        Channel B state envelope on the client.
       </p>
 
       <h2 id="error-boundary">errorBoundary()</h2>
@@ -285,9 +285,8 @@ export default page('/components', {
       <h2 id="keyed">keyed()</h2>
       <CodeBlock code={KEYED} />
       <p>
-        Stable identity for list children. Without it, the framework treats each list as opaque
-        and re-creates the DOM on every change; with it, only added/removed/reordered children
-        mutate.
+        Stable identity for list children. Without it, the framework treats each list as opaque and
+        re-creates the DOM on every change; with it, only added/removed/reordered children mutate.
       </p>
 
       <h2 id="virtual-list">virtualList()</h2>
@@ -301,16 +300,15 @@ export default page('/components', {
       <h2 id="component">component()</h2>
       <CodeBlock code={COMPONENT} />
       <p>
-        Plain render function. Runs on both server and client. Reach for{' '}
-        <code>component()</code> when you want a typed wrapper for shared chrome; reach for{' '}
-        <code>island()</code> when the subtree needs interactivity.
+        Plain render function. Runs on both server and client. Reach for <code>component()</code>{' '}
+        when you want a typed wrapper for shared chrome; reach for <code>island()</code> when the
+        subtree needs interactivity.
       </p>
 
       <h2 id="see-also">See also</h2>
       <ul>
         <li>
-          <Link to="/concepts/ssr">SSR & islands hydration</Link> — the wire format + the
-          classifier
+          <Link to="/concepts/ssr">SSR & islands hydration</Link> — the wire format + the classifier
         </li>
         <li>
           <Link to="/api/page">page()</Link> — page-level fields + streaming

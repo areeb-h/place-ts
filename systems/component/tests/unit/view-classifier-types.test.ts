@@ -45,9 +45,7 @@ const TSCONFIG = {
     paths: {
       '@place/reactivity': [`${repoRoot}/systems/reactivity/src/index.ts`],
       '@place/component': [`${repoRoot}/systems/component/src/index.ts`],
-      '@place/component/jsx-runtime': [
-        `${repoRoot}/systems/component/src/jsx-runtime.ts`,
-      ],
+      '@place/component/jsx-runtime': [`${repoRoot}/systems/component/src/jsx-runtime.ts`],
       '@place/capability': [`${repoRoot}/systems/capability/src/index.ts`],
     },
   },

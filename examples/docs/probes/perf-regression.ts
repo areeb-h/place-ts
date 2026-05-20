@@ -109,14 +109,18 @@ console.log('\n=== Inline-sourcemap inflation (dev only) ===')
 const firstIsland = scriptUrls[0]
 if (firstIsland !== undefined) {
   const body = (await timedFetch(`${baseUrl}${firstIsland}`)).body
-  const sourcemapMatch = body.match(/\/\/# sourceMappingURL=data:application\/json;base64,[A-Za-z0-9+/=]+/)
+  const sourcemapMatch = body.match(
+    /\/\/# sourceMappingURL=data:application\/json;base64,[A-Za-z0-9+/=]+/,
+  )
   if (sourcemapMatch) {
     const smapBytes = sourcemapMatch[0].length
     const codeBytes = body.length - smapBytes
     console.log(
       `${firstIsland}: code=${fmt(codeBytes)}  sourcemap=${fmt(smapBytes)} (${((smapBytes / body.length) * 100).toFixed(0)}% of bytes)`,
     )
-    console.log(`production builds drop sourcemap; same bundle would ship ~${fmt(codeBytes)} bytes.`)
+    console.log(
+      `production builds drop sourcemap; same bundle would ship ~${fmt(codeBytes)} bytes.`,
+    )
   } else {
     console.log(`(no inline sourcemap detected — bundle is bare JS)`)
   }

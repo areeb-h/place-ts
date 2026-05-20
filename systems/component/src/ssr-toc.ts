@@ -214,10 +214,7 @@ export function patchIslandMarker(
   //   </div>
   // Match the opening div + capture its attributes, find the matching
   // closing </div>, and rebuild.
-  const openRe = new RegExp(
-    `<div([^>]*\\sdata-view-id="${escapeRegex(viewId)}"[^>]*)>`,
-    'i',
-  )
+  const openRe = new RegExp(`<div([^>]*\\sdata-view-id="${escapeRegex(viewId)}"[^>]*)>`, 'i')
   const m = openRe.exec(html)
   if (!m) return html
   const openTag = m[0]
@@ -370,8 +367,5 @@ function escapeRegex(s: string): string {
  * HTML attribute. Apostrophes get HTML-entity-encoded; `<` is escaped
  * so the attribute can't accidentally close the surrounding tag. */
 function encodeForHtmlAttr(json: string): string {
-  return json
-    .replace(/&/g, '&amp;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
+  return json.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/</g, '&lt;')
 }

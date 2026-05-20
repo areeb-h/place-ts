@@ -74,32 +74,109 @@ export type Tokenizer = (src: string) => readonly Tok[]
 // Still hand-rolled, still ~250 LOC, still zero deps, still SSR-only.
 
 const KEYWORDS = new Set([
-  'const', 'let', 'var', 'function', 'return',
-  'if', 'else', 'import', 'export', 'default',
-  'async', 'await', 'from', 'as', 'type',
-  'interface', 'extends', 'class', 'new', 'this',
-  'true', 'false', 'null', 'undefined',
-  'in', 'of', 'for', 'while', 'do',
-  'switch', 'case', 'break', 'continue',
-  'throw', 'try', 'catch', 'finally',
-  'delete', 'typeof', 'instanceof',
-  'readonly', 'public', 'private', 'protected',
-  'static', 'enum', 'namespace', 'declare', 'yield',
-  'satisfies', 'keyof', 'infer', 'is', 'asserts',
-  'abstract', 'override', 'accessor', 'using', 'assert',
-  'module', 'unique', 'global', 'with', 'package',
-  'implements', 'super', 'void',
+  'const',
+  'let',
+  'var',
+  'function',
+  'return',
+  'if',
+  'else',
+  'import',
+  'export',
+  'default',
+  'async',
+  'await',
+  'from',
+  'as',
+  'type',
+  'interface',
+  'extends',
+  'class',
+  'new',
+  'this',
+  'true',
+  'false',
+  'null',
+  'undefined',
+  'in',
+  'of',
+  'for',
+  'while',
+  'do',
+  'switch',
+  'case',
+  'break',
+  'continue',
+  'throw',
+  'try',
+  'catch',
+  'finally',
+  'delete',
+  'typeof',
+  'instanceof',
+  'readonly',
+  'public',
+  'private',
+  'protected',
+  'static',
+  'enum',
+  'namespace',
+  'declare',
+  'yield',
+  'satisfies',
+  'keyof',
+  'infer',
+  'is',
+  'asserts',
+  'abstract',
+  'override',
+  'accessor',
+  'using',
+  'assert',
+  'module',
+  'unique',
+  'global',
+  'with',
+  'package',
+  'implements',
+  'super',
+  'void',
 ])
 
 const TYPES = new Set([
-  'string', 'number', 'boolean', 'object',
-  'any', 'never', 'unknown', 'bigint', 'symbol',
-  'Record', 'Array', 'Promise', 'Map', 'Set',
-  'WeakMap', 'WeakSet', 'ReadonlyArray', 'Readonly',
-  'Partial', 'Required', 'Pick', 'Omit',
-  'Awaited', 'NoInfer', 'Exclude', 'Extract',
-  'ReturnType', 'Parameters',
-  'Date', 'RegExp', 'Error', 'JSON', 'Math',
+  'string',
+  'number',
+  'boolean',
+  'object',
+  'any',
+  'never',
+  'unknown',
+  'bigint',
+  'symbol',
+  'Record',
+  'Array',
+  'Promise',
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'ReadonlyArray',
+  'Readonly',
+  'Partial',
+  'Required',
+  'Pick',
+  'Omit',
+  'Awaited',
+  'NoInfer',
+  'Exclude',
+  'Extract',
+  'ReturnType',
+  'Parameters',
+  'Date',
+  'RegExp',
+  'Error',
+  'JSON',
+  'Math',
 ])
 
 const IDENT = /[A-Za-z_$]/
@@ -108,9 +185,19 @@ const IDENT_TAIL = /[A-Za-z0-9_$]/
 // Keywords AFTER which a `/` introduces a regex (not division).
 // Discriminator for the "is regex allowed here?" heuristic.
 const REGEX_AFTER_KEYWORDS = new Set([
-  'return', 'typeof', 'instanceof', 'in', 'of',
-  'delete', 'throw', 'new', 'yield', 'await',
-  'case', 'do', 'else',
+  'return',
+  'typeof',
+  'instanceof',
+  'in',
+  'of',
+  'delete',
+  'throw',
+  'new',
+  'yield',
+  'await',
+  'case',
+  'do',
+  'else',
 ])
 
 // Punctuation chars after which a `/` is a regex (not division).
@@ -562,7 +649,10 @@ export const tokenizeJson: Tokenizer = (src) => {
       i = j
       continue
     }
-    if ((ch >= '0' && ch <= '9') || (ch === '-' && (src[i + 1] ?? '') >= '0' && (src[i + 1] ?? '') <= '9')) {
+    if (
+      (ch >= '0' && ch <= '9') ||
+      (ch === '-' && (src[i + 1] ?? '') >= '0' && (src[i + 1] ?? '') <= '9')
+    ) {
       let j = i
       if (src[j] === '-') j++
       while (j < src.length && /[0-9.eE+-]/.test(src[j] ?? '')) j++
@@ -672,7 +762,14 @@ export const tokenizeCss: Tokenizer = (src) => {
       let k = j
       while (k < src.length && /\s/.test(src[k] ?? '')) k++
       const isProperty = inBlock > 0 && !atPropertyValue && src[k] === ':'
-      const isVarCall = word === 'var' || word === 'calc' || word === 'rgb' || word === 'rgba' || word === 'hsl' || word === 'oklch' || word === 'color-mix'
+      const isVarCall =
+        word === 'var' ||
+        word === 'calc' ||
+        word === 'rgb' ||
+        word === 'rgba' ||
+        word === 'hsl' ||
+        word === 'oklch' ||
+        word === 'color-mix'
       const kind: TokKind = isProperty
         ? 'attr'
         : isVarCall
@@ -756,7 +853,8 @@ export const tokenizeHtml: Tokenizer = (src) => {
     // Attribute name inside a tag.
     if (inTag && IDENT.test(ch)) {
       let j = i
-      while (j < src.length && (IDENT_TAIL.test(src[j] ?? '') || src[j] === '-' || src[j] === ':')) j++
+      while (j < src.length && (IDENT_TAIL.test(src[j] ?? '') || src[j] === '-' || src[j] === ':'))
+        j++
       out.push({ kind: 'attr', text: src.slice(i, j) })
       i = j
       continue
@@ -784,16 +882,67 @@ export const tokenizeHtml: Tokenizer = (src) => {
 // comments (`#`), decorators (`@name`).
 
 const PY_KEYWORDS = new Set([
-  'def', 'class', 'return', 'if', 'elif', 'else', 'for', 'while',
-  'in', 'not', 'and', 'or', 'is', 'pass', 'break', 'continue',
-  'import', 'from', 'as', 'try', 'except', 'finally', 'raise',
-  'with', 'yield', 'lambda', 'global', 'nonlocal', 'async', 'await',
-  'True', 'False', 'None', 'self', 'cls', 'match', 'case',
+  'def',
+  'class',
+  'return',
+  'if',
+  'elif',
+  'else',
+  'for',
+  'while',
+  'in',
+  'not',
+  'and',
+  'or',
+  'is',
+  'pass',
+  'break',
+  'continue',
+  'import',
+  'from',
+  'as',
+  'try',
+  'except',
+  'finally',
+  'raise',
+  'with',
+  'yield',
+  'lambda',
+  'global',
+  'nonlocal',
+  'async',
+  'await',
+  'True',
+  'False',
+  'None',
+  'self',
+  'cls',
+  'match',
+  'case',
 ])
 const PY_TYPES = new Set([
-  'int', 'float', 'str', 'bool', 'list', 'tuple', 'dict', 'set',
-  'bytes', 'frozenset', 'object', 'type', 'Any', 'Optional', 'Union',
-  'List', 'Dict', 'Set', 'Tuple', 'Callable', 'Iterable', 'Iterator',
+  'int',
+  'float',
+  'str',
+  'bool',
+  'list',
+  'tuple',
+  'dict',
+  'set',
+  'bytes',
+  'frozenset',
+  'object',
+  'type',
+  'Any',
+  'Optional',
+  'Union',
+  'List',
+  'Dict',
+  'Set',
+  'Tuple',
+  'Callable',
+  'Iterable',
+  'Iterator',
 ])
 
 export const tokenizePython: Tokenizer = (src) => {
@@ -855,7 +1004,11 @@ export const tokenizePython: Tokenizer = (src) => {
       let j = i
       while (j < src.length && IDENT_TAIL.test(src[j] ?? '')) j++
       const word = src.slice(i, j)
-      const kind: TokKind = PY_KEYWORDS.has(word) ? 'keyword' : PY_TYPES.has(word) ? 'type' : 'plain'
+      const kind: TokKind = PY_KEYWORDS.has(word)
+        ? 'keyword'
+        : PY_TYPES.has(word)
+          ? 'type'
+          : 'plain'
       out.push({ kind, text: word })
       i = j
       continue

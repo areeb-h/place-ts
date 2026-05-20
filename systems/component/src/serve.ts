@@ -1336,7 +1336,6 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         } else {
           broadcastHmrReload()
         }
-        // biome-ignore lint/suspicious/noConsole: dev iteration feedback
         process.stdout.write(
           `[place hmr] islands rebuilt in ${Math.round(performance.now() - t0)} ms` +
             (updates.length > 0 ? ` (${updates.length} swapped)` : '') +

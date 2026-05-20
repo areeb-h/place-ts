@@ -36,9 +36,7 @@ describe('popoverStyle', () => {
 
   test('per-placement area + flip mapping', () => {
     // Sample a few representative pairs to confirm the encoding.
-    expect(popoverStyle({ anchor: 'x', placement: 'top' })).toContain(
-      'position-area: top;',
-    )
+    expect(popoverStyle({ anchor: 'x', placement: 'top' })).toContain('position-area: top;')
     expect(popoverStyle({ anchor: 'x', placement: 'top-end' })).toContain(
       'position-area: top span-left;',
     )
@@ -88,9 +86,7 @@ describe('popoverStyle', () => {
   })
 
   test('default offset is 4 when omitted', () => {
-    expect(popoverStyle({ anchor: 'x', placement: 'bottom-start' })).toContain(
-      'margin: 4px 0 0 0;',
-    )
+    expect(popoverStyle({ anchor: 'x', placement: 'bottom-start' })).toContain('margin: 4px 0 0 0;')
   })
 
   test('width: anchor-width emits the anchor-size() rule', () => {

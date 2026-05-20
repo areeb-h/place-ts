@@ -25,9 +25,8 @@ export const homePage = page('/', {
         <code style="background: #f3f3f3; padding: 0.1rem 0.4rem; border-radius: 0.25rem">
           src/islands/
         </code>
-        , point <code>islandsDir</code> at it in <code>src/app.ts</code>, and
-        drop it into a page. Only pages that use an island ship any
-        JavaScript at all.
+        , point <code>islandsDir</code> at it in <code>src/app.ts</code>, and drop it into a page.
+        Only pages that use an island ship any JavaScript at all.
       </p>
     </main>
   ),

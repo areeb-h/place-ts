@@ -46,7 +46,10 @@ export default page('${routePath}', {
  * Source of a routes-prefix barrel module: imports `routes` and
  * composes its leaf children with a `/prefix`.
  */
-function routesBarrel(prefix: string, leafImports: ReadonlyArray<{ name: string; rel: string }>): string {
+function routesBarrel(
+  prefix: string,
+  leafImports: ReadonlyArray<{ name: string; rel: string }>,
+): string {
   const imps = leafImports.map((l, i) => `import p${i} from '${l.rel}'`).join('\n')
   const refs = leafImports.map((_, i) => `p${i}`).join(', ')
   return `
@@ -152,9 +155,7 @@ describe('discoverPages — directory walk', () => {
   })
 
   test('errors clearly when the directory does not exist', async () => {
-    await expect(discoverPages(join(tmpDir, 'nope'))).rejects.toThrow(
-      /failed to read directory/,
-    )
+    await expect(discoverPages(join(tmpDir, 'nope'))).rejects.toThrow(/failed to read directory/)
   })
 
   test('empty directory returns empty array (no error)', async () => {

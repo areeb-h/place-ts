@@ -93,17 +93,21 @@ export default page('/security', {
       <p>
         place ships with security defaults that are <strong>on by default</strong>. The presets are
         named values, not opt-in arrays of headers to maintain — pick <code>'standard'</code> or{' '}
-        <code>'strict'</code>, and the framework wires CSP, CSRF, same-origin enforcement, body
-        size limits, and prototype-pollution guards in one shot.
+        <code>'strict'</code>, and the framework wires CSP, CSRF, same-origin enforcement, body size
+        limits, and prototype-pollution guards in one shot.
       </p>
 
       <h2>Pick a preset</h2>
       <CodeBlock code={PRESET} />
 
-      <h2>What <code>'standard'</code> enables</h2>
+      <h2>
+        What <code>'standard'</code> enables
+      </h2>
       <CodeBlock code={STANDARD} />
 
-      <h2>What <code>'strict'</code> adds</h2>
+      <h2>
+        What <code>'strict'</code> adds
+      </h2>
       <CodeBlock code={STRICT} />
 
       <h2>Content-Security-Policy</h2>
@@ -114,21 +118,23 @@ export default page('/security', {
       <CodeBlock code={CSP_DIRECTIVES} lang="text" />
 
       <Callout kind="tip" title="Per-response hashes, never 'unsafe-inline'">
-        <code>script-src</code> uses per-request nonces; the framework's SPA-nav runtime is the
-        only inline script and it carries the request nonce. <code>style-src</code> uses{' '}
-        per-response SHA-256 hashes for any inline <code>style="…"</code> attribute the SSR
-        actually emitted — so the directive is tight without breaking author-written inline
-        styles. Reactive <code>style:*</code> bindings still write through{' '}
-        <code>setProperty()</code> on hydration and need no hash.
+        <code>script-src</code> uses per-request nonces; the framework's SPA-nav runtime is the only
+        inline script and it carries the request nonce. <code>style-src</code> uses per-response
+        SHA-256 hashes for any inline <code>style="…"</code> attribute the SSR actually emitted — so
+        the directive is tight without breaking author-written inline styles. Reactive{' '}
+        <code>style:*</code> bindings still write through <code>setProperty()</code> on hydration
+        and need no hash.
       </Callout>
 
-      <h3>How inline styles + <code>style:*</code> directives stay CSP-safe</h3>
+      <h3>
+        How inline styles + <code>style:*</code> directives stay CSP-safe
+      </h3>
       <p>
         SSR renders inline <code>style="…"</code> attrs verbatim, but the framework collects every
         value it emits during the render and adds <code>'unsafe-hashes' 'sha256-&lt;hash&gt;'</code>{' '}
-        to the response's <code>style-src</code>. ISR cache hits reuse the same hash list, so
-        the CSP is byte-stable across cache + live renders. Reactive bindings stay out of the
-        SSR'd HTML entirely.
+        to the response's <code>style-src</code>. ISR cache hits reuse the same hash list, so the
+        CSP is byte-stable across cache + live renders. Reactive bindings stay out of the SSR'd HTML
+        entirely.
       </p>
       <CodeBlock code={STYLE_CSP} />
 
@@ -150,8 +156,8 @@ export default page('/security', {
 
       <h2>Body-size + prototype-pollution guards</h2>
       <p>
-        <code>action()</code> enforces a body-size limit (1 MB on <code>'standard'</code>, 256 KB
-        on <code>'strict'</code>) before any user code runs. JSON parsing rejects keys named{' '}
+        <code>action()</code> enforces a body-size limit (1 MB on <code>'standard'</code>, 256 KB on{' '}
+        <code>'strict'</code>) before any user code runs. JSON parsing rejects keys named{' '}
         <code>__proto__</code>, <code>constructor</code>, or <code>prototype</code> — the
         single-line patch that closes the entire class of prototype-pollution exploits.
       </p>
@@ -159,8 +165,8 @@ export default page('/security', {
       <Callout kind="warn" title="Don't relax for ergonomics">
         The security defaults stay on for a reason. If a feature in your app fights with{' '}
         <code>'standard'</code>, that's signal — the framework documents the failure mode at the
-        violation site (CSP report, body-too-large 413, CSRF reject 403). Read those, don't
-        relax the defaults.
+        violation site (CSP report, body-too-large 413, CSRF reject 403). Read those, don't relax
+        the defaults.
       </Callout>
 
       <h2>Related</h2>

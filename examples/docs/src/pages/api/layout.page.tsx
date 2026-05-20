@@ -104,8 +104,8 @@ export default page('/layout', {
 
       <h2 id="slots">Typed named slots</h2>
       <p>
-        Layouts can expose <strong>typed named slots</strong> — regions a page can fill with
-        custom content. The layout's second type parameter declares the slot key union; pages get
+        Layouts can expose <strong>typed named slots</strong> — regions a page can fill with custom
+        content. The layout's second type parameter declares the slot key union; pages get
         TypeScript autocomplete on those keys. No file convention, no <code>@</code>-prefixed
         parallel routes, no <code>{`<NuxtPage />`}</code> magic.
       </p>
@@ -117,11 +117,11 @@ export default page('/layout', {
         its inner layouts consume.
       </p>
       <p>
-        <strong>Compared to other frameworks:</strong> Next.js requires parallel routes
-        (file-system magic, <code>@modal/page.tsx</code> directories) for the same UX. Nuxt has
-        one <code>{`<NuxtPage />`}</code> outlet per layout — multi-slot isn't first-class.
-        Remix's <code>{`<Outlet />`}</code> is single-slot too. place's named slots are typed
-        values flowing through props.
+        <strong>Compared to other frameworks:</strong> Next.js requires parallel routes (file-system
+        magic, <code>@modal/page.tsx</code> directories) for the same UX. Nuxt has one{' '}
+        <code>{`<NuxtPage />`}</code> outlet per layout — multi-slot isn't first-class. Remix's{' '}
+        <code>{`<Outlet />`}</code> is single-slot too. place's named slots are typed values flowing
+        through props.
       </p>
 
       <h2 id="see-also">See also</h2>

@@ -101,15 +101,16 @@ const drawer = dec.decode(result.bundles.get(result.nameToBundleUrl.get('drawer'
 
 // Heuristic: count `state(false)` or `state2(false)` initialization in each.
 // If shared, the initialization should be in ONE chunk, not duplicated.
-const stateInitPattern = /state[a-zA-Z0-9_$]*\(!1\)|state[a-zA-Z0-9_$]*\(false\)|state[a-zA-Z0-9_$]*\(\)/g
+const stateInitPattern =
+  /state[a-zA-Z0-9_$]*\(!1\)|state[a-zA-Z0-9_$]*\(false\)|state[a-zA-Z0-9_$]*\(\)/g
 const openerHasInit = (opener.match(stateInitPattern) || []).length > 0
 const drawerHasInit = (drawer.match(stateInitPattern) || []).length > 0
 console.log(`Opener bundle has state() init pattern: ${openerHasInit}`)
 console.log(`Drawer bundle has state() init pattern: ${drawerHasInit}`)
 
 // Look for cross-bundle imports in entries.
-const openerImports = (opener.match(/import.*from\s*"[^"]*\.js"/g) || [])
-const drawerImports = (drawer.match(/import.*from\s*"[^"]*\.js"/g) || [])
+const openerImports = opener.match(/import.*from\s*"[^"]*\.js"/g) || []
+const drawerImports = drawer.match(/import.*from\s*"[^"]*\.js"/g) || []
 console.log(`Opener entry imports: ${openerImports.length}`)
 for (const i of openerImports) console.log(`    ${i}`)
 console.log(`Drawer entry imports: ${drawerImports.length}`)

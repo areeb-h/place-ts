@@ -229,9 +229,7 @@ const Header = (props: SlotProps): View => (
 )
 
 const Body = (props: SlotProps): View => (
-  <div class={cls('flex-1 px-5 py-4 overflow-y-auto', props.class ?? '')}>
-    {props.children}
-  </div>
+  <div class={cls('flex-1 px-5 py-4 overflow-y-auto', props.class ?? '')}>{props.children}</div>
 )
 
 const Footer = (props: SlotProps): View => (

@@ -339,9 +339,7 @@ describe('themeTokens — typography extension', () => {
     expect(tightH1).not.toBeNull()
     expect(looseH1).not.toBeNull()
     if (tightH1 && looseH1) {
-      expect(parseFloat(looseH1[1] as string)).toBeGreaterThan(
-        parseFloat(tightH1[1] as string),
-      )
+      expect(parseFloat(looseH1[1] as string)).toBeGreaterThan(parseFloat(tightH1[1] as string))
     }
   })
 
@@ -628,7 +626,9 @@ describe('theme() — high-DX theme helper', () => {
     const t = theme({
       modes: {
         dark: {
-          bg: '#000', fg: '#fff', accent: '#f80',
+          bg: '#000',
+          fg: '#fff',
+          accent: '#f80',
           // Custom semantic role
           success: '#0a0',
           warning: '#fa0',

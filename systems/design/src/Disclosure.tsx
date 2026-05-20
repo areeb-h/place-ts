@@ -81,9 +81,7 @@ const summaryRecipe = recipe({
 })
 
 const contentRecipe = recipe({
-  base:
-    'place-disclosure-content ' +
-    'text-sm text-fg/90 leading-relaxed',
+  base: 'place-disclosure-content ' + 'text-sm text-fg/90 leading-relaxed',
   variants: {
     size: {
       sm: 'px-3 pb-2',
@@ -158,7 +156,17 @@ const DefaultChevron = (extra?: string): View => (
       extra ?? '',
     )}
   >
-    <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg
+      aria-hidden="true"
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
       <polyline points="6 4 10 8 6 12" />
     </svg>
   </span>
@@ -169,8 +177,7 @@ const DefaultChevron = (extra?: string): View => (
 const DisclosureImpl = (props: DisclosureProps): View => {
   const size: DisclosureSize = props.size ?? 'md'
   const showChevron = props.chevron !== false
-  const initialOpen =
-    props.open !== undefined ? props.open() : (props.defaultOpen ?? false)
+  const initialOpen = props.open !== undefined ? props.open() : (props.defaultOpen ?? false)
 
   // Sync `[open]` to a controlled signal if provided. The browser's
   // own click/keyboard toggling continues to work — when the user
@@ -195,19 +202,11 @@ const DisclosureImpl = (props: DisclosureProps): View => {
   }
 
   const rootClass = cls(
-    disclosureRecipe(
-      props.intent !== undefined ? { intent: props.intent } : {},
-    ),
+    disclosureRecipe(props.intent !== undefined ? { intent: props.intent } : {}),
     props.class ?? '',
   )
-  const summaryClass = cls(
-    summaryRecipe({ size }),
-    props.classNames?.summary ?? '',
-  )
-  const contentClass = cls(
-    contentRecipe({ size }),
-    props.classNames?.content ?? '',
-  )
+  const summaryClass = cls(summaryRecipe({ size }), props.classNames?.summary ?? '')
+  const contentClass = cls(contentRecipe({ size }), props.classNames?.content ?? '')
 
   return (
     <details
@@ -236,9 +235,7 @@ interface DisclosureGroupProps {
 }
 
 const DisclosureGroup = (props: DisclosureGroupProps): View => (
-  <div class={cls('flex flex-col gap-2', props.class ?? '')}>
-    {props.children}
-  </div>
+  <div class={cls('flex flex-col gap-2', props.class ?? '')}>{props.children}</div>
 )
 
 /**

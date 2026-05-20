@@ -97,7 +97,9 @@ export const docsLayout = layout<Record<string, never>, 'headerActions' | 'tocOv
               GitHub
             </a>
             {slots('headerActions')}
-            <div class="ml-1.5"><ThemeToggle /></div>
+            <div class="ml-1.5">
+              <ThemeToggle />
+            </div>
           </nav>
         </div>
       </header>

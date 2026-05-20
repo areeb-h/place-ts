@@ -8,11 +8,7 @@
 //   - patchIslandMarker rewrites inner HTML + merges props
 
 import { describe, expect, test } from 'vitest'
-import {
-  extractMainHeadings,
-  patchIslandMarker,
-  slugifyHeading,
-} from '../../src/ssr-toc.ts'
+import { extractMainHeadings, patchIslandMarker, slugifyHeading } from '../../src/ssr-toc.ts'
 
 describe('slugifyHeading', () => {
   test('lowercases + replaces non-alphanumerics with single dashes', () => {
@@ -49,8 +45,7 @@ describe('extractMainHeadings', () => {
   })
 
   test('ignores h2/h3 outside <main>', () => {
-    const html =
-      '<aside><h2>Sidebar Title</h2></aside><main><h2>Real Title</h2></main>'
+    const html = '<aside><h2>Sidebar Title</h2></aside><main><h2>Real Title</h2></main>'
     const { headings } = extractMainHeadings(html)
     expect(headings.map((h) => h.text)).toEqual(['Real Title'])
   })
@@ -58,9 +53,7 @@ describe('extractMainHeadings', () => {
   test('preserves an existing id without rewriting', () => {
     const html = '<main><h2 id="custom-anchor">Heading</h2></main>'
     const { html: out, headings } = extractMainHeadings(html)
-    expect(headings).toEqual([
-      { id: 'custom-anchor', text: 'Heading', level: 2 },
-    ])
+    expect(headings).toEqual([{ id: 'custom-anchor', text: 'Heading', level: 2 }])
     // The tag is written through unchanged — id="custom-anchor" stays
     // exactly where the page put it.
     expect(out).toContain('<h2 id="custom-anchor">Heading</h2>')
@@ -75,9 +68,7 @@ describe('extractMainHeadings', () => {
   test('strips inner tags from text but keeps them in id-injected HTML', () => {
     const html = '<main><h2>Hello <code>world</code></h2></main>'
     const { html: out, headings } = extractMainHeadings(html)
-    expect(headings).toEqual([
-      { id: 'hello-world', text: 'Hello world', level: 2 },
-    ])
+    expect(headings).toEqual([{ id: 'hello-world', text: 'Hello world', level: 2 }])
     // Inner HTML preserved verbatim.
     expect(out).toContain('<h2 id="hello-world">Hello <code>world</code></h2>')
   })
@@ -102,8 +93,7 @@ describe('extractMainHeadings', () => {
   })
 
   test('handles <main> with attributes', () => {
-    const html =
-      '<main class="prose" role="main"><h2>Section</h2></main>'
+    const html = '<main class="prose" role="main"><h2>Section</h2></main>'
     const { headings } = extractMainHeadings(html)
     expect(headings).toEqual([{ id: 'section', text: 'Section', level: 2 }])
   })
@@ -111,8 +101,7 @@ describe('extractMainHeadings', () => {
 
 describe('patchIslandMarker', () => {
   test('replaces inner HTML by data-view-id', () => {
-    const html =
-      'before<div data-view="island" data-view-id="toc"><ul></ul></div>after'
+    const html = 'before<div data-view="island" data-view-id="toc"><ul></ul></div>after'
     const out = patchIslandMarker(html, 'toc', '<ul><li>x</li></ul>')
     expect(out).toBe(
       'before<div data-view="island" data-view-id="toc"><ul><li>x</li></ul></div>after',
@@ -126,8 +115,7 @@ describe('patchIslandMarker', () => {
   })
 
   test('merges propPatch into existing data-view-props', () => {
-    const html =
-      `<div data-view="island" data-view-id="toc" data-view-props='{"foo":1}'></div>`
+    const html = `<div data-view="island" data-view-id="toc" data-view-props='{"foo":1}'></div>`
     const out = patchIslandMarker(html, 'toc', '<span/>', {
       bar: 2,
     })
@@ -145,8 +133,7 @@ describe('patchIslandMarker', () => {
 
   test('handles nested <div> inside marker correctly', () => {
     // Marker contains a nested div — depth tracking must skip past it.
-    const html =
-      '<div data-view-id="toc"><div class="inner"><span>x</span></div></div>tail'
+    const html = '<div data-view-id="toc"><div class="inner"><span>x</span></div></div>tail'
     const out = patchIslandMarker(html, 'toc', '<replaced/>')
     expect(out).toBe('<div data-view-id="toc"><replaced/></div>tail')
   })

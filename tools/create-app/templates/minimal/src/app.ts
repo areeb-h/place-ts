@@ -16,9 +16,6 @@ const myApp = app({
   // islandsDir: './src/islands',
 })
 
-const buildOutDir =
-  typeof process !== 'undefined' ? process.env['PLACE_BUILD'] : undefined
+const buildOutDir = typeof process !== 'undefined' ? process.env['PLACE_BUILD'] : undefined
 
-export default buildOutDir
-  ? await myApp.build({ outDir: buildOutDir })
-  : myApp.run()
+export default buildOutDir ? await myApp.build({ outDir: buildOutDir }) : myApp.run()

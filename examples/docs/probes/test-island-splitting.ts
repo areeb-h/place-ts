@@ -76,7 +76,9 @@ console.log('What a page with all 3 islands ships:')
 const entries = [...result.nameToBundleUrl.values()]
 const entryGz = entries.reduce((a, u) => a + gzipSync(result.bundles.get(u)!).length, 0)
 const sharedGz = totalGz - entryGz
-console.log(`  Entries: ${entries.length} × ${fmt(entryGz / entries.length)} ≈ ${fmt(entryGz)} gzipped`)
+console.log(
+  `  Entries: ${entries.length} × ${fmt(entryGz / entries.length)} ≈ ${fmt(entryGz)} gzipped`,
+)
 console.log(`  Shared chunks: ${fmt(sharedGz)} gzipped (loaded once, cached)`)
 console.log(`  First-load total: ${fmt(entryGz + sharedGz)}`)
 console.log(`  Per-island avg first-load cost: ${fmt((entryGz + sharedGz) / entries.length)}`)

@@ -168,11 +168,14 @@ function explainLevel(level: ViewLevel, findings: readonly ClassifierFinding[]):
   if (level === 'static') return 'no effects beyond pure'
   if (level === 'thaw') {
     const f = findings.find((x) => x.effect === 'state')
-    return f ? `state-only — \`${f.identifier}\` (${f.count} ref${f.count === 1 ? '' : 's'})` : 'state-only'
+    return f
+      ? `state-only — \`${f.identifier}\` (${f.count} ref${f.count === 1 ? '' : 's'})`
+      : 'state-only'
   }
   // L2 / L3 — find the first L2-forcing effect for the "promoted because" line.
   const promoter = findings.find(
-    (x) => x.effect === 'lifecycle' || x.effect === 'timer' || x.effect === 'io' || x.effect === 'dom',
+    (x) =>
+      x.effect === 'lifecycle' || x.effect === 'timer' || x.effect === 'io' || x.effect === 'dom',
   )
   const suspense = findings.find((x) => x.effect === 'suspense')
   if (level === 'island+stream') {
