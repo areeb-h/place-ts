@@ -52,6 +52,8 @@
 
 import {
   type CryptoProvider,
+  deserializeMacaroon,
+  type MacaroonVerifyContext,
   type RotatingKey,
   type Session,
   SessionCap,
@@ -60,6 +62,7 @@ import {
   useCryptoProvider,
   useNonceStore,
   verifyEnvelope,
+  verifyMacaroon,
 } from '@place/security'
 import { ActionError, type ActionSchema, type LoadCtx, rejectsPollution } from './action.ts'
 
@@ -98,6 +101,79 @@ export interface CriticalActionDef<I, R> {
    * replay window; loosening accommodates clock skew on the client.
    */
   readonly maxAgeSec?: number
+  /**
+   * Required capabilities (Phase 3 / ADR 0055). When set, the
+   * framework reads a macaroon from the `X-Place-Macaroon` request
+   * header, verifies its signature against the session's macaroon
+   * key, walks its caveats, and confirms the effective authority
+   * covers every declared `perm()`. All-or-nothing: ANY missing
+   * permission → 403. Empty array (or absent) = no macaroon check
+   * (envelope-only protection from Phases 1+2).
+   *
+   * Declared via `perm('op.name')`:
+   *
+   *   criticalAction({
+   *     ...,
+   *     requires: [perm('comments.create'), perm('posts.read')],
+   *     fn: …
+   *   })
+   *
+   * The request's macaroon must permit BOTH `comments.create` AND
+   * `posts.read`. The framework checks each independently against
+   * the macaroon's effective `op=` restrictions (intersection of
+   * all `op=` caveats).
+   */
+  readonly requires?: readonly PermDeclaration[]
+  /**
+   * App-specific verifier for `app:<key>=<value>` caveats on the
+   * macaroon. Called once per `app:` caveat at verification time.
+   * Return `true` to permit; `false` to reject. Async permitted
+   * but adds latency to every verify call — keep it fast or
+   * memoise.
+   *
+   * Macaroons that carry `app:` caveats but no verifier is
+   * installed fail-closed (the framework refuses to accept caveats
+   * it can't evaluate).
+   */
+  readonly appCaveatVerifier?: (
+    key: string,
+    value: string,
+    ctx: MacaroonVerifyContext,
+  ) => boolean | Promise<boolean>
+}
+
+/** Marker returned by `perm()` — declares an op required for the
+ *  action. Pinned shape so the framework can statically introspect
+ *  it (e.g. for OpenAPI generation later). */
+export interface PermDeclaration {
+  readonly kind: 'perm'
+  readonly op: string
+}
+
+/**
+ * Declare that the action requires the given op-permission. Pass
+ * to `criticalAction({ requires: [...] })`. The op string is
+ * checked against the request's macaroon caveats:
+ *
+ *   - A macaroon with no `op=` caveats permits any op.
+ *   - A macaroon with `op=comments.*` permits any `comments.*`.
+ *   - A macaroon with `op=comments.create` permits ONLY that.
+ *
+ * Multiple `op=` caveats compose by intersection. The request's
+ * op must satisfy ALL of them.
+ *
+ * Apps mint macaroons during auth (see `provisionMacaroon`) and
+ * attenuate them with the user's actual permissions:
+ *
+ *   const root = await mintMacaroon(macaroonKey, session.id)
+ *   const userToken = await attenuate(root, `op=comments.*`)
+ *   // send userToken.bytes to the browser
+ */
+export function perm(op: string): PermDeclaration {
+  if (typeof op !== 'string' || op.length === 0) {
+    throw new Error('perm: op must be a non-empty string')
+  }
+  return { kind: 'perm', op }
 }
 
 /** Context passed to the handler. Differs from `LoadCtx` in:
@@ -206,6 +282,75 @@ export async function deriveSessionKey(
 }
 
 /**
+ * Derive the per-session **macaroon** key. Domain-separated from
+ * the envelope's session key via a distinct HKDF `info` tag — so
+ * a leak of one key doesn't help with the other.
+ *
+ * Algorithm: HKDF-SHA256(dailyRootKey, salt=sessionId, info="place-macaroon-v1").
+ *
+ * Apps mint user macaroons in their auth flow:
+ *
+ *   import { mintMacaroon, attenuate } from '@place/security'
+ *   import { deriveMacaroonKey } from '@place/component/server'
+ *
+ *   const { key } = await deriveMacaroonKey(session.id)
+ *   const root = await mintMacaroon(key, session.id)
+ *   const userToken = await attenuate(root, `op=comments.*`)
+ *   const userToken2 = await attenuate(userToken, `expires=…`)
+ *   // serialise + return to the browser via installMacaroon().
+ */
+export async function deriveMacaroonKey(
+  sessionId: string,
+  at: Date = new Date(),
+  provider: CryptoProvider = useCryptoProvider(),
+): Promise<{ key: Uint8Array; keyId: string }> {
+  const root = getActionRoot()
+  const dailyKey = await root.keyAt(at)
+  const enc = new TextEncoder()
+  const macaroonKey = await provider.hkdfSha256(
+    dailyKey,
+    enc.encode(sessionId),
+    enc.encode('place-macaroon-v1'),
+    32,
+  )
+  return { key: macaroonKey, keyId: root.keyIdAt(at) }
+}
+
+/**
+ * Provision a per-session macaroon for the browser. Apps call from
+ * their auth handler after authentication succeeds — typically right
+ * after `provisionActionKey`. The returned macaroon serialised string
+ * is sent to the browser; `installMacaroon()` stores it for use on
+ * subsequent `criticalAction.call()` invocations that need `requires`
+ * authorisation.
+ *
+ * The returned macaroon has NO `op=` caveats — it's the broadest
+ * authority a session can hold. Apps narrow it via `attenuate()` to
+ * match the user's actual permissions before issuance:
+ *
+ *   const broad = await provisionMacaroon(session.id)
+ *   const userToken = await attenuate(broad.macaroon, 'op=comments.*')
+ *   return { macaroon: serializeMacaroon(userToken), expiresAt: broad.expiresAt }
+ */
+export async function provisionMacaroon(
+  sessionId: string,
+): Promise<{ macaroon: import('@place/security').Macaroon; keyId: string; expiresAt: number }> {
+  if (typeof sessionId !== 'string' || sessionId.length === 0) {
+    throw new Error('provisionMacaroon: sessionId must be a non-empty string')
+  }
+  const { mintMacaroon } = await import('@place/security')
+  const { key, keyId } = await deriveMacaroonKey(sessionId)
+  const macaroon = await mintMacaroon(key, sessionId)
+  // Macaroons rotate with the daily root. After expiry the
+  // verifier rejects (key mismatch); apps re-provision via the
+  // session-refresh flow.
+  const nowMs = Date.now()
+  const dayMs = 24 * 60 * 60 * 1000
+  const expiresAt = Math.ceil(nowMs / dayMs) * dayMs
+  return { macaroon, keyId, expiresAt }
+}
+
+/**
  * Provision a per-session HMAC key for the browser. The app's auth
  * handler (login, signup, session-refresh) calls this + sends the
  * `keyBytes` to the browser in its response body. The browser's
@@ -306,6 +451,7 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
     const now = new Date()
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
     let verifyResult: Awaited<ReturnType<typeof verifyEnvelope>> | null = null
+    let verifiedAt: Date = now
     for (const at of [now, yesterday]) {
       const { key } = await deriveSessionKey(session.id, at, provider)
       const r = await verifyEnvelope(
@@ -322,6 +468,7 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
       )
       if (r.ok) {
         verifyResult = r
+        verifiedAt = at
         break
       }
       // Remember the LAST rejection reason — if both attempts fail,
@@ -336,6 +483,35 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
     const novel = await nonceStore.check(session.id, verifyResult.fields.counter)
     if (!novel) {
       return forbidden('replay')
+    }
+    // 7b. Macaroon authorisation. When `requires:` is non-empty the
+    //     request MUST carry `X-Place-Macaroon` whose effective
+    //     authority covers every declared `perm()`. Verified after
+    //     replay so we never pay schema cost for unauthenticated
+    //     requests, and so the audit trail of macaroon rejection
+    //     does not double-count replays of the same envelope.
+    if (def.requires && def.requires.length > 0) {
+      const macaroonWire = req.headers.get('x-place-macaroon')
+      if (macaroonWire === null || macaroonWire.length === 0) {
+        return forbidden('no-macaroon')
+      }
+      let macaroon: import('@place/security').Macaroon
+      try {
+        macaroon = deserializeMacaroon(macaroonWire)
+      } catch {
+        return forbidden('macaroon:malformed')
+      }
+      const { key: macaroonKey } = await deriveMacaroonKey(session.id, verifiedAt, provider)
+      const nowMs = now.getTime()
+      for (const decl of def.requires) {
+        const verifyCtx: MacaroonVerifyContext = def.appCaveatVerifier
+          ? { op: decl.op, origin, now: nowMs, appVerifier: def.appCaveatVerifier }
+          : { op: decl.op, origin, now: nowMs }
+        const r = await verifyMacaroon(macaroon, macaroonKey, verifyCtx, provider)
+        if (!r.ok) {
+          return forbidden(`macaroon:${r.reason}`)
+        }
+      }
     }
     // 8. Parse body for the schema. Critical actions are JSON-only
     //    (FormData is for `action()`'s progressive-enhancement
@@ -457,19 +633,27 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
     // (`@place/component/client`) so they can be tree-shaken from
     // server bundles. We dynamic-import on first use to avoid a hard
     // dep cycle.
-    const { signClientEnvelope } = await import('./critical-action-client.ts')
+    const { signClientEnvelope, loadMacaroonWire } = await import('./critical-action-client.ts')
     const bodyJson = JSON.stringify(input)
     const bodyBytes = new TextEncoder().encode(bodyJson)
     const envelope = await signClientEnvelope({
       actionId: routeKey,
       body: bodyBytes,
     })
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Place-Envelope': envelope,
+    }
+    // Always attach the macaroon if one is installed. Server checks
+    // it only when `requires:` is non-empty, but unconditional send
+    // means a single .call() works against any action shape.
+    const macaroonWire = await loadMacaroonWire()
+    if (macaroonWire !== null) {
+      headers['X-Place-Macaroon'] = macaroonWire
+    }
     const res = await fetch(path, {
       method,
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Place-Envelope': envelope,
-      },
+      headers,
       body: bodyJson,
     })
     if (!res.ok) {

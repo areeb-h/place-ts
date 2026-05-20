@@ -37,8 +37,12 @@ export {
   type CriticalActionCtx,
   type CriticalActionDef,
   criticalAction,
+  deriveMacaroonKey,
   deriveSessionKey,
+  perm,
+  type PermDeclaration,
   provisionActionKey,
+  provisionMacaroon,
 } from './critical-action.ts'
 // ----- node-free, also on the root `@place/component` barrel -----
 export {

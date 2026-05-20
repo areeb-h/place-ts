@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
 
 import {
+  attenuate,
   AuditLogCap,
   bunCryptoProvider,
   inMemoryAuditLog,
   inMemoryNonceStore,
+  mintMacaroon,
   NonceStoreCap,
   rotatingKey,
+  serializeMacaroon,
   type Session,
   SessionCap,
   sha256Base64url,
@@ -16,8 +19,11 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import {
   _clearActionRootKey,
   criticalAction,
+  deriveMacaroonKey,
   deriveSessionKey,
+  perm,
   provisionActionKey,
+  provisionMacaroon,
   setActionRootKey,
 } from '../../src/critical-action.ts'
 
@@ -620,6 +626,363 @@ describe('deriveSessionKey', () => {
     // The bytes should round-trip via base64url-encoded form.
     const provisionedBytes = decodeBase64url(provisioned.keyBytes)
     expect(bunCryptoProvider.timingSafeEqual(key, provisionedBytes)).toBe(true)
+  })
+})
+
+describe('criticalAction — perm() + requires (Phase 3)', () => {
+  test('perm() rejects empty op', () => {
+    expect(() => perm('')).toThrow(/non-empty string/)
+  })
+
+  test('perm() returns a typed declaration', () => {
+    const p = perm('comments.create')
+    expect(p.kind).toBe('perm')
+    expect(p.op).toBe('comments.create')
+  })
+
+  test('requires + no macaroon header → 403', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/needs-cap',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('comments.create')],
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/needs-cap']
+    if (!handler) throw new Error('handler not registered')
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/needs-cap', body })
+    const req = new Request('http://localhost/__a/needs-cap', {
+      method: 'POST',
+      headers: { referer: 'http://localhost/', 'x-place-envelope': envelope },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(403)
+  })
+
+  test('requires + valid permitting macaroon → 200', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/allowed',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('comments.create')],
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/allowed']
+    if (!handler) throw new Error('handler not registered')
+
+    const { key: macKey } = await deriveMacaroonKey(SESSION.id)
+    const root = await mintMacaroon(macKey, SESSION.id)
+    const userMac = await attenuate(root, 'op=comments.*')
+    const wire = serializeMacaroon(userMac)
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/allowed', body })
+    const req = new Request('http://localhost/__a/allowed', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': wire,
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(200)
+  })
+
+  test('requires + macaroon that does NOT cover the op → 403', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/forbidden-op',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('admin.delete')],
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/forbidden-op']
+    if (!handler) throw new Error('handler not registered')
+
+    const { key: macKey } = await deriveMacaroonKey(SESSION.id)
+    const root = await mintMacaroon(macKey, SESSION.id)
+    // Holder only has comments.* — not admin.delete.
+    const userMac = await attenuate(root, 'op=comments.*')
+    const wire = serializeMacaroon(userMac)
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/forbidden-op', body })
+    const req = new Request('http://localhost/__a/forbidden-op', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': wire,
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(403)
+  })
+
+  test('requires + macaroon signed under DIFFERENT key → 403 (bad-sig)', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/forged',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('anything')],
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/forged']
+    if (!handler) throw new Error('handler not registered')
+
+    // Attacker mints under a key they control — not the framework's
+    // derived macaroon key.
+    const attackerKey = ENCODER.encode('attacker-key-not-the-real-one!!!')
+    const forged = await mintMacaroon(attackerKey, SESSION.id)
+    const wire = serializeMacaroon(forged)
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/forged', body })
+    const req = new Request('http://localhost/__a/forged', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': wire,
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(403)
+  })
+
+  test('requires + malformed macaroon header → 403', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/malformed-mac',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('anything')],
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/malformed-mac']
+    if (!handler) throw new Error('handler not registered')
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/malformed-mac', body })
+    const req = new Request('http://localhost/__a/malformed-mac', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': '!!!not-a-valid-macaroon!!!',
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(403)
+  })
+
+  test('requires with multiple perms — ALL must be covered', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/two-caps',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('comments.create'), perm('posts.read')],
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/two-caps']
+    if (!handler) throw new Error('handler not registered')
+
+    const { key: macKey } = await deriveMacaroonKey(SESSION.id)
+    const root = await mintMacaroon(macKey, SESSION.id)
+    // Only comments.* — posts.read is NOT in the macaroon's authority.
+    const userMac = await attenuate(root, 'op=comments.*')
+    const wire = serializeMacaroon(userMac)
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/two-caps', body })
+    const req = new Request('http://localhost/__a/two-caps', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': wire,
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(403)
+  })
+
+  test('no requires field → macaroon header ignored', async () => {
+    installRoot()
+    const a = criticalAction({
+      path: 'POST /__a/no-requires',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      // No `requires:` → envelope-only protection. Stray macaroon
+      // headers (e.g. installed for a different action) must NOT
+      // fail this request.
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/no-requires']
+    if (!handler) throw new Error('handler not registered')
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/no-requires', body })
+    const req = new Request('http://localhost/__a/no-requires', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': 'garbage-but-ignored',
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(200)
+  })
+
+  test('app: caveat verifier consulted', async () => {
+    installRoot()
+    let verifierCallCount = 0
+    const a = criticalAction({
+      path: 'POST /__a/tenant',
+      input: (raw) => raw as object,
+      sameOrigin: false,
+      requires: [perm('records.read')],
+      appCaveatVerifier: (key, value) => {
+        verifierCallCount++
+        return key === 'tenant' && value === 'acme'
+      },
+      fn: () => ({ ok: true }),
+    })
+    const handler = a.handler['POST /__a/tenant']
+    if (!handler) throw new Error('handler not registered')
+
+    const { key: macKey } = await deriveMacaroonKey(SESSION.id)
+    const root = await mintMacaroon(macKey, SESSION.id)
+    const scoped = await attenuate(root, 'op=records.*')
+    const tenanted = await attenuate(scoped, 'app:tenant=acme')
+    const wire = serializeMacaroon(tenanted)
+
+    const body = ENCODER.encode('{}')
+    const envelope = await mintEnvelope({ actionId: 'POST /__a/tenant', body })
+    const req = new Request('http://localhost/__a/tenant', {
+      method: 'POST',
+      headers: {
+        referer: 'http://localhost/',
+        'x-place-envelope': envelope,
+        'x-place-macaroon': wire,
+      },
+      body,
+    })
+    const disposeNonce = NonceStoreCap.install(inMemoryNonceStore())
+    const disposeSession = SessionCap.install(SESSION)
+    let res: Response
+    try {
+      res = await handler(req, {})
+    } finally {
+      disposeSession()
+      disposeNonce()
+    }
+    expect(res.status).toBe(200)
+    // Single perm() in requires → one verify call → verifier consulted once.
+    expect(verifierCallCount).toBe(1)
+  })
+})
+
+describe('provisionMacaroon', () => {
+  test('returns a serialisable macaroon + stable keyId + expiresAt', async () => {
+    installRoot()
+    const out = await provisionMacaroon('session-prov')
+    expect(out.macaroon.id).toBe('session-prov')
+    expect(out.macaroon.caveats).toEqual([])
+    expect(out.keyId.startsWith('b')).toBe(true)
+    expect(out.expiresAt).toBeGreaterThan(Date.now())
+  })
+
+  test('rejects empty sessionId', async () => {
+    installRoot()
+    await expect(provisionMacaroon('')).rejects.toThrow(/non-empty string/)
+  })
+
+  test('different sessions get different macaroons (different keys)', async () => {
+    installRoot()
+    const a = await provisionMacaroon('session-a')
+    const b = await provisionMacaroon('session-b')
+    expect(a.macaroon.sig).not.toBe(b.macaroon.sig)
+  })
+
+  test('macaroon key is DOMAIN-SEPARATED from envelope session key', async () => {
+    installRoot()
+    const { key: envKey } = await deriveSessionKey('session-x')
+    const { key: macKey } = await deriveMacaroonKey('session-x')
+    // Both derived from the same daily-root + same session id, but
+    // different HKDF info strings — bytes must differ.
+    expect(bunCryptoProvider.timingSafeEqual(envKey, macKey)).toBe(false)
   })
 })
 

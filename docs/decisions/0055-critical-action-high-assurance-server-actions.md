@@ -1,6 +1,6 @@
 # ADR 0055: `criticalAction()` — high-assurance server actions
 
-**Status:** accepted (Phases 1, 2, 4 shipped; Phases 3, 5 specified, deferred)
+**Status:** accepted (Phases 1, 2, 3, 4 shipped; Phase 5 specified, deferred)
 **Date:** 2026-05-20
 **Affects:** `@place/security` (substrate); `@place/component` (`criticalAction()`,
 `provisionActionKey`, `installActionKey`, `ServeOptions.secret`)
@@ -293,10 +293,19 @@ codegen target: ~90 µs saved on schema validation; net result
   `provisionActionKey`, `installActionKey`, `ServeOptions.secret`).
   47 tests added (28 substrate + 19 factory). Total 1483 → 1547.
 
-- **Phase 3 — Macaroon caveats.** `perm('comments.create')` declarator
-  + caveat chain (`expires=`, `origin=`, `op=`, app-namespace `app:*`).
-  Server walks the chain; failures return 403 in constant time.
-  Deferred — substrate ready.
+- **Phase 3 — Macaroon caveats.** Shipped. `@place/security/macaroon.ts`
+  primitive (mint / attenuate / serialize / deserialize / verify with
+  constant-time HMAC compare); `perm('comments.create')` declarator on
+  `criticalAction({ requires: [...] })`; `deriveMacaroonKey()` +
+  `provisionMacaroon()` server helpers (HKDF `info="place-macaroon-v1"`,
+  domain-separated from the envelope's session key); browser-side
+  `installMacaroon()` / `clearMacaroon()` + automatic
+  `X-Place-Macaroon` header send on `.call()`. Caveat grammar fixed
+  in v0.1: `expires=`, `origin=`, `op=` (with `name.*` prefix or `*`
+  wildcard), `app:<key>=<value>` (app-defined, fail-closed unless an
+  `appCaveatVerifier` is registered). Multiple `op=` caveats compose
+  by intersection. 32 macaroon tests + 11 `criticalAction({ requires })`
+  integration tests added.
 
 - **Phase 4 — Audit log.** Shipped commit `1332a29`.
   `AuditLogCap` interface + hash-chained `inMemoryAuditLog`

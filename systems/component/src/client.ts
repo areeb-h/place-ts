@@ -17,4 +17,14 @@ export { hydrate, mount } from './_client-mount.ts'
 // key + sign envelopes. Apps call `installActionKey()` once after
 // auth + `clearActionKey()` on logout; the rest happens
 // automatically inside `criticalAction().call()`.
-export { clearActionKey, installActionKey } from './critical-action-client.ts'
+//
+// `installMacaroon()` / `clearMacaroon()` are the parallel for the
+// `requires:` authorisation path (Phase 3 / ADR 0055): the server
+// returns a serialised macaroon at auth time, the browser stores
+// it, every `.call()` sends it via `X-Place-Macaroon`.
+export {
+  clearActionKey,
+  clearMacaroon,
+  installActionKey,
+  installMacaroon,
+} from './critical-action-client.ts'

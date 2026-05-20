@@ -49,6 +49,8 @@
 const enc = new TextEncoder()
 const IDB_DB = 'place-action-key'
 const IDB_STORE = 'keys'
+const KEY_RECORD_ID = 'current' as const
+const MACAROON_RECORD_ID = 'current-macaroon' as const
 
 interface StoredKey {
   /** The non-extractable CryptoKey. Browser keeps the raw bytes
@@ -61,9 +63,8 @@ interface StoredKey {
   readonly expiresAt: number
 }
 
-interface IdbRecord {
-  /** Always 'current' — single-key store. */
-  readonly id: 'current'
+interface IdbKeyRecord {
+  readonly id: typeof KEY_RECORD_ID
   /** The non-extractable CryptoKey, stored directly. IndexedDB can
    *  persist CryptoKeys structurally without losing the
    *  `extractable: false` flag. */
@@ -74,8 +75,19 @@ interface IdbRecord {
   readonly counter: number
 }
 
+interface IdbMacaroonRecord {
+  readonly id: typeof MACAROON_RECORD_ID
+  /** Serialised macaroon (wire string) — what we'll send in
+   *  `X-Place-Macaroon`. Opaque to the browser; the server
+   *  deserialises and verifies. */
+  readonly wire: string
+  /** When the macaroon key rotates — re-provision before this. */
+  readonly expiresAt: number
+}
+
 let _cached: StoredKey | null = null
 let _counter: number | null = null
+let _cachedMacaroon: { wire: string; expiresAt: number } | null = null
 
 /**
  * Install the per-session HMAC key the server provisioned. Apps call
@@ -113,7 +125,7 @@ export async function installActionKey(provisioned: {
   _cached = { cryptoKey, keyId: provisioned.keyId, expiresAt: provisioned.expiresAt }
   _counter = 1
   await idbPut({
-    id: 'current',
+    id: KEY_RECORD_ID,
     cryptoKey,
     keyId: provisioned.keyId,
     expiresAt: provisioned.expiresAt,
@@ -129,7 +141,61 @@ export async function installActionKey(provisioned: {
 export async function clearActionKey(): Promise<void> {
   _cached = null
   _counter = null
-  await idbDelete('current')
+  await idbDelete(KEY_RECORD_ID)
+}
+
+/**
+ * Install the macaroon the server provisioned (via
+ * `provisionMacaroon()` + the app's auth flow). Apps call once
+ * after auth + after `installActionKey()`:
+ *
+ *   await installActionKey(session.action)
+ *   await installMacaroon(session.macaroon)
+ *
+ * The wire string is opaque to the browser; the server
+ * deserialises and verifies on every `criticalAction({ requires })`
+ * call. Stored in IndexedDB so reloads + multi-tab share it.
+ *
+ * Re-installing replaces the prior macaroon. Apps that need to
+ * NARROW the macaroon further on the client (e.g. limiting an
+ * embedded iframe to a sub-scope) can `attenuate()` the
+ * deserialised macaroon, then re-install — but note that an
+ * attacker with script access can do the same, so cap the actual
+ * authority server-side at provision time.
+ */
+export async function installMacaroon(provisioned: {
+  macaroon: string
+  expiresAt: number
+}): Promise<void> {
+  _cachedMacaroon = { wire: provisioned.macaroon, expiresAt: provisioned.expiresAt }
+  await idbPutMacaroon({
+    id: MACAROON_RECORD_ID,
+    wire: provisioned.macaroon,
+    expiresAt: provisioned.expiresAt,
+  })
+}
+
+/** Drop the stored macaroon. Called on logout. Subsequent
+ *  criticalAction calls fall back to envelope-only protection;
+ *  any handler with `requires:` will 403. */
+export async function clearMacaroon(): Promise<void> {
+  _cachedMacaroon = null
+  await idbDelete(MACAROON_RECORD_ID)
+}
+
+/**
+ * Read the stored macaroon wire string for header send. Returns
+ * `null` if not installed or expired (treated as not installed —
+ * apps re-provision via the same flow as action keys).
+ */
+export async function loadMacaroonWire(): Promise<string | null> {
+  if (_cachedMacaroon === null) {
+    const rec = await idbGetMacaroon(MACAROON_RECORD_ID)
+    if (!rec) return null
+    _cachedMacaroon = { wire: rec.wire, expiresAt: rec.expiresAt }
+  }
+  if (Date.now() > _cachedMacaroon.expiresAt) return null
+  return _cachedMacaroon.wire
 }
 
 /**
@@ -158,7 +224,7 @@ export async function signClientEnvelope(args: {
   }
   const counter = (_counter ?? 1) + 1
   _counter = counter
-  await idbUpdateCounter('current', counter)
+  await idbUpdateCounter(KEY_RECORD_ID, counter)
 
   // Compute body hash + canonical envelope, then sign.
   const bodyHash = await sha256Base64url(args.body)
@@ -186,7 +252,7 @@ export async function signClientEnvelope(args: {
 
 async function loadKey(): Promise<StoredKey | null> {
   if (_cached !== null) return _cached
-  const rec = await idbGet('current')
+  const rec = await idbGetKey(KEY_RECORD_ID)
   if (!rec) return null
   _cached = { cryptoKey: rec.cryptoKey, keyId: rec.keyId, expiresAt: rec.expiresAt }
   _counter = rec.counter
@@ -207,17 +273,29 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-async function idbGet(id: 'current'): Promise<IdbRecord | null> {
+async function idbGetKey(id: typeof KEY_RECORD_ID): Promise<IdbKeyRecord | null> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readonly')
     const req = tx.objectStore(IDB_STORE).get(id)
-    req.onsuccess = () => resolve(req.result ?? null)
+    req.onsuccess = () => resolve((req.result as IdbKeyRecord | undefined) ?? null)
     req.onerror = () => reject(req.error)
   })
 }
 
-async function idbPut(rec: IdbRecord): Promise<void> {
+async function idbGetMacaroon(
+  id: typeof MACAROON_RECORD_ID,
+): Promise<IdbMacaroonRecord | null> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly')
+    const req = tx.objectStore(IDB_STORE).get(id)
+    req.onsuccess = () => resolve((req.result as IdbMacaroonRecord | undefined) ?? null)
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function idbPut(rec: IdbKeyRecord): Promise<void> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readwrite')
@@ -227,7 +305,19 @@ async function idbPut(rec: IdbRecord): Promise<void> {
   })
 }
 
-async function idbDelete(id: 'current'): Promise<void> {
+async function idbPutMacaroon(rec: IdbMacaroonRecord): Promise<void> {
+  const db = await openDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite')
+    const req = tx.objectStore(IDB_STORE).put(rec)
+    req.onsuccess = () => resolve()
+    req.onerror = () => reject(req.error)
+  })
+}
+
+async function idbDelete(
+  id: typeof KEY_RECORD_ID | typeof MACAROON_RECORD_ID,
+): Promise<void> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readwrite')
@@ -237,19 +327,19 @@ async function idbDelete(id: 'current'): Promise<void> {
   })
 }
 
-async function idbUpdateCounter(id: 'current', counter: number): Promise<void> {
+async function idbUpdateCounter(id: typeof KEY_RECORD_ID, counter: number): Promise<void> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readwrite')
     const store = tx.objectStore(IDB_STORE)
     const getReq = store.get(id)
     getReq.onsuccess = () => {
-      const rec = getReq.result as IdbRecord | undefined
+      const rec = getReq.result as IdbKeyRecord | undefined
       if (!rec) {
         resolve()
         return
       }
-      const updated: IdbRecord = { ...rec, counter }
+      const updated: IdbKeyRecord = { ...rec, counter }
       const putReq = store.put(updated)
       putReq.onsuccess = () => resolve()
       putReq.onerror = () => reject(putReq.error)

@@ -850,3 +850,22 @@ export {
   useAuditLog,
   type VerifyResult,
 } from './audit-log.ts'
+
+// ===== Macaroons (Phase 3) =====
+//
+// HMAC-chained bearer tokens with attenuating caveats. Composes
+// with `criticalAction()`'s `requires: [perm('op')]` declaration:
+// the framework verifies the macaroon on the request, walks its
+// caveats against the request context, and rejects with 403 if
+// the effective authority doesn't cover the required op.
+
+export {
+  attenuate,
+  deserializeMacaroon,
+  type Macaroon,
+  type MacaroonVerifyContext,
+  type MacaroonVerifyResult,
+  mintMacaroon,
+  serializeMacaroon,
+  verifyMacaroon,
+} from './macaroon.ts'
