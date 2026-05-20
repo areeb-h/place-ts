@@ -39,6 +39,13 @@ const docsApp = app({
   styles: [designStyles, appStyles],
   router: pathRouter,
   islandsDir: './src/islands',
+  // Cloudflare Pages serves `/path/index.html` and 301-redirects bare
+  // `/path` to `/path/`. Emitting canonical trailing-slash hrefs from
+  // `<Link>` avoids that redirect entirely — a +37 ms-per-nav penalty
+  // Lighthouse flags as a real LCP cost. The runtime router matches
+  // both forms (segments are slash-stripped on parse) so registered
+  // routes like `page('/getting-started', …)` keep working unchanged.
+  trailingSlash: 'always',
 })
 
 // One entry, two modes. `PLACE_BUILD=<outDir>` pre-renders the whole

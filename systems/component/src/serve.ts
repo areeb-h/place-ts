@@ -47,6 +47,7 @@ import {
   type IslandRegistration,
   type IslandSsrPropsResolver,
 } from './islands.ts'
+import { _setTrailingSlash } from './link.ts'
 import { formatRequestLogLine, formatStartupBanner } from './logging.ts'
 import type { StyleSrc } from './meta.ts'
 import { type AnyLayout, type AnyPage, isPage, type Page } from './page.ts'
@@ -626,6 +627,32 @@ export interface ServeOptions {
    */
   prefetch?: boolean
   /**
+   * Trailing-slash policy for internal `<Link>` hrefs.
+   *
+   *   - `'preserve'` (default): emit hrefs verbatim, whatever the
+   *     author wrote in `<Link to=…>`.
+   *   - `'always'`: append a trailing slash to non-root internal paths
+   *     that don't already have one. Matches the canonical URL form
+   *     static hosts like Cloudflare Pages serve `/path/index.html` at
+   *     — eliminates the auto `/path` → `/path/` 301 that costs ~40 ms
+   *     on every nav and breaks prefetch warm-hits on the live site.
+   *
+   * Lighthouse reports the redirect as a real performance hit even
+   * for a single hop: a +37 ms penalty plus a critical-path delay
+   * to LCP. Setting `trailingSlash: 'always'` makes every framework-
+   * emitted href canonical, so the host serves directly with no
+   * redirect.
+   *
+   * The runtime router still matches both forms (segments are
+   * leading/trailing-slash-stripped on parse), so apps can opt in
+   * without changing how routes are registered, and existing
+   * bookmarks to `/path` still work (Cloudflare's auto 301 catches
+   * them on the way in — only outgoing framework links are normalised).
+   *
+   * Default: `'preserve'`.
+   */
+  trailingSlash?: 'preserve' | 'always'
+  /**
    * Extra early-paint inline-JS statements. Each entry runs in
    * `<head>` BEFORE the body parses, AFTER the framework's built-in
    * platform + motion hints. Use for app-specific first-paint hints:
@@ -958,6 +985,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   const port = options.port ?? 3000
   const clientPath = options.clientPath ?? '/client.js'
   const userHeaders: Record<string, string> = { ...(options.headers as Record<string, string>) }
+  // Per-app trailing-slash policy. Read by `<Link>` at SSR render
+  // time. Default `'preserve'`. Apps deploying to hosts with canonical
+  // trailing-slash URLs (Cloudflare Pages, etc.) opt into `'always'` to
+  // skip the host's auto 301 — see ServeOptions['trailingSlash'].
+  _setTrailingSlash(options.trailingSlash ?? 'preserve')
   // Observability flags. Default-on in dev (banner + per-request log),
   // default-off in production (a single one-line ready message). Apps
   // can override either way via `serve({ log })`.

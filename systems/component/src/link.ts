@@ -145,6 +145,65 @@ function isExternalHref(to: string): boolean {
 }
 
 /**
+ * Per-app trailing-slash policy for internal hrefs.
+ *
+ *   - `'preserve'` (default): emit hrefs verbatim, whatever the author
+ *     wrote in `<Link to=…>`.
+ *   - `'always'`: append a trailing slash to non-root paths that don't
+ *     already have one. Matches the canonical URL form static hosts
+ *     like Cloudflare Pages serve `/path/index.html` at — eliminates
+ *     the auto `/path` → `/path/` 301 that costs ~40 ms on every nav
+ *     and breaks prefetch warm-hits on the live site.
+ *
+ * Set by `app()`/`serve()`/`build()` via `_setTrailingSlash()` at app
+ * boot; read by `<Link>` at render time. SSR-time normalisation only —
+ * the runtime router still matches both forms (segments are
+ * leading/trailing-slash-stripped on parse), so apps can opt in /
+ * out without changing how routes are registered.
+ */
+export type TrailingSlashMode = 'preserve' | 'always'
+
+let _trailingSlash: TrailingSlashMode = 'preserve'
+
+/**
+ * Set the per-app trailing-slash policy. Called by the framework's
+ * `app()` boot path. Module-level state matches the existing pattern
+ * for other app-wide configs (`cookieState`, etc.).
+ */
+export function _setTrailingSlash(mode: TrailingSlashMode): void {
+  _trailingSlash = mode
+}
+
+/**
+ * Normalise an internal href according to the active trailing-slash
+ * policy. External / fragment-only / non-path hrefs are returned
+ * unchanged. Query + hash are preserved.
+ *
+ * Examples (mode='always'):
+ *   `/getting-started`         → `/getting-started/`
+ *   `/getting-started/`        → `/getting-started/`   (already canonical)
+ *   `/`                        → `/`                  (root stays bare)
+ *   `/posts/42?tab=comments`   → `/posts/42/?tab=comments`
+ *   `/posts/42#section`        → `/posts/42/#section`
+ *   `https://example.com/x`    → unchanged             (external)
+ *   `#section`                 → unchanged             (fragment-only)
+ */
+function normalizeTrailingSlash(href: string): string {
+  if (_trailingSlash !== 'always') return href
+  if (isExternalHref(href)) return href
+  const qIdx = href.indexOf('?')
+  const hIdx = href.indexOf('#')
+  let cutAt = -1
+  if (qIdx >= 0 && hIdx >= 0) cutAt = Math.min(qIdx, hIdx)
+  else if (qIdx >= 0) cutAt = qIdx
+  else if (hIdx >= 0) cutAt = hIdx
+  const pathPart = cutAt >= 0 ? href.slice(0, cutAt) : href
+  const rest = cutAt >= 0 ? href.slice(cutAt) : ''
+  if (pathPart === '' || pathPart === '/' || pathPart.endsWith('/')) return href
+  return `${pathPart}/${rest}`
+}
+
+/**
  * Typed client-navigation link. Reads the active router from
  * `RouterCap` when one is installed and goes through it for click +
  * active-state. When no router is installed (e.g. SSR rendering pages
@@ -171,10 +230,14 @@ export const Link = component<LinkProps>((props) => {
   // context from controlling window.opener (security best practice).
   if (external || opensInNewTab) {
     const rel = props.rel ?? (opensInNewTab ? 'noopener noreferrer' : undefined)
+    // External hrefs aren't touched by trailing-slash normalisation
+    // (the policy is for internal paths only). `_blank` internal links
+    // still get normalised so a "open in new tab" right-click goes to
+    // the canonical URL too.
     return el(
       'a',
       {
-        href: props.to,
+        href: external ? props.to : normalizeTrailingSlash(props.to),
         class: props.class ?? '',
         ...(props.target ? { target: props.target } : {}),
         ...(rel ? { rel } : {}),
@@ -204,7 +267,7 @@ export const Link = component<LinkProps>((props) => {
     return el(
       'a',
       {
-        href: props.to,
+        href: normalizeTrailingSlash(props.to),
         class: props.class ?? '',
         'data-place-link': '',
         ...(props.title ? { title: props.title } : {}),
@@ -227,7 +290,7 @@ export const Link = component<LinkProps>((props) => {
   return el(
     'a',
     {
-      href: link.href,
+      href: normalizeTrailingSlash(link.href),
       onClick: link.onClick as unknown as (e: Event) => void,
       'aria-current': link['aria-current'],
       class: className,
