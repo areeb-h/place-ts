@@ -6,8 +6,8 @@
 // Run from project root:
 //   bun examples/docs/probes/bundle-probes.ts
 
-import { mkdir, writeFile } from 'fs/promises'
-import { gzipSync } from 'zlib'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { gzipSync } from 'node:zlib'
 
 interface Probe {
   name: string

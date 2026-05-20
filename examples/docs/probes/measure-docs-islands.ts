@@ -4,7 +4,7 @@
 // Run from project root:
 //   bun examples/docs/probes/measure-docs-islands.ts
 
-import { gzipSync } from 'zlib'
+import { gzipSync } from 'node:zlib'
 import { resolve } from 'node:path'
 
 import { buildIslandBundles } from '../../../systems/component/src/build/island-bundler.ts'

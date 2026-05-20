@@ -6,7 +6,7 @@
 // could be conditionally stripped via per-system __PLACE_USES_X__
 // defines.
 
-import { gzipSync } from 'zlib'
+import { gzipSync } from 'node:zlib'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve, dirname } from 'node:path'
 
@@ -40,7 +40,7 @@ await writeFile(
 import { hydrate, mount } from ${JSON.stringify(frameworkSrc)}
 
 // Mimic the bundler's footer so the size matches what users ship.
-// T8-C wire format: unified `data-view-*` attributes (ADR 0030).
+// T8-C wire format: unified data-view-* attributes (ADR 0030).
 const NAME = 'counter'
 function readProps(el: HTMLElement): Record<string, unknown> {
   const raw = el.dataset.viewProps

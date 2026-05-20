@@ -25,9 +25,9 @@
 //
 // Output: a markdown table written to `docs/probes/16kb-breakdown.md`.
 
-import { mkdir, readFile, writeFile } from 'fs/promises'
-import { join, resolve } from 'path'
-import { gzipSync } from 'zlib'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { gzipSync } from 'node:zlib'
 
 interface ProbeResult {
   name: string
