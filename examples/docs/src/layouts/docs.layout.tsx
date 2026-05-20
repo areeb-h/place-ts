@@ -157,8 +157,12 @@ export const docsLayout = layout<Record<string, never>, 'headerActions' | 'tocOv
       <MobileNavDrawer client="idle" />
 
       {/* The place devtools — the docs site doubles as a live demo of
-          `@place/devtools`. Loads on idle, off the critical path. */}
-      <Devtools client="idle" />
+          `@place/devtools`. Dev-only: the conditional is evaluated at
+          SSR time, so in a `NODE_ENV=production` static export the
+          marker never reaches the HTML and the browser never fetches
+          the devtools island bundle. Loads on idle in dev so it's
+          off the critical path. */}
+      {process.env['NODE_ENV'] !== 'production' ? <Devtools client="idle" /> : null}
     </div>
   ),
 })

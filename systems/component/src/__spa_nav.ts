@@ -188,12 +188,19 @@ function prefetch(url){
   })
     .then(function(r){
       // A prefetch that was redirected (e.g. session expired ->
-      // /login) must NOT be cached as this destination — drop it so
-      // the real click re-fetches live and the redirect is honored.
+      // /login, or a trailing-slash normaliser on a static host) must
+      // NOT be cached as this destination — drop it so the real click
+      // re-fetches live and the redirect is honoured.
       if(r.redirected)throw new Error('prefetch redirected');
       return readHtml(r);
     })
     .catch(function(err){delete prefetchCache[k];throw err;});
+  // Attach a silent observer so the rejection doesn't surface as
+  // "Uncaught (in promise)" when no click ever consumed this entry.
+  // A real navigate() that adopts this in-flight promise still sees
+  // the rejection via its own .then/.catch chain — that's a DIFFERENT
+  // observer; both attach handlers, both count.
+  p.catch(function(){});
   prefetchCache[k]={at:Date.now(),p:p};
 }
 function navigate(url,push){
