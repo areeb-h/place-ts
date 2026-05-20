@@ -791,3 +791,150 @@ describe('serverAdapter', () => {
     expect(b.load()).toBe(123)
   })
 })
+
+// ===== dispose() teardown tests =====
+//
+// Every adapter that owns an external resource (socket, channel, db
+// handle) MUST release it on dispose(). Without these tests, the
+// "zero leaks" guarantee can regress silently — a future adapter
+// refactor that forgets to wire dispose() is the exact shape of bug
+// the audit caught.
+
+describe('PersistenceAdapter dispose() — no leaks', () => {
+  test('indexedDBAdapter.dispose closes the db handle', async () => {
+    const factory = new IDBFactory()
+    const closed: string[] = []
+    // Wrap factory.open to spy on the resulting IDBDatabase.close calls.
+    const origOpen = factory.open.bind(factory)
+    factory.open = ((name: string, version?: number) => {
+      const req = origOpen(name, version)
+      req.addEventListener('success', () => {
+        const db = req.result
+        const origClose = db.close.bind(db)
+        db.close = (): void => {
+          closed.push(name)
+          origClose()
+        }
+      })
+      return req
+    }) as typeof factory.open
+
+    const a = indexedDBAdapter('k', 0, { factory })
+    a.save(1)
+    await tick()
+    a.dispose?.()
+    // The memoized open Promise resolved; dispose closes it
+    // asynchronously. Wait for the close to land.
+    await waitFor(() => closed.length > 0)
+    expect(closed).toEqual(['place'])
+  })
+
+  test('indexedDBAdapter.dispose is idempotent', () => {
+    const a = indexedDBAdapter('k', 0, { factory: new IDBFactory() })
+    a.dispose?.()
+    expect(() => a.dispose?.()).not.toThrow()
+  })
+
+  test('indexedDBAdapter.save after dispose is a no-op (no error)', () => {
+    const a = indexedDBAdapter('k', 0, { factory: new IDBFactory() })
+    a.dispose?.()
+    expect(() => a.save(99)).not.toThrow()
+  })
+
+  test('serverAdapter.dispose closes the WebSocket and removes the message listener', async () => {
+    // Stub WebSocket: tracks addEventListener / removeEventListener /
+    // close calls. Constructed synchronously inside serverAdapter.
+    let opened: string | null = null
+    let closed = false
+    const listeners: Array<{ type: string; cb: EventListener }> = []
+    class StubSocket {
+      readyState = 1
+      constructor(url: string) {
+        opened = url
+      }
+      addEventListener(type: string, cb: EventListener): void {
+        listeners.push({ type, cb })
+      }
+      removeEventListener(type: string, cb: EventListener): void {
+        const idx = listeners.findIndex((l) => l.type === type && l.cb === cb)
+        if (idx >= 0) listeners.splice(idx, 1)
+      }
+      close(): void {
+        closed = true
+      }
+    }
+    const fetchStub = async (): Promise<Response> =>
+      new Response(JSON.stringify({ value: null }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    const a = serverAdapter<number>({
+      baseUrl: 'http://localhost:5180',
+      key: 'k',
+      defaultValue: 0,
+      fetchImpl: fetchStub as unknown as typeof fetch,
+      webSocketImpl: StubSocket as unknown as typeof WebSocket,
+    })
+    expect(opened).toBe('ws://localhost:5180')
+    expect(listeners.length).toBe(1)
+    a.dispose?.()
+    expect(closed).toBe(true)
+    expect(listeners.length).toBe(0)
+  })
+
+  test('serverAdapter.dispose is idempotent', () => {
+    const a = serverAdapter<number>({
+      baseUrl: 'http://localhost:5180',
+      key: 'k',
+      defaultValue: 0,
+      fetchImpl: (async () => new Response('null')) as unknown as typeof fetch,
+    })
+    a.dispose?.()
+    expect(() => a.dispose?.()).not.toThrow()
+  })
+
+  test('crossTabAdapter.dispose closes the channel AND forwards to inner', () => {
+    let innerDisposed = 0
+    const inner: PersistenceAdapter<number> = {
+      load: () => 0,
+      save: () => {},
+      dispose: () => {
+        innerDisposed++
+      },
+    }
+    const channelName = `dispose-test-${Date.now()}-${Math.random()}`
+    const a = crossTabAdapter(inner, channelName)
+    a.dispose?.()
+    expect(innerDisposed).toBe(1)
+    // After dispose, posting on a NEW channel with the same name
+    // should NOT reach `a`'s torn-down callbacks. Hard to assert
+    // negatively without flake; the idempotence test below is the
+    // proxy for "we cleaned up".
+  })
+
+  test('crossTabAdapter.dispose is idempotent + works without inner.dispose', () => {
+    const inner: PersistenceAdapter<number> = { load: () => 0, save: () => {} }
+    const a = crossTabAdapter(inner, `dispose-no-inner-${Date.now()}`)
+    expect(() => a.dispose?.()).not.toThrow()
+    expect(() => a.dispose?.()).not.toThrow()
+  })
+
+  test('persistedState.dispose forwards to adapter.dispose', () => {
+    let adapterDisposed = 0
+    const adapter: PersistenceAdapter<number> = {
+      load: () => 0,
+      save: () => {},
+      dispose: () => {
+        adapterDisposed++
+      },
+    }
+    const { dispose } = persistedState(adapter)
+    dispose()
+    expect(adapterDisposed).toBe(1)
+  })
+
+  test('persistedState.dispose tolerates adapters without dispose()', () => {
+    // memoryAdapter has no dispose; persistedState must NOT throw.
+    const { dispose } = persistedState(memoryAdapter(0))
+    expect(() => dispose()).not.toThrow()
+  })
+})

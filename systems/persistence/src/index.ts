@@ -62,6 +62,19 @@ export interface PersistenceAdapter<T> {
    * here — the caller is responsible for the notification path.
    */
   refresh?(): void | Promise<void>
+  /**
+   * Optional: release any retained external resources. Adapters that
+   * hold sockets, channels, observers, or open database handles
+   * implement this; `persistedState`'s returned `dispose()` forwards
+   * to it so the entire stack tears down cleanly. Adapters with
+   * nothing to release (`localStorage`, `memoryAdapter`) omit it —
+   * the contract is "must be safe to never call."
+   *
+   * Idempotent. After `dispose()`, subsequent `load`/`save`/`observe`
+   * calls are best-effort no-ops; the adapter does NOT throw to keep
+   * teardown races forgiving.
+   */
+  dispose?(): void
 }
 
 export interface PersistedStateOptions<T> {
@@ -115,6 +128,10 @@ export function persistedState<T>(
     dispose: () => {
       stopObserve?.()
       stopWatch()
+      // Tear down adapter-owned external resources (sockets,
+      // BroadcastChannels, IDB handles). Adapters without external
+      // resources omit `dispose`; the optional-call is the contract.
+      adapter.dispose?.()
     },
   }
 }
@@ -276,9 +293,11 @@ export function indexedDBAdapter<T>(
     if (changed) for (const cb of callbacks) cb()
   })
 
+  let disposed = false
   return {
     load: () => cached,
     save(value: T): void {
+      if (disposed) return
       // Serialize FIRST — if it throws, neither the cache nor IDB
       // updates, so they stay consistent. Setting `cached` before the
       // serialize attempt would leave a fresh adapter on the same key
@@ -310,6 +329,32 @@ export function indexedDBAdapter<T>(
     // they notify their consumers. Does NOT fire observers — the
     // caller's notification path is responsible for that.
     refresh: () => reload().then(() => undefined),
+    dispose(): void {
+      if (disposed) return
+      disposed = true
+      callbacks.clear()
+      // Close the IDB handle. The Promise stays settled — any in-
+      // flight transaction the save path kicked off will run to
+      // completion against the closed db (browser semantics: open
+      // transactions outlive close), but no NEW transactions can be
+      // opened. Reset the memo so a fresh adapter on the same key
+      // opens its own connection.
+      if (dbPromise !== null) {
+        const p = dbPromise
+        dbPromise = null
+        void p
+          .then((db) => {
+            try {
+              db.close()
+            } catch (_) {
+              // best-effort close on dispose
+            }
+          })
+          .catch(() => {
+            // Open failed before dispose — nothing to close.
+          })
+      }
+    },
   }
 }
 
@@ -406,33 +451,40 @@ export function serverAdapter<T>(opts: ServerAdapterOptions<T>): PersistenceAdap
   // Open a WebSocket and listen for change-events on our key. If the
   // browser blocks it, we just don't get push updates — `refresh()`
   // still pulls on demand. We don't reconnect on disconnect in v0.1.
+  // Listener is named so `dispose()` can detach it AND close the
+  // socket — without that, every SPA nav past a `persistedState`
+  // backed by a serverAdapter leaks the socket + its in-flight
+  // message dispatch.
   let socket: WebSocket | null = null
+  const onSocketMessage = (event: MessageEvent): void => {
+    try {
+      const msg = JSON.parse(typeof event.data === 'string' ? event.data : '{}') as {
+        type?: string
+        key?: string
+      }
+      if (msg.type !== 'change' || msg.key !== opts.key) return
+      // Re-fetch and notify callbacks. Errors are silent.
+      void fetchValue().then((changed) => {
+        if (changed) for (const cb of callbacks) cb()
+      })
+    } catch {
+      // Malformed message — ignore.
+    }
+  }
   if (typeof WS === 'function') {
     try {
       socket = new WS(wsUrl)
-      socket.addEventListener('message', (event) => {
-        try {
-          const msg = JSON.parse(typeof event.data === 'string' ? event.data : '{}') as {
-            type?: string
-            key?: string
-          }
-          if (msg.type !== 'change' || msg.key !== opts.key) return
-          // Re-fetch and notify callbacks. Errors are silent.
-          void fetchValue().then((changed) => {
-            if (changed) for (const cb of callbacks) cb()
-          })
-        } catch {
-          // Malformed message — ignore.
-        }
-      })
+      socket.addEventListener('message', onSocketMessage)
     } catch {
       socket = null
     }
   }
 
+  let disposed = false
   return {
     load: () => cached,
     save(value: T): void {
+      if (disposed) return
       // Same fail-closed pattern as IDB: serialize first, only update
       // cache if serialize succeeds. Otherwise the cache and the server
       // could diverge on a custom serialize that throws.
@@ -460,6 +512,24 @@ export function serverAdapter<T>(opts: ServerAdapterOptions<T>): PersistenceAdap
     // crossTabAdapter that need consumers' next load() to be fresh).
     // Does NOT fire observers — the caller's notification path does.
     refresh: () => fetchValue().then(() => undefined),
+    dispose(): void {
+      if (disposed) return
+      disposed = true
+      callbacks.clear()
+      if (socket !== null) {
+        try {
+          socket.removeEventListener('message', onSocketMessage)
+        } catch (_) {
+          // best-effort detach
+        }
+        try {
+          socket.close()
+        } catch (_) {
+          // best-effort close
+        }
+        socket = null
+      }
+    },
   }
 }
 
@@ -497,8 +567,9 @@ export function memoryAdapter<T>(initial: T): PersistenceAdapter<T> {
 // can lose keystrokes. CRDT / OT integration is the sync-server adapter,
 // deferred.
 //
-// The channel leaks for the page lifetime — `BroadcastChannel.close()`
-// is not called. Adding a refcount in v0.3 if a real workload needs it.
+// `dispose()` closes the BroadcastChannel + tears down the inner
+// adapter's resources too — `persistedState`'s returned `dispose()`
+// walks the whole stack.
 
 export function crossTabAdapter<T>(
   inner: PersistenceAdapter<T>,
@@ -519,7 +590,7 @@ export function crossTabAdapter<T>(
   const fireCallbacks = (): void => {
     for (const cb of callbacks) cb()
   }
-  channel?.addEventListener('message', () => {
+  const onChannelMessage = (): void => {
     const refresh = inner.refresh
     if (refresh === undefined) {
       fireCallbacks()
@@ -532,11 +603,14 @@ export function crossTabAdapter<T>(
     } else {
       void result.then(fireCallbacks)
     }
-  })
+  }
+  channel?.addEventListener('message', onChannelMessage)
 
+  let disposed = false
   return {
     load: () => inner.load(),
     save(value) {
+      if (disposed) return
       inner.save(value)
       channel?.postMessage('changed')
     },
@@ -549,6 +623,26 @@ export function crossTabAdapter<T>(
         callbacks.delete(onChange)
         stopInner?.()
       }
+    },
+    dispose(): void {
+      if (disposed) return
+      disposed = true
+      callbacks.clear()
+      if (channel !== null) {
+        try {
+          channel.removeEventListener('message', onChannelMessage)
+        } catch (_) {
+          // best-effort detach
+        }
+        try {
+          channel.close()
+        } catch (_) {
+          // best-effort close
+        }
+      }
+      // Forward to inner — a stack like crossTabAdapter(serverAdapter(...))
+      // releases both the channel and the socket.
+      inner.dispose?.()
     },
   }
 }
