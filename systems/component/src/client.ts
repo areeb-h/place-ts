@@ -12,3 +12,9 @@
 // `@place/component/server` or `@place/component/build` — the
 // boundary is an impossible import graph, not DCE.
 export { hydrate, mount } from './_client-mount.ts'
+
+// criticalAction() client-side helpers — install per-session HMAC
+// key + sign envelopes. Apps call `installActionKey()` once after
+// auth + `clearActionKey()` on logout; the rest happens
+// automatically inside `criticalAction().call()`.
+export { clearActionKey, installActionKey } from './critical-action-client.ts'

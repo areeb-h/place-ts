@@ -31,6 +31,15 @@ export {
 } from './app.ts'
 export { discoverPages } from './build/discover-pages.ts'
 export { type BuildStaticOptions, type BuildStaticResult, buildStatic } from './build-static.ts'
+// ----- criticalAction — high-assurance server actions -----
+export {
+  type CriticalAction,
+  type CriticalActionCtx,
+  type CriticalActionDef,
+  criticalAction,
+  deriveSessionKey,
+  provisionActionKey,
+} from './critical-action.ts'
 // ----- node-free, also on the root `@place/component` barrel -----
 export {
   type Action,
@@ -78,6 +87,7 @@ export {
   slugifyHeading,
   type ValidationFailure,
 } from './index.ts'
+
 export {
   type CrossOriginEmbedderPolicy,
   type CrossOriginOpenerPolicy,

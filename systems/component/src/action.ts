@@ -469,7 +469,7 @@ const DEFAULT_MAX_BODY_BYTES = 1_048_576 // 1 MB
  * actions that legitimately need these keys (very rare), explicit
  * opt-out would require a separate code path; we keep it baked-in.
  */
-function rejectsPollution(value: unknown): boolean {
+export function rejectsPollution(value: unknown): boolean {
   if (value === null || typeof value !== 'object') return false
   if (Array.isArray(value)) {
     for (const item of value) if (rejectsPollution(item)) return true

@@ -26,6 +26,8 @@ declare const __PLACE_DEV__: boolean | undefined
 
 import { runWithCapabilityScope } from '@place/capability'
 import { route } from '@place/routing'
+import { bunCryptoProvider, rotatingKey } from '@place/security'
+
 import { HMR_WS_PATH } from './__hmr.ts'
 import { placeAutoImport } from './auto-import-plugin.ts'
 import type {
@@ -37,6 +39,7 @@ import type { buildRouteSplitBundles as BuildRouteSplitBundlesFn } from './build
 import type { CacheEntry, CacheStore } from './cache.ts'
 import { _registeredCaches } from './component.ts'
 import { maybeCompress } from './compress.ts'
+import { setActionRootKey } from './critical-action.ts'
 import { isProductionRuntime } from './error-overlay.ts'
 import { INLINE_STYLE_HASHES_HEADER } from './index.ts'
 import {
@@ -653,6 +656,25 @@ export interface ServeOptions {
    */
   trailingSlash?: 'preserve' | 'always'
   /**
+   * Root secret for `criticalAction()`'s per-session HMAC key
+   * derivation. MUST be at least 32 bytes (256 bits). MUST be the
+   * SAME on every node in a multi-node deployment, or envelopes
+   * signed on one node won't verify on another.
+   *
+   * Source it from a deployment-secret manager (Cloudflare Pages
+   * env, AWS Secrets Manager, etc.); never commit it. Generate
+   * with `openssl rand -base64 32` or
+   * `node -e 'console.log(crypto.randomBytes(32).toString("base64url"))'`.
+   *
+   * **Required iff any `criticalAction()` is registered.** The
+   * framework throws at app-boot time when a critical action exists
+   * but `secret` is unset. Apps without critical actions can omit it.
+   *
+   * The framework runs `rotatingKey(HKDF(secret, "place-action-root-v1"))`
+   * so the daily-rotation primitive's blast-radius bound applies.
+   */
+  secret?: string | Uint8Array
+  /**
    * Auto-attach the place devtools panel.
    *
    *   - `'auto'`: enabled when `NODE_ENV !== 'production'` (the
@@ -1014,6 +1036,28 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // trailing-slash URLs (Cloudflare Pages, etc.) opt into `'always'` to
   // skip the host's auto 301 — see ServeOptions['trailingSlash'].
   _setTrailingSlash(options.trailingSlash ?? 'preserve')
+  // criticalAction() root secret. Required iff any criticalAction()
+  // is registered (validated later in route inspection). HKDF the
+  // raw secret into a domain-separated root, then rotatingKey wraps
+  // it for daily sub-key derivation. The raw secret is held briefly
+  // here + wiped after HKDF; the rotating key holds derived bytes.
+  if (options.secret !== undefined) {
+    const enc = new TextEncoder()
+    const raw = typeof options.secret === 'string' ? enc.encode(options.secret) : options.secret
+    if (raw.length < 32) {
+      throw new Error(
+        'serve: `secret` must be at least 32 bytes (256 bits). ' +
+          'Generate with `openssl rand -base64 32` or equivalent.',
+      )
+    }
+    const root = await bunCryptoProvider.hkdfSha256(
+      raw,
+      enc.encode('place-action-root-salt-v1'),
+      enc.encode('place-action-root-v1'),
+      32,
+    )
+    setActionRootKey(rotatingKey(root), root)
+  }
   // Observability flags. Default-on in dev (banner + per-request log),
   // default-off in production (a single one-line ready message). Apps
   // can override either way via `serve({ log })`.
