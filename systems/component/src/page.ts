@@ -1110,6 +1110,15 @@ export interface RenderPageOptions {
    * the standard error overlay).
    */
   transformBody?: (body: string, ctx: { req: Request; url: URL }) => string
+  /**
+   * When set, `renderPage` appends a `<div data-view="island"
+   * data-view-id="place-devtools" data-view-strategy="idle">` marker at
+   * the end of the body. The marker triggers the island runtime to
+   * fetch + mount `@place/devtools`'s panel on idle. `serve()` sets
+   * this when its own `devtools` option resolves to enabled and the
+   * island registration succeeded. Apps should not set this directly.
+   */
+  emitDevtoolsMarker?: boolean
 }
 
 /**

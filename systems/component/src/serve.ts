@@ -653,6 +653,30 @@ export interface ServeOptions {
    */
   trailingSlash?: 'preserve' | 'always'
   /**
+   * Auto-attach the place devtools panel.
+   *
+   *   - `'auto'`: enabled when `NODE_ENV !== 'production'` (the
+   *     default). Off in prod with zero leftover bytes — the devtools
+   *     island isn't registered, isn't bundled, and the marker isn't
+   *     emitted.
+   *   - `true`: always on.
+   *   - `false`: always off.
+   *
+   * When enabled the framework lazy-imports `@place/devtools/island`,
+   * adds it to the island registry, and emits a
+   * `<div data-view="island" data-view-id="place-devtools" data-view-strategy="idle">`
+   * marker at the end of `<body>` on every page. The devtools bundle
+   * mounts on idle so the panel doesn't compete with first paint.
+   *
+   * `@place/devtools` must be on the consuming app's dependency list
+   * for the auto-attach path to resolve; if it isn't installed and
+   * `devtools` is truthy, the framework emits a one-line warning and
+   * continues (the rest of the app boots fine).
+   *
+   * Default: `'auto'`.
+   */
+  devtools?: 'auto' | boolean
+  /**
    * Extra early-paint inline-JS statements. Each entry runs in
    * `<head>` BEFORE the body parses, AFTER the framework's built-in
    * platform + motion hints. Use for app-specific first-paint hints:
@@ -1253,6 +1277,48 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       mergedMap[name] = reg
     }
   }
+  // 3. Auto-attach `@place/devtools` when enabled. 'auto' (default)
+  //    resolves to enabled when NODE_ENV !== 'production'. The dynamic
+  //    import keeps the devtools dependency off the prod-build module
+  //    graph — apps not running devtools don't pay even an import.
+  // Devtools auto-attach is gated on `Bun.build` availability — a
+  // test runtime (vitest + happy-dom) calls serve() without islands
+  // support, and we shouldn't force a build there. The test flag is
+  // VITEST=true; we ALSO bail when Bun.build isn't available, which is
+  // the structural check (broader than just vitest).
+  const isVitest = process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test'
+  const hasBunBuild = typeof Bun !== 'undefined' && typeof Bun.build === 'function'
+  const devtoolsEnabled =
+    !isVitest &&
+    hasBunBuild &&
+    (options.devtools === true ||
+      (options.devtools !== false && process.env['NODE_ENV'] !== 'production'))
+  let devtoolsRegistered = false
+  if (devtoolsEnabled) {
+    try {
+      const devtoolsMod = (await _serverDynImport('@place/devtools')) as {
+        devtoolsIsland?: IslandComponent<never>
+      }
+      const dt = devtoolsMod.devtoolsIsland
+      if (typeof dt === 'function' && typeof dt.__islandName === 'string') {
+        mergedMap[dt.__islandName] = {
+          component: dt as never,
+          src: dt.__islandSrc,
+        }
+        devtoolsRegistered = true
+      }
+    } catch (e) {
+      // `@place/devtools` isn't installed — that's fine, the app still
+      // boots. One-line warning so the developer knows the option was
+      // observed.
+      // biome-ignore lint/suspicious/noConsole: one-shot startup misconfig warning
+      console.warn(
+        'serve: `devtools` was enabled but `@place/devtools` is not installed. ' +
+          'Either `bun add @place/devtools` (workspace dep), or pass `devtools: false` to silence this. ' +
+          `Underlying error: ${e instanceof Error ? e.message : String(e)}`,
+      )
+    }
+  }
   islandRegistry = mergedMap
   // **`rebuildIslands` closure** — captures the entire island-build
   // pipeline so the dev-mode file watcher (set up further down) can
@@ -1710,6 +1776,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(htmlClassPrefix ? { htmlClassPrefix } : {}),
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
         ...(options.transformBody ? { transformBody: options.transformBody } : {}),
+        ...(devtoolsRegistered ? { emitDevtoolsMarker: true } : {}),
       })
       const inlineHashHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)
       const inlineStyleAttrHashes = inlineHashHeader
@@ -2015,6 +2082,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           ...(htmlClassPrefix ? { htmlClassPrefix } : {}),
           ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
           ...(options.transformBody ? { transformBody: options.transformBody } : {}),
+          ...(devtoolsRegistered ? { emitDevtoolsMarker: true } : {}),
         })
         const inlineHashHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)
         const inlineStyleAttrHashes = inlineHashHeader
@@ -2316,6 +2384,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         // read a cookie at SSR, so the early-paint script is the only
         // thing that applies the persisted theme.
         ...(effectiveEarlyHead.length > 0 ? { extraEarlyHead: effectiveEarlyHead } : {}),
+        ...(devtoolsRegistered ? { emitDevtoolsMarker: true } : {}),
       })
       const html = await res.text()
       const styleHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)

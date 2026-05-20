@@ -34,6 +34,7 @@ import {
   _getIslandBundleUrl,
   _getIslandRegistry,
   _getSharedChunkUrls,
+  Island,
 } from './islands.ts'
 import { type HeadEntry, type PageMeta, renderDocument, type StyleSrc } from './meta.ts'
 import { _consumeTabsUsedFlag } from './mount.ts'
@@ -361,6 +362,16 @@ export async function renderPage(
     const collectedHeadings = _beginHeadingCollection()
     try {
       body = renderToString(view)
+      // Auto-emit the devtools island marker at the end of body when
+      // enabled. Goes inside the island-collection scope so the bundler
+      // sees `place-devtools` as "used" and emits its `<script>` tag.
+      // The standard `<Island>` JSX path handles validation, prop
+      // sanitization, and strategy. Idle strategy: the panel fetches
+      // its bundle off the critical path.
+      if (options?.emitDevtoolsMarker) {
+        const marker = Island({ name: 'place-devtools', client: 'idle' })
+        body += marker.toHtml?.() ?? ''
+      }
     } catch (e) {
       _endIslandCollection()
       _endInlineStyleCollection()

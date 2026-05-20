@@ -8,7 +8,6 @@ import { Sidebar } from '../components/sidebar.tsx'
 // component; the framework auto-discovers them via `app({ islandsDir })`
 // so no manual registration is needed in `app.ts`. We still import
 // the values here to use as JSX.
-import Devtools from '../islands/_devtools.tsx'
 import MobileNavButton from '../islands/mobile-nav-button.tsx'
 import MobileNavDrawer from '../islands/mobile-nav-drawer.tsx'
 import PageNav from '../islands/page-nav.tsx'
@@ -156,13 +155,10 @@ export const docsLayout = layout<Record<string, never>, 'headerActions' | 'tocOv
       <SearchPalette client="idle" />
       <MobileNavDrawer client="idle" />
 
-      {/* The place devtools — the docs site doubles as a live demo of
-          `@place/devtools`. Dev-only: the conditional is evaluated at
-          SSR time, so in a `NODE_ENV=production` static export the
-          marker never reaches the HTML and the browser never fetches
-          the devtools island bundle. Loads on idle in dev so it's
-          off the critical path. */}
-      {process.env['NODE_ENV'] !== 'production' ? <Devtools client="idle" /> : null}
+      {/* No `<Devtools />` JSX here — the framework auto-emits the
+          devtools island marker at the end of `<body>` when
+          `app({ devtools: 'auto' })` is set (the default in dev).
+          See `serve()`'s `devtools` option. */}
     </div>
   ),
 })

@@ -28,6 +28,7 @@
       "dependencies": {
         "@place/component": "workspace:*",
         "@place/design": "workspace:*",
+        "@place/devtools": "workspace:*",
         "@place/reactivity": "workspace:*",
         "@place/routing": "workspace:*",
         "@tailwindcss/node": "^4.2.4",
