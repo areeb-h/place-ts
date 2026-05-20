@@ -105,3 +105,7 @@ Optional. Things future readers might find useful — links, references, follow-
 | [0049](0049-light-dark-theme.md) | Tier 17-C — `light-dark()` theme migration (drop `.dark`-class proliferation) | accepted | 2026-05-17 |
 | [0050](0050-classnames-customization-contract.md) | Tier 17-D — typed `class` + `classNames` customization contract | accepted | 2026-05-17 |
 | [0051](0051-static-export-islands.md) | Tier 19 — islands-aware static export + Cloudflare Pages deploy | accepted | 2026-05-17 |
+| [0052](0052-trailing-slash-canonical-hrefs.md) | `trailingSlash` option + canonical-href emission from `<Link>` | accepted | 2026-05-20 |
+| [0053](0053-framework-owned-dev-primitives.md) | Framework-owned dev primitives — `app({ devtools })` + additive `islands`/`islandsDir` | accepted | 2026-05-20 |
+| [0054](0054-inline-runtime-minification.md) | HTML-transport minification — strip comments + indentation from inline runtime sources | accepted | 2026-05-20 |
+| [0055](0055-critical-action-mil-grade-server-actions.md) | `criticalAction()` — mil-grade server actions (Phases 1+2 shipped; 3–5 specified) | accepted | 2026-05-20 |
