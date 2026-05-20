@@ -1041,7 +1041,7 @@ function applyStyleObjectSafe(node: HTMLElement, obj: Record<string, unknown>): 
     if (raw == null || raw === false) continue
     // Custom properties (`--foo`) stay as-is; camelCase → kebab-case for
     // standard CSS property names.
-    const cssName = key.startsWith('--') ? key : key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())
+    const cssName = key.startsWith('--') ? key : key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)
     let value = String(raw)
     let priority = ''
     const bangIdx = value.lastIndexOf('!')

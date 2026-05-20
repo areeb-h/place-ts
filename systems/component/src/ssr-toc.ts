@@ -267,7 +267,7 @@ export function patchIslandMarker(
   const newOpen = `<div${nextAttrs}>`
   // `closeEnd` is the byte index immediately after the matched </div>.
   // Splice: [start, openStart) + newOpen + newInner + </div> + [closeEnd, end).
-  return html.slice(0, openStart) + newOpen + newInner + '</div>' + html.slice(closeEnd)
+  return `${html.slice(0, openStart)}${newOpen}${newInner}</div>${html.slice(closeEnd)}`
 }
 
 /**

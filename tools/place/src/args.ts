@@ -99,7 +99,7 @@ export function parseArgs(argv: string[]): PlaceArgs {
     }
     if (out.route === null) {
       // Normalize: a route always starts with `/`.
-      out.route = a.startsWith('/') ? a : '/' + a
+      out.route = a.startsWith('/') ? a : `/${a}`
       continue
     }
     throw new Error(`unexpected argument: ${a}`)

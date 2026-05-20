@@ -562,14 +562,14 @@ export function island<P extends Record<string, unknown>>(
         try {
           const inner = runImpl()
           const innerHtml = inner.toHtml?.() ?? ''
-          return openTag + innerHtml + '</div>'
+          return `${openTag}${innerHtml}</div>`
         } catch (e) {
           if (e instanceof ClientOnlyAbort || isBrowserGlobalRef(e)) {
             // Emit the marker with empty content. The island's bundle
             // will mount() the impl into the marker on the client (the
             // wrapper's `el.firstChild` check falls back to `mount`
             // when there's no existing content).
-            return openTag + '</div>'
+            return `${openTag}</div>`
           }
           throw e
         }

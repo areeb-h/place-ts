@@ -293,7 +293,7 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
           ? explicitBase.base
           : (explicitBase as string | undefined)
       const prefix = explicitBaseStr ?? themeBase ?? '@import "tailwindcss";'
-      const combinedBase = prefix + '\n' + globalStyles
+      const combinedBase = `${prefix}\n${globalStyles}`
       serveOpts.tailwind = { ...(explicit ?? {}), base: combinedBase }
     }
   }

@@ -1362,7 +1362,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       // Single multi-line console.log so the report renders as a unit
       // and editors that group consecutive console output keep it intact.
       // biome-ignore lint/suspicious/noConsole: dev startup banner
-      console.log('\n' + renderViewManifestReport(islandResult.viewManifest) + '\n')
+      console.log(`\n${renderViewManifestReport(islandResult.viewManifest)}\n`)
     }
     timings.bundleMs = (timings.bundleMs ?? 0) + (performance.now() - islandStart)
     timings.bundleBytes = (timings.bundleBytes ?? 0) + islandResult.totalBytes
@@ -2442,8 +2442,8 @@ async function startSrcWatcher(
   const isWatched = (filename: string | null): boolean => {
     if (!filename) return false
     for (const skip of skipDirs) {
-      if (filename === skip || filename.startsWith(skip + '/')) return false
-      if (filename.includes('/' + skip + '/')) return false
+      if (filename === skip || filename.startsWith(`${skip}/`)) return false
+      if (filename.includes(`/${skip}/`)) return false
     }
     if (filename.startsWith('.') || filename.includes('/.')) return false
     for (const ext of exts) if (filename.endsWith(ext)) return true
@@ -2457,7 +2457,7 @@ async function startSrcWatcher(
   const isIslandFile = (filename: string): boolean => {
     if (!absIslandsDir) return false
     const abs = resolve(watchDir, filename)
-    return abs.startsWith(absIslandsDir + '/') || abs === absIslandsDir
+    return abs.startsWith(`${absIslandsDir}/`) || abs === absIslandsDir
   }
 
   // Throttle the island fast-path rebuild — coalesces save

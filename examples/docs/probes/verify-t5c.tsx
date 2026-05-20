@@ -50,7 +50,7 @@ export default island(import.meta.url, ({ start = 0 }: { start?: number }) => {
 `,
 )
 
-const Counter = island('file://' + counterSrc, ({ start = 0 }: { start?: number }) => {
+const Counter = island(`file://${counterSrc}`, ({ start = 0 }: { start?: number }) => {
   const count = state(start)
   return (
     <button

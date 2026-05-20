@@ -258,7 +258,7 @@ if (typeof process !== 'undefined' && typeof process.memoryUsage === 'function')
     // Ratio close to 10 → linear growth (red flag). Negative deltas
     // (GC ran during measurement) collapse to "—" because the ratio
     // isn't meaningful.
-    const ratio = d100 <= 0 || d1000 <= 0 ? '—' : (d1000 / d100).toFixed(1) + '×'
+    const ratio = d100 <= 0 || d1000 <= 0 ? '—' : `${(d1000 / d100).toFixed(1)}×`
     host.remove()
     console.log(
       `${pad(label, 22, 'l')} ${pad(fmtMB(d100), 12)} ${pad(fmtMB(d1000), 12)} ${pad(ratio, 8)}`,

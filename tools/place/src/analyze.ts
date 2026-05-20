@@ -222,7 +222,7 @@ function routeFromHtmlPath(distDir: string, htmlPath: string): string {
   // Drop the trailing `index.html`, normalize separators to URL `/`.
   const dir = rel.slice(0, rel.length - 'index.html'.length)
   const segments = dir.split(sep).filter((s) => s.length > 0)
-  return segments.length === 0 ? '/' : '/' + segments.join('/')
+  return segments.length === 0 ? '/' : `/${segments.join('/')}`
 }
 
 interface RawScript {
@@ -268,7 +268,7 @@ export function matchIslandName(src: string, manifestNames: readonly string[]): 
   for (const name of manifestNames) {
     // `<name>` + `-` + 12-char hash + `.js`
     if (basename.length !== name.length + 1 + 12 + 3) continue
-    if (basename.startsWith(name + '-')) return name
+    if (basename.startsWith(`${name}-`)) return name
   }
   return null
 }
