@@ -202,6 +202,7 @@ function injectIslandSrcUrlArg(source: string): string {
   let cursor = 0
   const idRe = /\bisland\b/g
   let m: RegExpExecArray | null = null
+  // biome-ignore lint/suspicious/noAssignInExpressions: canonical regex.exec loop pattern
   while ((m = idRe.exec(scannable)) !== null) {
     const idEnd = m.index + m[0].length
     let i = idEnd

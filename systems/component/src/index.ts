@@ -188,7 +188,7 @@ export type {
  *     flag at the end of `boot()`.
  *   - CSR-only mount: runs once, synchronously after the watch settles.
  */
-function _onMount(fn: () => void | (() => void)): void {
+function _onMount(fn: () => (() => void) | undefined): void {
   if (typeof window === 'undefined') {
     // SSR — onMount is a no-op. Body finishes; static structure ships.
     return

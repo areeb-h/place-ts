@@ -111,7 +111,7 @@ export interface IslandSsrResult<P> {
  */
 export type IslandSsrPropsResolver<P extends Record<string, unknown>> = (
   ctx: IslandSsrContext,
-) => IslandSsrResult<P> | null | undefined | void
+) => IslandSsrResult<P> | null | undefined
 
 /**
  * Island registry entry. `component` is used to SSR the island; `src`

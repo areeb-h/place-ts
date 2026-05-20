@@ -45,7 +45,7 @@ const FAVICON = `data:image/svg+xml,${encodeURIComponent(FAVICON_SVG)}`
  * Layouts without slots stayed `layout({ ... })`; the typed slot
  * union is purely opt-in.
  */
-export const docsLayout = layout<{}, 'headerActions' | 'tocOverride'>({
+export const docsLayout = layout<Record<string, never>, 'headerActions' | 'tocOverride'>({
   meta: {
     // `titleTemplate` wraps every page's title with the site suffix —
     // pages now write `meta: 'Why place'` (or no meta at all, letting

@@ -268,7 +268,7 @@ describe('layout() — composable wrappers around pages', () => {
 
   describe('typed named slots', () => {
     test('slots: filled by page, rendered by layout', async () => {
-      const shell = layout<{}, 'headerActions' | 'sidebar'>({
+      const shell = layout<Record<string, never>, 'headerActions' | 'sidebar'>({
         view: ({ children, slots }) =>
           div({ class: 'shell' }, [
             div({ class: 'header' }, [slots('headerActions')]),
@@ -294,7 +294,7 @@ describe('layout() — composable wrappers around pages', () => {
     })
 
     test('slots.has(): false for unfilled, true for filled', async () => {
-      const shell = layout<{}, 'a' | 'b'>({
+      const shell = layout<Record<string, never>, 'a' | 'b'>({
         view: ({ children, slots }) =>
           div({ class: 'shell' }, [
             slots.has('a') ? span({ class: 'has-a' }, [slots('a')]) : span({ class: 'no-a' }, []),
@@ -315,7 +315,7 @@ describe('layout() — composable wrappers around pages', () => {
     })
 
     test('unfilled slot resolves to null (renders nothing)', async () => {
-      const shell = layout<{}, 'ghost'>({
+      const shell = layout<Record<string, never>, 'ghost'>({
         view: ({ children, slots }) =>
           div({ class: 'shell' }, [
             span({ class: 'before' }, [slots('ghost')]),
@@ -339,7 +339,7 @@ describe('layout() — composable wrappers around pages', () => {
       const outer = layout({
         view: ({ children }) => div({ class: 'outer' }, [children]),
       })
-      const inner = layout<{}, 'aside'>({
+      const inner = layout<Record<string, never>, 'aside'>({
         view: ({ children, slots }) =>
           div({ class: 'inner' }, [span({ class: 'aside' }, [slots('aside')]), children]),
       })

@@ -1,5 +1,7 @@
 // @vitest-environment node
 
+// biome-ignore-all lint/suspicious/noTemplateCurlyInString: these strings are tokenizer inputs that contain ${…} as literal text, not template-literal interpolation
+
 import { describe, expect, test } from 'vitest'
 import {
   tokenizeCss,

@@ -76,7 +76,7 @@ export function colorMix(
   // into [0,1]. The Math.round-to-thousandths step keeps the output
   // string stable across sub-pixel reactive updates so the browser's
   // computed-style cache short-circuits unchanged frames.
-  const clamped = t !== t ? 0 : t < 0 ? 0 : t > 1 ? 1 : t
+  const clamped = Number.isNaN(t) ? 0 : t < 0 ? 0 : t > 1 ? 1 : t
   const tq = Math.round(clamped * 1000) / 1000
   // Hot-path short-circuits — when the mix collapses to a single
   // endpoint, return the endpoint string verbatim. Matters for theme

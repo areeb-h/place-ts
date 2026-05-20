@@ -273,6 +273,7 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     const tw = serveOpts.tailwind
     if (tw === false) {
       if (typeof console !== 'undefined') {
+        // biome-ignore lint/suspicious/noConsole: one-shot misconfig warning at app() construction
         console.warn(
           'app(): `styles` is ignored when `tailwind: false`. ' +
             'Set `tailwind: true` (or pass `tailwind: { … }`) or remove `styles`.',

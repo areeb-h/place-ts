@@ -847,7 +847,7 @@ function applyUseDirective(
 
 const _useDirectiveRegistry: Record<
   string,
-  (el: HTMLElement, payload: unknown) => void | Disposer
+  (el: HTMLElement, payload: unknown) => Disposer | undefined
 > = {}
 
 /**
@@ -858,7 +858,7 @@ const _useDirectiveRegistry: Record<
  */
 export function registerDirective(
   name: string,
-  fn: (el: HTMLElement, payload: unknown) => void | Disposer,
+  fn: (el: HTMLElement, payload: unknown) => Disposer | undefined,
 ): void {
   _useDirectiveRegistry[name] = fn
 }

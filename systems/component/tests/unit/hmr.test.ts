@@ -65,7 +65,9 @@ describe('placeHmr() — typed-envelope HMR client', () => {
       lastWs = this
     } as unknown as typeof WebSocket
     // Clear any leftover injected script tags from previous tests.
-    document.querySelectorAll('script[data-place-island]').forEach((s) => s.remove())
+    document.querySelectorAll('script[data-place-island]').forEach((s) => {
+      s.remove()
+    })
   })
 
   afterEach(() => {

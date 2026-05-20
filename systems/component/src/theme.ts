@@ -148,7 +148,7 @@ const SCALE_RATIOS: Readonly<Record<Exclude<TypographyScaleRatio, number>, numbe
   'minor-third': 1.2,
   'major-third': 1.25,
   'perfect-fourth': 1.333,
-  'augmented-fourth': 1.414,
+  'augmented-fourth': Math.SQRT2,
   'perfect-fifth': 1.5,
   'golden': 1.618,
 }
@@ -1044,12 +1044,14 @@ export function theme<M extends ColorModeMap>(
     opts.systemPreference !== false
 
   // Forward to `themeTokens()`. Cast: the typed shape passes through.
-  // biome-ignore lint/suspicious/noExplicitAny: type narrowing through tokens map
+  type SysPref = { dark?: keyof M & string; light?: keyof M & string } | false
   return themeTokens({
     default: defaultMode,
     themes: themes as Record<keyof M & string, ThemeMap>,
     ...(canUseLightDark ? { mode: 'light-dark' as const } : {}),
-    ...(opts.systemPreference !== undefined ? { systemPreference: opts.systemPreference as any } : {}),
+    ...(opts.systemPreference !== undefined
+      ? { systemPreference: opts.systemPreference as SysPref }
+      : {}),
     ...(opts.classPrefix ? { classPrefix: opts.classPrefix } : {}),
     ...(opts.typography ? { typography: opts.typography } : {}),
   }) as ThemeTokens<Record<keyof M, ThemeMap>>
