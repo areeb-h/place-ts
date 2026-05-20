@@ -39,10 +39,12 @@ npm-debug.log*
 bun-debug.log*
 
 # Claude Code: keep agents committed; ignore local-only settings +
-# machine-specific dev tooling (absolute WSL paths, dev-only secrets).
+# machine-specific dev tooling (absolute WSL paths, dev-only secrets)
+# + per-session runtime artefacts that don't belong in history.
 .claude/settings.local.json
 .claude/launch.json
 .claude/dev*.sh
+.claude/scheduled_tasks.lock
 
 # Env
 .env

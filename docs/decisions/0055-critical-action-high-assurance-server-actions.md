@@ -1,6 +1,6 @@
 # ADR 0055: `criticalAction()` — high-assurance server actions
 
-**Status:** accepted (Phases 1+2 shipped; Phases 3–5 specified, deferred)
+**Status:** accepted (Phases 1, 2, 4 shipped; Phases 3, 5 specified, deferred)
 **Date:** 2026-05-20
 **Affects:** `@place/security` (substrate); `@place/component` (`criticalAction()`,
 `provisionActionKey`, `installActionKey`, `ServeOptions.secret`)
@@ -298,11 +298,19 @@ codegen target: ~90 µs saved on schema validation; net result
   Server walks the chain; failures return 403 in constant time.
   Deferred — substrate ready.
 
-- **Phase 4 — Audit log.** `AuditLogCap` interface + in-memory
-  Merkle-tree default + opt-in SQLite adapter. Each entry chains
-  the previous + canonical (actor, action, payload-hash,
-  result-hash, ts). **Tamper-evident**, not classical
-  non-repudiation (see Consequences). Deferred.
+- **Phase 4 — Audit log.** Shipped commit `1332a29`.
+  `AuditLogCap` interface + hash-chained `inMemoryAuditLog`
+  (ring-buffered, default 10k entries). Each entry binds the
+  previous via `prev_hash`, so any modification anywhere earlier
+  breaks the chain and is caught by `verify()`. `criticalAction()`
+  auto-appends on accepted requests (one entry per success;
+  `#error`-suffixed entry on handler throw); `ctx.audit(event,
+  payload?)` lets handlers emit custom events alongside.
+  Merkle-tree adapter for log(n) inclusion proofs deferred until
+  a use case appears (hash chain delivers tamper-evidence; Merkle
+  buys cheap inclusion proofs that no in-memory consumer needs
+  yet). **Tamper-evident**, not classical non-repudiation (see
+  Consequences). 22 tests added.
 
 - **Phase 5 — Validator codegen.** Bun plugin lifts
   `fromStandard(schema)` into generated direct-decode code at build
