@@ -6,8 +6,12 @@ import {
   bunCryptoProvider,
   CryptoProviderCap,
   CSP_DEFAULTS,
+  canonicalise,
   cspHeader,
   csrfToken,
+  type EnvelopeFields,
+  inMemoryNonceStore,
+  NonceStoreCap,
   parseCookies,
   rateLimit,
   requireSession,
@@ -15,8 +19,12 @@ import {
   SecurityError,
   SessionCap,
   setCookieHeader,
+  sha256Base64url,
+  signEnvelope,
   signedToken,
   useCryptoProvider,
+  useNonceStore,
+  verifyEnvelope,
 } from '../../src/index.ts'
 
 const SECRET = 'this-is-a-test-secret-32-bytes-long!'
@@ -406,5 +414,315 @@ describe('rotatingKey — per-day HMAC sub-key derivation', () => {
     const kA = await rkA.keyAt(at)
     const kB = await rkB.keyAt(at)
     expect(bunCryptoProvider.timingSafeEqual(kA, kB)).toBe(true)
+  })
+})
+
+describe('NonceStore — IPsec-style sliding-window replay defense', () => {
+  test('first counter for a session is accepted', async () => {
+    const store = inMemoryNonceStore()
+    expect(await store.check('s1', 1)).toBe(true)
+  })
+
+  test('immediate replay of the same counter is rejected', async () => {
+    const store = inMemoryNonceStore()
+    expect(await store.check('s1', 5)).toBe(true)
+    expect(await store.check('s1', 5)).toBe(false) // replay
+  })
+
+  test('strictly-increasing counters all accepted', async () => {
+    const store = inMemoryNonceStore()
+    for (let i = 1; i <= 100; i++) {
+      expect(await store.check('s1', i)).toBe(true)
+    }
+  })
+
+  test('counter older than window is rejected (stale)', async () => {
+    const store = inMemoryNonceStore({ windowSize: 8 })
+    await store.check('s1', 100)
+    // Window is now [93..100]. Counter 92 is past the left edge.
+    expect(await store.check('s1', 92)).toBe(false)
+    // Counter 93 is the leftmost in-window slot.
+    expect(await store.check('s1', 93)).toBe(true)
+    // Counter 92 still rejected (replay AND stale).
+    expect(await store.check('s1', 92)).toBe(false)
+  })
+
+  test('out-of-order delivery within window is accepted exactly once', async () => {
+    const store = inMemoryNonceStore({ windowSize: 64 })
+    await store.check('s1', 10)
+    // A reordered request for counter 7 arrives — within window.
+    expect(await store.check('s1', 7)).toBe(true)
+    // A second copy of counter 7 — replay.
+    expect(await store.check('s1', 7)).toBe(false)
+  })
+
+  test('big jump forward resets the window cleanly', async () => {
+    const store = inMemoryNonceStore({ windowSize: 8 })
+    await store.check('s1', 5)
+    // Jump well beyond W. Window must reset (old bitmap discarded).
+    expect(await store.check('s1', 1000)).toBe(true)
+    // 5 is now stale (1000 - 5 > 8).
+    expect(await store.check('s1', 5)).toBe(false)
+    // 1000 replay rejected.
+    expect(await store.check('s1', 1000)).toBe(false)
+  })
+
+  test('exactly at the window left edge is the LAST accepted', async () => {
+    const store = inMemoryNonceStore({ windowSize: 8 })
+    await store.check('s1', 100)
+    // Window: counters 93..100. 93 is in. 92 is out.
+    expect(await store.check('s1', 93)).toBe(true)
+    expect(await store.check('s1', 92)).toBe(false)
+  })
+
+  test('sessions are independent', async () => {
+    const store = inMemoryNonceStore()
+    expect(await store.check('s1', 1)).toBe(true)
+    // Same counter 1 on a DIFFERENT session: accept.
+    expect(await store.check('s2', 1)).toBe(true)
+    // Replay on each: rejected.
+    expect(await store.check('s1', 1)).toBe(false)
+    expect(await store.check('s2', 1)).toBe(false)
+  })
+
+  test('forget drops the bitmap so a re-issued session starts fresh', async () => {
+    const store = inMemoryNonceStore()
+    await store.check('s1', 5)
+    expect(await store.size()).toBe(1)
+    await store.forget('s1')
+    expect(await store.size()).toBe(0)
+    // s1 is gone — counter 5 is novel again. (App's session-rotation
+    // layer is responsible for not reusing session ids; we just
+    // honour forget().)
+    expect(await store.check('s1', 5)).toBe(true)
+  })
+
+  test('non-integer / negative / infinite counters rejected without state mutation', async () => {
+    const store = inMemoryNonceStore()
+    expect(await store.check('s1', -1)).toBe(false)
+    expect(await store.check('s1', 1.5)).toBe(false)
+    expect(await store.check('s1', Number.POSITIVE_INFINITY)).toBe(false)
+    expect(await store.check('s1', Number.NaN)).toBe(false)
+    expect(await store.size()).toBe(0)
+    // Valid counter still works after garbage attempts.
+    expect(await store.check('s1', 1)).toBe(true)
+  })
+
+  test('windowSize=1 → only most-recent counter accepted; everything older rejected', async () => {
+    const store = inMemoryNonceStore({ windowSize: 1 })
+    await store.check('s1', 5)
+    await store.check('s1', 6)
+    expect(await store.check('s1', 5)).toBe(false) // outside window
+    expect(await store.check('s1', 6)).toBe(false) // replay
+    expect(await store.check('s1', 7)).toBe(true)
+  })
+
+  test('windowSize must be 1..256', () => {
+    expect(() => inMemoryNonceStore({ windowSize: 0 })).toThrow(/windowSize must be 1..256/)
+    expect(() => inMemoryNonceStore({ windowSize: 257 })).toThrow(/windowSize must be 1..256/)
+  })
+
+  test('useNonceStore falls back to in-memory singleton when no cap installed', async () => {
+    const store = useNonceStore()
+    expect(await store.check('test-fallback', 1)).toBe(true)
+    // Same store across calls (the fallback is cached so we don't lose state).
+    expect(await useNonceStore().check('test-fallback', 1)).toBe(false)
+  })
+
+  test('useNonceStore returns the installed cap impl', async () => {
+    const mock = inMemoryNonceStore({ windowSize: 8 })
+    await NonceStoreCap.provide(mock, async () => {
+      const active = useNonceStore()
+      expect(active).toBe(mock)
+    })
+  })
+})
+
+describe('HMAC envelope — Phase 2b', () => {
+  const KEY = new TextEncoder().encode('test-envelope-key-32-bytes-long!')
+  const ORIGIN = 'https://example.com'
+  const SESSION = 'session-abc'
+  const ACTION = 'POST /__a/createComment'
+  const validFields = (overrides: Partial<EnvelopeFields> = {}): EnvelopeFields => ({
+    actionId: ACTION,
+    bodyHash: 'placeholder-will-be-recomputed',
+    counter: 1,
+    iat: Math.floor(Date.now() / 1000),
+    origin: ORIGIN,
+    sessionId: SESSION,
+    keyId: 'b20020',
+    ...overrides,
+  })
+  const baseOpts = (
+    body: Uint8Array,
+  ): Omit<Parameters<typeof verifyEnvelope>[1], 'body'> & {
+    body: Uint8Array
+  } => ({
+    expectedActionId: ACTION,
+    expectedOrigin: ORIGIN,
+    expectedSessionId: SESSION,
+    body,
+    key: KEY,
+  })
+
+  test('canonicalise is deterministic + field-order-stable', () => {
+    const f = validFields()
+    const c1 = canonicalise(f)
+    const c2 = canonicalise(f)
+    expect(c1).toEqual(c2)
+    const text = new TextDecoder().decode(c1)
+    // Field order is fixed: v, action_id, body_hash, counter, iat, origin, session_id, key_id.
+    const lines = text.split('\n')
+    expect(lines[0]).toBe('v=1')
+    expect(lines[1]?.startsWith('action_id=')).toBe(true)
+    expect(lines[2]?.startsWith('body_hash=')).toBe(true)
+    expect(lines[3]?.startsWith('counter=')).toBe(true)
+    expect(lines[4]?.startsWith('iat=')).toBe(true)
+    expect(lines[5]?.startsWith('origin=')).toBe(true)
+    expect(lines[6]?.startsWith('session_id=')).toBe(true)
+    expect(lines[7]?.startsWith('key_id=')).toBe(true)
+  })
+
+  test('round-trip — sign + verify accepts the valid envelope', async () => {
+    const body = new TextEncoder().encode('{"comment":"hi"}')
+    const bodyHash = await sha256Base64url(body)
+    const fields = validFields({ bodyHash })
+    const wire = await signEnvelope(KEY, fields)
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.fields.actionId).toBe(ACTION)
+      expect(result.fields.counter).toBe(1)
+      expect(result.fields.sessionId).toBe(SESSION)
+    }
+  })
+
+  test('tampered body is rejected with reason "wrong-body"', async () => {
+    const original = new TextEncoder().encode('{"comment":"hi"}')
+    const tampered = new TextEncoder().encode('{"comment":"hi!"}') // one byte added
+    const bodyHash = await sha256Base64url(original)
+    const wire = await signEnvelope(KEY, validFields({ bodyHash }))
+    const result = await verifyEnvelope(wire, baseOpts(tampered))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('wrong-body')
+  })
+
+  test('tampered envelope tag is rejected with reason "bad-tag"', async () => {
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    const wire = await signEnvelope(KEY, validFields({ bodyHash }))
+    // Flip the last char of the tag.
+    const lastChar = wire.charAt(wire.length - 1)
+    const replaceWith = lastChar === 'A' ? 'B' : 'A'
+    const tampered = `${wire.slice(0, -1)}${replaceWith}`
+    const result = await verifyEnvelope(tampered, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('bad-tag')
+  })
+
+  test('wrong key produces "bad-tag" — verifier MUST verify HMAC first', async () => {
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    const wrongKey = new TextEncoder().encode('attacker-key-also-32-bytes-long!')
+    const wire = await signEnvelope(wrongKey, validFields({ bodyHash }))
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('bad-tag')
+  })
+
+  test('cross-action confusion — envelope minted for action A rejected as B', async () => {
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    // Mint for action A.
+    const wire = await signEnvelope(KEY, validFields({ bodyHash, actionId: 'POST /__a/A' }))
+    // Verify as action B.
+    const result = await verifyEnvelope(wire, {
+      ...baseOpts(body),
+      expectedActionId: 'POST /__a/B',
+    })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('wrong-action')
+  })
+
+  test('cross-origin replay — envelope minted at A rejected at B', async () => {
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    const wire = await signEnvelope(KEY, validFields({ bodyHash, origin: 'https://attacker.test' }))
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('wrong-origin')
+  })
+
+  test('wrong session — envelope minted for user A rejected as user B', async () => {
+    const body = new TextEncoder().encode('{"x":1}')
+    const bodyHash = await sha256Base64url(body)
+    const wire = await signEnvelope(KEY, validFields({ bodyHash, sessionId: 'attacker-session' }))
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('wrong-session')
+  })
+
+  test('stale iat (older than maxAgeSec) is rejected', async () => {
+    const body = new TextEncoder().encode('{}')
+    const bodyHash = await sha256Base64url(body)
+    const ancient = Math.floor(Date.now() / 1000) - 10_000 // ~3h old
+    const wire = await signEnvelope(KEY, validFields({ bodyHash, iat: ancient }))
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('stale-iat')
+  })
+
+  test('future iat (clock-forward attack) is rejected', async () => {
+    const body = new TextEncoder().encode('{}')
+    const bodyHash = await sha256Base64url(body)
+    const future = Math.floor(Date.now() / 1000) + 10_000
+    const wire = await signEnvelope(KEY, validFields({ bodyHash, iat: future }))
+    const result = await verifyEnvelope(wire, baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('future-iat')
+  })
+
+  test('malformed wire (no dot) is rejected', async () => {
+    const body = new TextEncoder().encode('{}')
+    const result = await verifyEnvelope('garbage', baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('malformed')
+  })
+
+  test('malformed wire (bad base64) is rejected', async () => {
+    const body = new TextEncoder().encode('{}')
+    const result = await verifyEnvelope('!!!.!!!', baseOpts(body))
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('malformed')
+  })
+
+  test('canonical form is HMAC-tagged + can be inspected by base64url-decode', async () => {
+    const body = new TextEncoder().encode('{}')
+    const bodyHash = await sha256Base64url(body)
+    const wire = await signEnvelope(KEY, validFields({ bodyHash }))
+    // The canonical half is base64url; should decode to readable text.
+    const [canonicalB64] = wire.split('.')
+    expect(canonicalB64).toBeDefined()
+    const pad = (4 - ((canonicalB64 as string).length % 4)) % 4
+    const b64 = (canonicalB64 as string).replace(/-/g, '+').replace(/_/g, '/') + '='.repeat(pad)
+    const decoded = atob(b64)
+    expect(decoded.includes('action_id=')).toBe(true)
+    expect(decoded.includes(`"${ACTION}"`)).toBe(true)
+  })
+
+  test('canonicalisation is JSON-string-encoded — embedded newlines in fields cannot inject extra lines', () => {
+    const malicious = validFields({
+      actionId: 'fake\naction_id="real-action"', // attacker tries to inject a line
+    })
+    const canonical = canonicalise(malicious)
+    const text = new TextDecoder().decode(canonical)
+    // The injected `action_id=...` MUST NOT appear as a parseable
+    // line; the `\n` should be JSON-escaped inside the action_id
+    // value, so the actionId line is still ONE line.
+    const lines = text.split('\n')
+    // Exactly one line starts with `action_id=`.
+    expect(lines.filter((l) => l.startsWith('action_id=')).length).toBe(1)
+    // The actionId line contains the escaped form, not a raw newline.
+    expect(lines[1]).toContain('\\n')
   })
 })

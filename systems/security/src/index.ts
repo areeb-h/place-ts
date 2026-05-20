@@ -389,6 +389,164 @@ export function rotatingKey(
   }
 }
 
+// ===== NonceStoreCap — IPsec-style sliding-window replay defense =====
+//
+// **The threat:** an attacker captures a legitimate action request
+// (e.g. via shoulder-surfing TLS keys, network logging at an
+// intermediary, browser-history theft) and replays it within the
+// HMAC envelope's freshness window. The HMAC is valid; only a
+// distinct nonce-tracking layer can reject the replay.
+//
+// **The defense:** each request carries a monotonically-increasing
+// `counter` (the `jti` in the envelope). The server tracks the
+// highest counter seen per session, plus a bitmap of the most-recent
+// N counters. A request is accepted iff its counter is novel and
+// within N of the most recent. This is the exact IPsec anti-replay
+// algorithm (RFC 4302/4303), proven correct + memory-bounded:
+//
+//   - Memory: one `(rightEdge, bitmap)` tuple per session — ~16 bytes
+//     per session regardless of how many requests they make.
+//   - Lookup: O(1) — bitmap shift + bit test, no DB read.
+//   - Out-of-order tolerance: N (default 64) — handles network
+//     reordering on a single keep-alive connection while still
+//     rejecting any counter older than N behind the right edge.
+//
+// **Why a counter, not a random `jti`?** Random nonces need either a
+// bounded LRU (probabilistic) or unbounded growth. Counters give
+// constant memory + O(1) decisions + no probabilistic failures —
+// what high-assurance systems use. The client-side complexity (an
+// IndexedDB-backed counter that survives reloads) is real but small;
+// the framework's client layer (Phase 2b) handles it.
+//
+// **What goes in the bitmap:**
+//
+//   right          → bit 0 (LSB) of bitmap
+//   right - 1      → bit 1
+//   ...
+//   right - W + 1  → bit W-1 (MSB of the window)
+//
+// When a counter c > right arrives, the window slides: shift bitmap
+// LEFT by (c - right) positions, then OR in bit 0 (recording c). Any
+// bits that fall off the high end were old and don't need to be
+// remembered.
+//
+// **Standards:** OWASP ASVS 5.0 11.3.4 (L3 — nonce single-use within
+// the validity window); NIST SP 800-77 Rev 1 (IPsec implementation
+// guidance, sec 4.3); RFC 4303 (ESP anti-replay).
+//
+// **Pluggable.** The default `inMemoryNonceStore()` is per-process.
+// Multi-node deployments install `redisNonceStore(client)` or a
+// Durable-Object-backed adapter. The interface is small (3 methods)
+// so writing a new adapter is ~20 lines.
+
+export interface NonceStore {
+  /**
+   * Check + record. Returns true when `counter` is novel for
+   * `sessionId` AND within the sliding window of the rightmost
+   * counter seen; false on replay (counter previously marked) or
+   * stale (counter is more than W positions behind the right edge).
+   *
+   * Implementations MUST be linearizable per (sessionId, counter) —
+   * concurrent calls for the same session must agree on which one
+   * "wins" the slot. The in-memory default is single-threaded JS so
+   * this is free; Redis-backed adapters use Lua/CAS.
+   */
+  check(sessionId: string, counter: number): Promise<boolean>
+  /**
+   * Drop the nonce state for `sessionId`. Called when a session
+   * logs out / expires, so the bitmap doesn't outlive its purpose.
+   * Idempotent — returning when no state existed is fine.
+   */
+  forget(sessionId: string): Promise<void>
+  /**
+   * Number of currently-tracked sessions (for observability). The
+   * in-memory default uses this for the dev-banner stat; durable
+   * stores may return a rolling estimate.
+   */
+  size(): Promise<number>
+}
+
+/**
+ * Default in-memory nonce store — one `(rightEdge, bitmap)` tuple per
+ * session. Suitable for dev + single-process production. Multi-node
+ * deployments install a Redis / Durable-Object / Postgres adapter.
+ *
+ * @param opts.windowSize  Bitmap width in bits (default 64). Trades
+ *   out-of-order tolerance for memory. 64 is the IPsec default + the
+ *   sweet spot for HTTP — handles realistic network reordering on
+ *   one connection without consuming meaningful memory.
+ */
+export function inMemoryNonceStore(opts: { windowSize?: number } = {}): NonceStore {
+  const W = opts.windowSize ?? 64
+  if (W < 1 || W > 256) {
+    throw new Error(`@place/security: NonceStore windowSize must be 1..256 (got ${W})`)
+  }
+  const sessions = new Map<string, { right: number; bitmap: bigint }>()
+  const WMask = (1n << BigInt(W)) - 1n
+  return {
+    async check(sessionId, counter) {
+      if (!Number.isInteger(counter) || counter < 0 || !Number.isFinite(counter)) return false
+      const entry = sessions.get(sessionId)
+      if (!entry) {
+        // First-ever counter for this session — accept + record.
+        sessions.set(sessionId, { right: counter, bitmap: 1n })
+        return true
+      }
+      const { right, bitmap } = entry
+      if (counter > right) {
+        // Right edge advances. Shift bitmap left by the gap, set bit 0
+        // (the new right edge). Bits that fall off the high end were
+        // counters too old to track — they're gone, which is correct
+        // (the window only remembers the last W).
+        const shift = counter - right
+        let newBitmap: bigint
+        if (shift >= W) {
+          // The jump is bigger than the window — old bitmap entirely
+          // out of range. Reset with just the new right edge.
+          newBitmap = 1n
+        } else {
+          newBitmap = ((bitmap << BigInt(shift)) | 1n) & WMask
+        }
+        sessions.set(sessionId, { right: counter, bitmap: newBitmap })
+        return true
+      }
+      // counter <= right: check the bitmap.
+      const offset = right - counter
+      if (offset >= W) return false // stale — outside the window
+      const bit = 1n << BigInt(offset)
+      if ((bitmap & bit) !== 0n) return false // replay
+      sessions.set(sessionId, { right, bitmap: bitmap | bit })
+      return true
+    },
+    async forget(sessionId) {
+      sessions.delete(sessionId)
+    },
+    async size() {
+      return sessions.size
+    },
+  }
+}
+
+/**
+ * Capability slot for the nonce store. Default fallback (when no cap
+ * installed) is `inMemoryNonceStore()` — sane for dev + single-process.
+ * Multi-node production installs a Redis / DO / Postgres adapter via
+ * `app({ caps: [[NonceStoreCap, redisStore]] })`.
+ */
+export const NonceStoreCap = defineCapability<NonceStore>('NonceStore')
+
+/**
+ * Read the active nonce store. Module-level fallback singleton so the
+ * default doesn't allocate a new in-memory store per call — a fresh
+ * Map per call would reject every "second" request from the same
+ * session as a replay.
+ */
+let _defaultNonceStore: NonceStore | null = null
+export function useNonceStore(): NonceStore {
+  if (_defaultNonceStore === null) _defaultNonceStore = inMemoryNonceStore()
+  return NonceStoreCap.use(_defaultNonceStore)
+}
+
 // ===== signedToken — opaque HMAC-signed payloads =====
 
 export interface SignedToken<T> {
@@ -655,3 +813,21 @@ export function cspHeader(directives: Readonly<Record<string, string>>): string 
 // visual variants.
 
 export { Can, type CanProps } from './can.ts'
+
+// ===== HMAC envelope (Phase 2) =====
+//
+// Per-action integrity wrapper for `criticalAction()`. Binds
+// (action_id, body_hash, counter, iat, origin, session_id, key_id)
+// under a single HMAC tag. The verifier returns a typed rejection
+// the framework maps to 403 — see envelope.ts for the canonical
+// form + verification logic.
+
+export {
+  canonicalise,
+  type EnvelopeFields,
+  type EnvelopeVerifyResult,
+  sha256Base64url,
+  signEnvelope,
+  type VerifyOptions,
+  verifyEnvelope,
+} from './envelope.ts'
