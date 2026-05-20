@@ -86,6 +86,68 @@ const LOGIN = `page('/login', {
   view: () => <LoginForm />,
 })`
 
+const CRITICAL_PROVISION = `// Auth flow for apps that use criticalAction() — provision both the
+// HMAC action key (envelope signing) and a macaroon (capability gate).
+// The /login response returns BOTH; the browser installs them after
+// success.
+import {
+  provisionActionKey,
+  provisionMacaroon,
+} from '@place/component/server'
+import { attenuate, serializeMacaroon } from '@place/security'
+
+export const login = action({
+  path: 'POST /api/login',
+  input: shape({ email: 'string', password: 'string' }),
+  fn: async ({ email, password }, ctx) => {
+    const user = await verify(email, password)
+    if (!user) throw new ActionError(401, 'invalid')
+
+    const session = await createSession(user)
+    setCookieHeader(ctx.req, 'place_sid', session.id, { httpOnly: true, secure: true })
+
+    // 1. Action key — for envelope signing on every criticalAction call.
+    const action = await provisionActionKey(session.id)
+
+    // 2. Macaroon — broad root, then attenuate to the user's ops.
+    const broad = await provisionMacaroon(session.id)
+    const scoped = await attenuate(
+      broad.macaroon,
+      \`op=\${user.role === 'admin' ? '*' : 'comments.*,posts.read'.split(',')[0]}\`,
+    )
+    const tenanted = await attenuate(scoped, \`app:tenant=\${user.tenantId}\`)
+
+    return {
+      action,
+      macaroon: {
+        macaroon: serializeMacaroon(tenanted),
+        expiresAt: broad.expiresAt,
+      },
+    }
+  },
+})`
+
+const CRITICAL_INSTALL = `// Browser side, after login resolves. Both helpers are idempotent —
+// re-installing replaces the previous values. On logout, drop both.
+import {
+  installActionKey,
+  installMacaroon,
+  clearActionKey,
+  clearMacaroon,
+} from '@place/component/client'
+
+async function signIn(email: string, password: string) {
+  const res = await login.call({ email, password })
+  await installActionKey(res.action)
+  await installMacaroon(res.macaroon)
+  // From here, every criticalAction().call() signs + sends both
+  // headers automatically.
+}
+
+async function signOut() {
+  await Promise.all([clearActionKey(), clearMacaroon()])
+}`
+
 export default page('/auth', {
   // No `meta:` — auto-title from `<h1>Authentication</h1>`.
   view: () => (
@@ -142,6 +204,26 @@ export default page('/auth', {
         .
       </p>
 
+      <h2 id="critical-action">
+        High-assurance actions: provisioning for <code>criticalAction()</code>
+      </h2>
+      <p>
+        Apps that use <Link to="/api/critical-action"><code>criticalAction()</code></Link>{' '}
+        provision a per-session HMAC key (for envelope signing) and a macaroon (for capability
+        gates). The auth handler returns both; the browser installs them as part of the sign-in
+        flow.
+      </p>
+      <CodeBlock code={CRITICAL_PROVISION} />
+      <CodeBlock code={CRITICAL_INSTALL} />
+      <Callout kind="tip" title="<Can> and macaroons coexist">
+        <code>&lt;Can&gt;</code> is the UI gate; macaroons are the request-time gate. Same logical
+        permission, different jobs — one hides the button, the other refuses to run the action
+        when the button is clicked anyway (via DevTools, a stale tab, a replayed request). Wire
+        both off the same policy data, attenuate the macaroon to match the user's effective
+        permissions at auth time. Macaroons attenuate further on the server inside delegating
+        flows; <code>&lt;Can&gt;</code> stays render-time.
+      </Callout>
+
       <h2 id="see-also">See also</h2>
       <ul>
         <li>
@@ -149,6 +231,12 @@ export default page('/auth', {
         </li>
         <li>
           <Link to="/api/layout">API: layout()</Link>
+        </li>
+        <li>
+          <Link to="/api/critical-action">API: criticalAction()</Link>
+        </li>
+        <li>
+          <Link to="/concepts/security">Concepts: security pipeline</Link>
         </li>
       </ul>
     </article>

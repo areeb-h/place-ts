@@ -134,6 +134,109 @@ const custom = cspHeader({
   'connect-src': "'self' https://api.example.com",
 })`
 
+const ENVELOPE_EX = `// HMAC envelope — the substrate criticalAction() builds on.
+// Signs a canonical metadata blob that binds the action, body hash,
+// session, origin, counter, and iat. signEnvelope() returns a single
+// wire string; verifyEnvelope() returns ok + typed reason on failure.
+//
+// Apps don't usually call these directly — criticalAction() does — but
+// they're exposed for custom transports (websocket frames, signed
+// pub/sub messages, etc.).
+import { signEnvelope, verifyEnvelope, sha256Base64url } from '@place/security'
+
+const wire = await signEnvelope(perSessionKey, {
+  actionId: 'POST /__a/transfer',
+  bodyHash: await sha256Base64url(bodyBytes),
+  counter: nextCounter,
+  iat: Math.floor(Date.now() / 1000),
+  origin: 'https://app.example.com',
+  sessionId: session.id,
+  keyId: 'b20142',
+})
+
+const r = await verifyEnvelope(wire, {
+  key: perSessionKey,
+  body: bodyBytes,
+  expectedActionId: 'POST /__a/transfer',
+  expectedOrigin: 'https://app.example.com',
+  expectedSessionId: session.id,
+  maxAgeSec: 300,
+})
+if (!r.ok) reject(r.reason)  // bad-tag | stale | replay | wrong-session | …`
+
+const MACAROON_EX = `// Macaroons — HMAC-chained bearer tokens with attenuating caveats.
+// criticalAction({ requires }) uses them; the primitives are exposed
+// for apps that want capability-based authorization elsewhere.
+//
+// Stanford / Google macaroons paper. Each caveat NARROWS the token's
+// authority — a holder can attenuate without the root key (HMAC over
+// existing tag), but cannot widen.
+import {
+  mintMacaroon,
+  attenuate,
+  verifyMacaroon,
+  serializeMacaroon,
+  deserializeMacaroon,
+} from '@place/security'
+
+// Mint at the auth boundary.
+const root = await mintMacaroon(rootKey, session.id)
+
+// Narrow to the user's actual permissions.
+const scoped = await attenuate(root, 'op=comments.*')
+const tenanted = await attenuate(scoped, 'app:tenant=acme')
+const dated = await attenuate(tenanted, 'expires=2026-06-01T00:00:00Z')
+
+// Send to the browser:
+const wire = serializeMacaroon(dated)   // header-safe single-line string
+
+// Verify on receive:
+const r = await verifyMacaroon(deserializeMacaroon(wire), rootKey, {
+  op: 'comments.create',
+  origin: 'https://app.example.com',
+  appVerifier: (key, value, ctx) => key === 'tenant' && value === requestTenant(),
+})
+if (!r.ok) reject(r.reason)
+// reason ∈ 'bad-sig' | 'malformed' | 'unknown-caveat' | 'expired'
+//        | 'wrong-op' | 'wrong-origin' | 'app-denied'
+
+// Caveat grammar (v0.1, fail-closed on anything else):
+//   expires=<ISO-8601 UTC>
+//   origin=<URL>
+//   op=<name>            // exact
+//   op=<prefix>.*        // prefix match
+//   op=*                 // wildcard
+//   app:<key>=<value>    // requires appVerifier; rejected otherwise
+//
+// Multiple op= caveats compose by INTERSECTION (order-free).`
+
+const AUDIT_EX = `// Hash-chained tamper-evident audit log. criticalAction() auto-appends
+// one entry per invocation (request body hash + result hash bound).
+// Apps emit additional entries via ctx.audit() inside the handler.
+// Any modification to an existing entry breaks the chain and is caught
+// by verify().
+import { AuditLogCap, inMemoryAuditLog, useAuditLog } from '@place/security'
+
+// At app boot:
+AuditLogCap.install(inMemoryAuditLog({ maxEntries: 10_000 }))
+//   ↑ ring-buffered in-memory adapter. Replace with a durable adapter
+//     (postgres / S3 / object-store) that conforms to AuditLog.
+
+// Inside any handler (criticalAction sets it up automatically; manual
+// use is fine too):
+const log = useAuditLog()
+await log.append({
+  actor: session.userId,
+  action: 'admin.role.change',
+  payloadHash: await sha256Base64url(payloadBytes),
+  resultHash: '',
+  keyId: 'b20142',
+})
+
+// Verify the chain anywhere:
+const { ok, brokenAt } = await log.verify()
+if (!ok) reportTampering(brokenAt)`
+
 export default page('/security', {
   meta: '@place/security',
   view: () => (
@@ -225,8 +328,61 @@ export default page('/security', {
       </h2>
       <CodeBlock code={CSP_EX} />
 
+      <h2 id="envelope">
+        Envelope — <code>signEnvelope</code> + <code>verifyEnvelope</code> (ADR 0055)
+      </h2>
+      <p>
+        HMAC envelope substrate. The canonical metadata blob binds an <code>actionId</code>,
+        body hash, monotonic counter, issued-at timestamp, origin, session id, and key id — then
+        signs it with a per-session HMAC key. Constant-time verify on the way in. Used by{' '}
+        <Link to="/api/critical-action">
+          <code>criticalAction()</code>
+        </Link>{' '}
+        and exposed for custom transports (websocket frames, signed pub/sub messages).
+      </p>
+      <CodeBlock code={ENVELOPE_EX} />
+
+      <h2 id="macaroon">
+        Macaroons — <code>mintMacaroon</code> + <code>attenuate</code> + <code>verifyMacaroon</code> (ADR 0055)
+      </h2>
+      <p>
+        HMAC-chained bearer tokens with attenuating caveats — the Stanford / Google paper, in 300
+        lines. Apps mint a broad token at the auth boundary, narrow it to match the user's actual
+        permissions, and pass the serialised wire string to the browser. Anyone holding the token
+        can attenuate further (the chain extends) but cannot widen (that requires the root key).{' '}
+        <code>criticalAction({'{ requires }'})</code> uses these structurally; the primitive is
+        exposed for capability-based authorization in custom paths.
+      </p>
+      <CodeBlock code={MACAROON_EX} />
+      <Callout kind="tip" title="Why macaroons and not predicates">
+        <code>&lt;Can do="…"&gt;</code> is a render-time predicate — fast, sync, perfect for UI
+        gating. Macaroons are <em>tokens</em>: they carry authority WITH the request, so a
+        sub-system handling part of the work can trust an attenuated token without re-fetching the
+        session. They compose. UI gating and request-time authorization are different jobs — this
+        is the second one.
+      </Callout>
+
+      <h2 id="audit">
+        Audit log — <code>AuditLogCap</code> + <code>inMemoryAuditLog</code> (ADR 0055)
+      </h2>
+      <p>
+        Hash-chained tamper-evident log. Each entry binds the previous via{' '}
+        <code>prev_hash = sha256(canonical(entry_{`{i-1}`}))</code>; any retroactive modification
+        breaks <code>verify()</code> and reports the broken index.{' '}
+        <code>criticalAction()</code> auto-appends one entry per invocation;{' '}
+        <code>ctx.audit(event, payload?)</code> appends handler-emitted events alongside. The
+        in-memory adapter is a ring buffer (default 10k entries); apps with retention requirements
+        plug in a durable adapter conforming to the <code>AuditLog</code> interface.
+      </p>
+      <CodeBlock code={AUDIT_EX} />
+
       <h2 id="see-also">See also</h2>
       <ul>
+        <li>
+          <Link to="/api/critical-action">
+            API: <code>criticalAction()</code> — uses the envelope, macaroon, and audit primitives
+          </Link>
+        </li>
         <li>
           <Link to="/concepts/security">Concepts: Security pipeline</Link>
         </li>

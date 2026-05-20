@@ -85,6 +85,43 @@ app({
   },
 }).run()`
 
+const HIGH_ASSURANCE = `// criticalAction() — the high-assurance sibling of action(). Same
+// author shape; every request is verified against an HMAC envelope
+// BEFORE the handler body runs. ADR 0055; OWASP ASVS 5.0 V11/V13;
+// NIST SP 800-53 Rev 5 AU-10 + SI-7; RFC 4303 (IPsec ESP anti-replay).
+//
+// Wire format (browser → server):
+//
+//   POST /__a/transferFunds
+//   X-Place-Envelope: <base64url(canonical)>.<base64url(tag)>
+//   X-Place-Macaroon: <serialised macaroon>   ← when requires: is set
+//   Content-Type: application/json
+//
+//   {"to":"acct_123","amountCents":5000}
+//
+// The canonical envelope binds:
+//   v=1
+//   action_id   — METHOD + path; envelope minted for /deposit fails on /withdraw
+//   body_hash   — sha256(body bytes); flipping a byte in the body fails
+//   counter     — monotonic per session; replay is rejected
+//   iat         — issued-at unix seconds; maxAgeSec bounds the window
+//   origin      — request origin; cross-site reuse fails
+//   session_id  — session.id; user A's envelope rejected for user B
+//   key_id      — daily-rotation key id
+
+import { criticalAction, perm } from '@place/component/server'
+
+export const transferFunds = criticalAction({
+  path: 'POST /__a/transfer',
+  input: shape({ to: 'string', amountCents: 'number' }),
+  requires: [perm('payments.transfer')],
+  fn: async (input, { session }) => {
+    // session GUARANTEED non-null. Envelope verified. Macaroon checked.
+    await ledger.transfer(session.userId, input.to, input.amountCents)
+    return { ok: true }
+  },
+})`
+
 export default page('/security', {
   // No `meta:` — auto-title from `<h1>Security</h1>`.
   view: () => (
@@ -169,11 +206,57 @@ export default page('/security', {
         the defaults.
       </Callout>
 
+      <h2>
+        High-assurance actions — <code>criticalAction()</code>
+      </h2>
+      <p>
+        For mutations where being wrong matters (payments, role changes, deletions, anything
+        compliance audits), <code>action()</code>'s same-origin + CSRF defaults are not enough. A
+        valid CSRF token can be replayed; a same-origin XSS bug can still drive an{' '}
+        <code>action()</code> handler with any body. <code>criticalAction()</code> raises every
+        request to a signed HMAC envelope that binds the session, origin, action, body bytes, and
+        a monotonic counter — and gates execution behind macaroon-based capability checks.
+      </p>
+      <CodeBlock code={HIGH_ASSURANCE} />
+      <p>The pipeline that runs before <code>fn</code>:</p>
+      <ol>
+        <li>Same-origin guard.</li>
+        <li>Body-size pre-check (Content-Length).</li>
+        <li>SessionCap required (framework throws at app-boot if absent).</li>
+        <li>
+          Envelope verify: constant-time HMAC compare, then check <code>action_id</code>,{' '}
+          <code>origin</code>, <code>session_id</code>, <code>body_hash</code>, freshness window.
+        </li>
+        <li>Replay defense via IPsec ESP sliding-window counter store (RFC 4303).</li>
+        <li>
+          Macaroon verify (when <code>requires</code> is set) — caveat chain + op-intersection
+          check.
+        </li>
+        <li>JSON parse + prototype-pollution guard.</li>
+        <li>Schema validate.</li>
+        <li>
+          Run <code>fn</code>; auto-append entry to the hash-chained audit log; return JSON.
+        </li>
+      </ol>
+      <p>
+        Total added crypto: ~5–15 µs per request. Every failure returns <code>403</code> with
+        identical body bytes (typed reason logged server-side, not on the wire). See{' '}
+        <Link to="/api/critical-action">
+          <code>criticalAction()</code> API ref
+        </Link>{' '}
+        for the full surface; ADR 0055 has the threat model + standards mapping.
+      </p>
+
       <h2>Related</h2>
       <ul>
         <li>
           <Link to="/api/page">
             <code>page({'{ load, on }'})</code> — server-side data + actions
+          </Link>
+        </li>
+        <li>
+          <Link to="/api/critical-action">
+            <code>criticalAction()</code> — high-assurance API ref
           </Link>
         </li>
         <li>

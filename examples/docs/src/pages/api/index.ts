@@ -5,6 +5,7 @@ import { routes } from '@place/component/server'
 import apiAction from './action.page.tsx'
 import apiApp from './app.page.tsx'
 import apiComponents from './components.page.tsx'
+import apiCriticalAction from './critical-action.page.tsx'
 import apiData from './data.page.tsx'
 import apiDefineCapability from './define-capability.page.tsx'
 import apiDesign from './design.page.tsx'
@@ -23,6 +24,7 @@ export default routes('/api', [
   apiState,
   apiComponents,
   apiAction,
+  apiCriticalAction,
   apiDefineCapability,
   apiMotion,
   apiDesign,
