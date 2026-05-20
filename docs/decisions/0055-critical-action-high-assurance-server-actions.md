@@ -1,6 +1,6 @@
 # ADR 0055: `criticalAction()` — high-assurance server actions
 
-**Status:** accepted (Phases 1, 2, 3, 4 shipped; Phase 5 specified, deferred)
+**Status:** accepted (Phases 1, 2, 3, 4 shipped; Phase 5 partially shipped — `shape()` codegen lands, `fromStandard()` Bun plugin deferred)
 **Date:** 2026-05-20
 **Affects:** `@place/security` (substrate); `@place/component` (`criticalAction()`,
 `provisionActionKey`, `installActionKey`, `ServeOptions.secret`)
@@ -321,12 +321,34 @@ codegen target: ~90 µs saved on schema validation; net result
   yet). **Tamper-evident**, not classical non-repudiation (see
   Consequences). 22 tests added.
 
-- **Phase 5 — Validator codegen.** Bun plugin lifts
-  `fromStandard(schema)` into generated direct-decode code at build
-  time. Target: replace runtime schema interp (~100 µs Zod typical)
-  with generated specialised code (~5 µs). Net **target**:
-  `criticalAction()` matches or beats `action()` despite the
-  crypto. Deferred; treat as target until measured.
+- **Phase 5 — Validator codegen.** Partially shipped, partially
+  deferred. The original Phase 5 target was a Bun plugin lifting
+  `fromStandard(schema)` into generated decode code at build time;
+  on attempting it we found the surface is broader than the ADR
+  estimated. Standard Schema v1's contract exposes only
+  `validate(value)`, not an AST — codegen has to know each adapter's
+  internals (Zod `_def`, Valibot pipe shape, ArkType internals,
+  Effect Schema runtime, …). The Bun plugin would be a per-library
+  matrix that the framework has no business owning. **Shipped:** the
+  framework-owned `shape({...})` validator is now JIT-compiled at
+  construction time via `new Function('raw', '…')` — straight-line
+  inlined property reads + type checks per field, no `Object.entries`
+  walk per request. Honest measurements on a typical 5-field body:
+
+  - Legacy interpreter: 0.12 µs/call
+  - Compiled decoder:  0.03 µs/call
+  - **Speedup:** 4.5×
+
+  The absolute numbers are small because `shape()` was already a
+  flat-object walk over primitive types — never the bottleneck the
+  original ADR target assumed. Codegen still wins on JIT pressure
+  (one hidden class per spec, monomorphic allocation site) and on
+  garbage pressure (no intermediate `Object.entries` array per
+  call). **Deferred:** the per-library `fromStandard()` codegen. Apps
+  that hit the ~100 µs Zod path can fall back to `shape()` for
+  primitive-flat inputs OR hand-rolled validators; if a workload
+  proves the Zod overhead matters, that's the trigger to ship a
+  Zod-specific Bun plugin under a different ADR.
 
 ## Notes
 

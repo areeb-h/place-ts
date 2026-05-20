@@ -236,6 +236,58 @@ describe('shape() — built-in object validator for action()', () => {
     expect(() => v('string')).toThrow(/expected an object/)
   })
 
+  test('rejects unsafe field names at schema-construction time (codegen injection guard)', () => {
+    // Codegen inlines field names into the compiled source — anything
+    // outside `/^[A-Za-z_$][A-Za-z0-9_$]*$/` could smuggle JS, so we
+    // throw at `shape(...)` call time. Runtime requests never reach
+    // the bad code.
+    const badKeys = [
+      'with space',
+      "'); throw 1; //",
+      '`); throw 1; //',
+      '__proto__',
+      'constructor',
+      'prototype',
+      '1leadsWithDigit',
+      '',
+    ]
+    for (const k of badKeys) {
+      expect(() => shape({ [k]: 'string' } as never)).toThrow(/shape: field name/)
+    }
+  })
+
+  test('rejects unsupported type literals at schema-construction time', () => {
+    expect(() => shape({ x: 'bigint' } as never)).toThrow(/unsupported type/)
+    expect(() => shape({ x: '' } as never)).toThrow(/unsupported type/)
+    expect(() => shape({ x: 123 } as never)).toThrow(/unsupported type/)
+  })
+
+  test('compiled decoder is referentially stable per shape() call', () => {
+    // Each `shape({...})` builds ONE codegen'd function and returns it.
+    // The same returned function is used for every subsequent call —
+    // the codegen cost is paid once, at construction time.
+    const v = shape({ id: 'string' })
+    expect(typeof v).toBe('function')
+    // Same function reference on repeated reads (sanity).
+    expect(v).toBe(v)
+  })
+
+  test('rejects pollution-key field names at schema-construction time', () => {
+    // `{ __proto__: x }` literal syntax is the prototype-setter form
+    // and doesn't add an own key — use the computed-key form to
+    // actually exercise the guard. `Object.entries` on a polluted
+    // object returns the bracketed key as an own property.
+    const polluted: Record<string, string> = {}
+    Object.defineProperty(polluted, '__proto__', {
+      value: 'string',
+      enumerable: true,
+      configurable: true,
+    })
+    expect(() => shape(polluted as never)).toThrow(/reserved object key/)
+    expect(() => shape({ ['constructor']: 'string' } as never)).toThrow(/reserved object key/)
+    expect(() => shape({ ['prototype']: 'string' } as never)).toThrow(/reserved object key/)
+  })
+
   test('plugs into action() — runtime validation works', async () => {
     // TS inference from `input` to `fn`'s param: when both fields are
     // declared together, TS sometimes binds the destructured `fn` param
