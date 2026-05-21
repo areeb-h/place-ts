@@ -85,7 +85,7 @@ const p = '$SCRATCH/package.json'
 const pkg = JSON.parse(readFileSync(p, 'utf8'))
 const local = {
   '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
-  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.3.0.tgz',
+  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.3.1.tgz',
   '@place-ts/data':       'file:$REPO/systems/data/place-ts-data-0.1.0.tgz',
   '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.2.0.tgz',
   '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.0.tgz',

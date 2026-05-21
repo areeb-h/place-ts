@@ -18,6 +18,7 @@
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
+    "@place-ts/devtools": "^0.1.0",
     "@types/bun": "latest"
   }
 }

@@ -2562,6 +2562,22 @@ async function runDevSupervisor(): Promise<never> {
   }
   process.on('SIGINT', () => propagate('SIGINT'))
   process.on('SIGTERM', () => propagate('SIGTERM'))
+
+  // **Supervisor-level file watcher (0.3.1).** When the child crashes
+  // (user typo, duplicate routes, schema validation throw, etc.) the
+  // child's own watcher dies with it — we'd have no signal for "the
+  // user fixed it, try again." The supervisor owns its own watcher so
+  // a post-crash save respawns the dev server cleanly.
+  //
+  // During healthy operation the child's watcher does the work; the
+  // supervisor's watcher just sits idle (no listeners). Only after a
+  // crash do we attach a one-shot listener that resolves on the next
+  // change event.
+  let onCrashFileChange: ((filename: string) => void) | null = null
+  void startSupervisorWatcher(process.cwd(), (filename) => {
+    if (onCrashFileChange) onCrashFileChange(filename)
+  })
+
   while (true) {
     child = Bun.spawn(['bun', Bun.main], {
       env: { ...process.env, __PLACE_DEV_CHILD: '1' },
@@ -2571,15 +2587,77 @@ async function runDevSupervisor(): Promise<never> {
       stdio: ['inherit', 'inherit', 'inherit'] as any,
     })
     const code = (await child.exited) as number | null
-    if (code !== 0) {
-      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-      console.error(`[place] dev server exited with code ${code ?? 'unknown'}; not restarting`)
-      process.exit(code ?? 1)
+    if (code === 0) {
+      // Framework-triggered restart on file change. Loop straight
+      // back to spawn — no banner, no delay. The HMR client's
+      // reconnect-detection drives the browser refresh as soon as
+      // the new child's WS is up.
+      continue
     }
-    // Exit-0 = framework-triggered restart on file change.
-    // Loop straight back to spawn — no banner, no delay. The HMR
-    // client's reconnect-detection drives the browser refresh as
-    // soon as the new child's WS is up.
+    // Non-zero exit = user code crashed. The child already printed
+    // its error to the inherited stderr; don't pile a second copy on
+    // top. Stay alive and wait for the user to save a fix — then
+    // respawn. This is the dev-loop's resilience contract: a typo,
+    // a duplicate route, a validation throw should NEVER require
+    // manual `bun dev` re-runs.
+    // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
+    console.error(
+      `\n[place] dev server crashed (exit ${code ?? 'unknown'}). Watching for source changes — save any file to restart.\n`,
+    )
+    await new Promise<void>((resolve) => {
+      onCrashFileChange = (filename: string): void => {
+        onCrashFileChange = null
+        // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
+        console.log(`[place] ${filename} changed — restarting...`)
+        resolve()
+      }
+    })
+  }
+}
+
+/**
+ * Lightweight supervisor-side file watcher. Survives child-process
+ * crashes (the child's own watcher dies with it). Fires `onChange`
+ * on every relevant edit; the supervisor only listens during the
+ * crashed-state window.
+ *
+ * Mirrors `startSrcWatcher`'s filter rules so both watchers see the
+ * same set of events.
+ */
+async function startSupervisorWatcher(
+  cwd: string,
+  onChange: (filename: string) => void,
+): Promise<void> {
+  try {
+    const { existsSync, statSync } = (await _serverDynImport('node:fs')) as typeof import('node:fs')
+    const { watch } = (await _serverDynImport(
+      'node:fs/promises',
+    )) as typeof import('node:fs/promises')
+    const { resolve } = (await _serverDynImport('node:path')) as typeof import('node:path')
+    const srcDir = resolve(cwd, 'src')
+    const watchDir = existsSync(srcDir) && statSync(srcDir).isDirectory() ? srcDir : cwd
+    const exts = ['.ts', '.tsx', '.js', '.jsx', '.css', '.html', '.json']
+    const skipDirs = ['node_modules', '.git', 'dist', '.place', 'build', '.next']
+    const isWatched = (filename: string | null): boolean => {
+      if (!filename) return false
+      for (const skip of skipDirs) {
+        if (filename === skip || filename.startsWith(`${skip}/`)) return false
+        if (filename.includes(`/${skip}/`)) return false
+      }
+      if (filename.startsWith('.') || filename.includes('/.')) return false
+      for (const ext of exts) if (filename.endsWith(ext)) return true
+      return false
+    }
+    const watcher = watch(watchDir, { recursive: true })
+    for await (const event of watcher) {
+      if (!isWatched(event.filename)) continue
+      onChange(event.filename ?? 'unknown')
+    }
+  } catch (_) {
+    // fs.watch unsupported / permission denied — supervisor watcher
+    // degrades to no-op. The dev experience falls back to the pre-0.3.1
+    // behaviour (crash kills the supervisor); this matches platforms
+    // where the child's own watcher also can't run.
   }
 }
 
