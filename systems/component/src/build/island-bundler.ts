@@ -23,6 +23,7 @@ import type { IslandRegistration } from '../index.ts'
 import { validateIslandName, validateIslandSrc } from '../island-validation.ts'
 import {
   classifyIslandSource,
+  validateAssertedLevel,
   predictBytesAtLevel,
   renderReport,
   type ViewManifest,
@@ -799,6 +800,14 @@ export async function buildIslandBundles(
       typedCtx !== null
         ? classifyIslandWithTypes(absoluteSrc, src, typedCtx)
         : classifyIslandSource(src)
+    // Phase 2 (ADR 0030): validate the author's `level` assertion against
+    // the classifier's prediction. Throws on a mismatch — `view({ level:
+    // 'static' })` on a body the classifier sees effects in is a hard
+    // build error, not a silent promotion. Other levels (`'island'`,
+    // `'island+stream'`, unset) skip validation; only 'static' makes a
+    // STRICTER claim than the default emit, so only 'static' needs the
+    // backstop. See `validateAssertedLevel` in view-classifier.ts.
+    validateAssertedLevel(name, src, result)
     const url = nameToBundleUrl.get(name)
     const bytesCurrent = url ? (bundles.get(url)?.byteLength ?? 0) : 0
     const bytesPredicted = predictBytesAtLevel(result.level, bytesCurrent)

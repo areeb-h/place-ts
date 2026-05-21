@@ -1,6 +1,6 @@
 # ADR 0030: Unified hydration via effect-typed classification (`view()`)
 
-**Status:** Phase 1 shipped — `view()` factory + L0 static path; L1 thaw runtime still deferred (2026-05-21)
+**Status:** Phases 1 + 2 shipped — `view()` factory + L0 static path + build-time validation of `level: 'static'` assertions; L1 thaw runtime still deferred (2026-05-21)
 **Date:** 2026-05-15
 **Affects:** `systems/component/src/view.ts` (shipped); `systems/component/src/build/view-classifier.ts` (shipped); `systems/component/src/build/view-classifier-types.ts` (shipped); `systems/component/src/islands.ts` (`island()` JSDoc-deprecated as a `view()` alias).
 
@@ -32,15 +32,46 @@
 > rename only. Existing apps keep working unchanged.
 >
 > What didn't land in Phase 1: the L1 thaw runtime (ADR 0027) and
-> automatic emit selection via classifier prediction. The
-> classifier remains REPORT-ONLY — `view()` requires the author
-> to opt in to `level: 'static'` explicitly. Auto-selection is
-> deferred until the L1 runtime exists; until then, the conservative
-> "author asserts, framework validates" contract avoids the
-> silent-promotion footgun discussed in the Decision section.
+> automatic emit selection via classifier prediction.
 >
-> Tests: 9 unit tests across the four level paths
-> (`systems/component/tests/unit/view.test.ts`).
+> **Phase 2 landed (2026-05-21).** Build-time validation closes
+> the "author asserts, framework validates" half of the contract.
+> The island bundler now runs `validateAssertedLevel(name, source,
+> classifierResult)` for every island; if the source contains
+> `view({ level: 'static' })` AND the classifier sees effects in
+> the body, the build throws with a precise error naming the
+> offending primitive:
+>
+>   `view: island 'with-state' asserts level: 'static' but the
+>    body has effects.`
+>   `  Found: 'state' (effect: 'state', 1 ref)`
+>   `  Classifier prediction: 'thaw'`
+>   `  Fix: drop the level: 'static' option, OR remove the effect
+>    so the assertion holds.`
+>
+> Only `level: 'static'` is validated — it's the only level
+> STRICTER than the default emit, so it's the only one where a
+> misclassification would silently break behavior (zero JS shipped
+> for code that needed hydration). Other assertions (`'island'`,
+> `'island+stream'`, unset, dynamic expressions) skip validation;
+> they emit at L2 either way.
+>
+> The implementation is two small additions in `view-classifier.ts`:
+> `extractAssertedLevel(source)` parses the view() call's options
+> object for a literal `level` field, and `validateAssertedLevel(...)`
+> compares it to the classifier's prediction. The island bundler
+> calls the validator inline after classification — no extra build
+> pass.
+>
+> Tests: 9 unit tests for the factory's level paths
+> ([view.test.ts](systems/component/tests/unit/view.test.ts)),
+> 19 unit tests for the extractor + validator
+> ([view-classifier-validate.test.ts](systems/component/tests/unit/view-classifier-validate.test.ts)).
+> 28 total for the Phase 1 + 2 surface.
+>
+> Still deferred (Phase 3+): the L1 thaw runtime (ADR 0027) and
+> automatic emit-level selection driven by classifier prediction
+> when no level is asserted.
 
 ## Context
 

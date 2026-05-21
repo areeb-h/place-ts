@@ -164,6 +164,190 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// ===== Phase 2 (ADR 0030): assertion validation =====
+//
+// `view({ level: 'static' })` is a CONTRACT: the author asserts the
+// component has no effects beyond pure. Phase 1 trusted the author;
+// Phase 2 verifies via the classifier. The build pass extracts the
+// asserted level from each `view()` call's options literal, compares
+// it to the classifier's prediction, and throws on a mismatch.
+//
+// Only literal asserts are validated — `view(fn, { level: someVar })`
+// where the level is a non-literal expression is skipped (no static
+// view into the runtime value). The common case is the literal form.
+
+export type AssertedLevel = ViewLevel | null
+
+/**
+ * Scan `source` for the first `view(...)` call's `level` option. Returns
+ * the literal string if found (`'static' | 'thaw' | 'island' |
+ * 'island+stream'`), or `null` if the call doesn't set `level` at all,
+ * the source contains no `view(...)` call, or the level value isn't a
+ * static string literal.
+ *
+ * Light parser — comments + strings masked beforehand so a `level:` token
+ * inside a JSDoc or string literal doesn't trip the scan. Multiple
+ * `view()` calls in one file: the first one wins (an island file's
+ * default-export is the framework convention; multiple calls would be a
+ * pre-existing weird shape, not a current concern).
+ */
+export function extractAssertedLevel(source: string): AssertedLevel {
+  // Mask line + block comments and string literals so identifier-looking
+  // tokens inside them can't poison the scan.
+  const masked = maskCommentsAndStringsForLevel(source)
+  // Find the first whole-word `view(` call. Generic args (`view<T>(`)
+  // and whitespace tolerated between the identifier and the paren.
+  const callRe = /\bview\s*(?:<[^>(]*>)?\s*\(/g
+  const m = callRe.exec(masked)
+  if (m === null) return null
+  // Walk balanced parens from the open-paren position. Collect arg
+  // ranges so we can extract the LAST argument (which is `options` when
+  // it's an object literal).
+  const openParen = m.index + m[0].length - 1 // points at `(`
+  let depth = 1
+  let i = openParen + 1
+  const argStarts: number[] = [openParen + 1]
+  while (i < masked.length && depth > 0) {
+    const ch = masked.charAt(i)
+    if (ch === '(') depth += 1
+    else if (ch === ')') {
+      depth -= 1
+      if (depth === 0) break
+    } else if (ch === ',' && depth === 1) {
+      argStarts.push(i + 1)
+    }
+    i += 1
+  }
+  if (depth !== 0) return null
+  const closeParen = i
+  // Identify the LAST argument's range.
+  const lastStart = argStarts[argStarts.length - 1] ?? openParen + 1
+  const lastArg = source.slice(lastStart, closeParen).trim()
+  // Must start with `{` to be an object literal.
+  if (!lastArg.startsWith('{')) return null
+  // Look for a `level:` field. The value pattern accepts single-,
+  // double-, or back-tick-quoted strings. If level is set to a
+  // variable (`level: someVar`), the match fails and we return null —
+  // the framework only validates literal asserts.
+  const levelRe = /level\s*:\s*(['"`])([a-z+]+)\1/i
+  const lm = lastArg.match(levelRe)
+  if (lm === null) return null
+  const value = lm[2] as ViewLevel
+  if (value === 'static' || value === 'thaw' || value === 'island' || value === 'island+stream') {
+    return value
+  }
+  return null
+}
+
+/**
+ * Mask comments + string literals to whitespace so subsequent regex
+ * scans can't match inside them. Preserves character positions so
+ * downstream indices line up with the original source. Lighter-weight
+ * than `maskCommentsAndStrings` in the auto-import plugin — this one
+ * only cares about NOT matching false positives in `extractAssertedLevel`,
+ * not about preserving any structural property.
+ */
+function maskCommentsAndStringsForLevel(source: string): string {
+  const out: string[] = []
+  let i = 0
+  const n = source.length
+  while (i < n) {
+    const c = source.charAt(i)
+    const c2 = source.charAt(i + 1)
+    // Line comment
+    if (c === '/' && c2 === '/') {
+      const end = source.indexOf('\n', i)
+      const stopAt = end < 0 ? n : end
+      out.push(' '.repeat(stopAt - i))
+      i = stopAt
+      continue
+    }
+    // Block comment
+    if (c === '/' && c2 === '*') {
+      const end = source.indexOf('*/', i + 2)
+      const stopAt = end < 0 ? n : end + 2
+      // Preserve newlines so line counts stay sane in error messages.
+      for (let k = i; k < stopAt; k++) {
+        out.push(source.charAt(k) === '\n' ? '\n' : ' ')
+      }
+      i = stopAt
+      continue
+    }
+    // String literal
+    if (c === '"' || c === "'" || c === '`') {
+      const quote = c
+      out.push(c)
+      i += 1
+      while (i < n) {
+        const ch = source.charAt(i)
+        if (ch === '\\') {
+          out.push('  ')
+          i += 2
+          continue
+        }
+        if (ch === quote) {
+          out.push(quote)
+          i += 1
+          break
+        }
+        out.push(ch === '\n' ? '\n' : ' ')
+        i += 1
+      }
+      continue
+    }
+    out.push(c)
+    i += 1
+  }
+  return out.join('')
+}
+
+/**
+ * Validate the author's `level` assertion against the classifier's
+ * prediction. Throws a build error on mismatch with a precise reason
+ * naming the offending primitive. Called by the island bundler after
+ * classification. Idempotent + safe to call when no assertion was made
+ * (returns immediately).
+ *
+ * Validation matrix:
+ *   - asserted `'static'` + classifier predicts non-static  → throw
+ *   - asserted `'thaw'`                                     → never reaches
+ *                                                             here (the
+ *                                                             view() runtime
+ *                                                             throws first)
+ *   - asserted `'island'` or `'island+stream'`              → no validation
+ *                                                             (default emit)
+ *   - no assertion                                          → no validation
+ *
+ * The asymmetry is structural: only `'static'` is a STRICTER assertion
+ * than the default. `'island'` is the default; `'island+stream'` is the
+ * same emit shape as island. Only `'static'` claims "this component
+ * ships ZERO JS" — and that's the one a misclassification would silently
+ * break.
+ */
+export function validateAssertedLevel(
+  islandName: string,
+  source: string,
+  classified: ClassifierResult,
+): void {
+  const asserted = extractAssertedLevel(source)
+  if (asserted === null) return
+  if (asserted !== 'static') return
+  if (classified.level === 'static') return
+  // Misclassification — the author claimed 'static' but the classifier
+  // saw effects. Throw with the offending primitive named so the fix
+  // is immediate: either drop the assertion or remove the effect.
+  const promoter = classified.findings[0]
+  const reason = promoter
+    ? `'${promoter.identifier}' (effect: '${promoter.effect}', ${promoter.count} ref${promoter.count === 1 ? '' : 's'})`
+    : `classifier predicts '${classified.level}'`
+  throw new Error(
+    `view: island '${islandName}' asserts \`level: 'static'\` but the body has effects.\n` +
+      `  Found: ${reason}\n` +
+      `  Classifier prediction: '${classified.level}'\n` +
+      `  Fix: drop the \`level: 'static'\` option, OR remove the effect so the assertion holds.`,
+  )
+}
+
 function explainLevel(level: ViewLevel, findings: readonly ClassifierFinding[]): string {
   if (level === 'static') return 'no effects beyond pure'
   if (level === 'thaw') {
