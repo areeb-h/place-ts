@@ -10,15 +10,21 @@ Phoenix + LiveView + Ecto + OTP, Redwood). The coherence *between* the
 systems is the platform: one reactive timeline, derivation as the
 primitive, one inspectable graph.
 
-> **Status (2026-05-17).** Pre-publish. Eight systems shipping + one
-> foundational build system; `cache` is charter-only and deferred.
-> **1446 tests passing / 14 skipped** across 84 files under Vitest;
-> 50 ADRs. Islands are the only hydration model — content pages ship
-> zero framework JS. A curated component library (`@place/design`,
-> 14 primitives) and a motion sub-module (`@place/reactivity/motion`)
-> ship on top. Three example apps run on the framework's own pipeline
-> (`serve()` + per-route bundle splitting + auto-Tailwind v4 + strict
-> CSP + cookie-driven theming) — no Vite anywhere.
+> **Status (2026-05-21).** Pre-publish. Eight systems shipping + one
+> foundational build subsystem; `cache` is charter-only and deferred.
+> **1691 tests passing / 7 skipped** across 95 files under Vitest,
+> including **51 fast-check property tests** across five systems
+> (security, reactivity, routing, capability, persistence). 56 ADRs.
+> Islands are the only hydration model — content pages ship zero
+> framework JS. A curated component library (`@place/design`, 14
+> primitives) and a motion sub-module (`@place/reactivity/motion`)
+> ship on top. The high-assurance server-action substrate
+> ([`criticalAction()`, ADR 0055](docs/decisions/0055-critical-action-high-assurance-server-actions.md))
+> ships envelope-signed requests, IPsec-style replay defense,
+> capability-based macaroons, and a tamper-evident audit log. The
+> docs site runs on the framework's own pipeline (`serve()` +
+> per-route bundle splitting + auto-Tailwind v4 + strict CSP +
+> cookie-driven theming) at **Lighthouse 100/100** — no Vite anywhere.
 
 ## The systems
 
@@ -31,8 +37,8 @@ primitive, one inspectable graph.
 | [persistence](systems/persistence/) | v0.1 | Storage adapters (`localStorage` / `indexedDB` / `server` HTTP+WS / `memory` / `crossTab`), `persistedState(adapter)`, durability semantics |
 | [search](systems/search/) | v0.1 | `searchable(items)` — in-process substring + structured-query indexer |
 | [data](systems/data/) | v0.1 | `collection<T>()` — keyed CRUD over a `State<T[]>` with reactive lookups |
-| [security](systems/security/) | v0.1 | `signedToken` (HMAC-SHA256), `csrfToken`, `rateLimit`, `SessionCap` + `<Can>` RBAC gate, secure-by-default cookies, `cspHeader` |
-| [build](systems/build/) | v0.1 | `Bun.build` integration + per-route splitting, island discovery + bundler, the view classifier, SRI hashing, the dev supervisor |
+| [security](systems/security/) | v0.1 | `signedToken` (HMAC-SHA256), `csrfToken`, `rateLimit`, `SessionCap` + `<Can>` RBAC gate, secure-by-default cookies, `cspHeader`, the HMAC envelope + IPsec-style nonce store + macaroon primitive + tamper-evident audit log that power `criticalAction()` |
+| build | inside `@place/component` | `Bun.build` integration + per-route splitting, island discovery + bundler, the view classifier, SRI hashing, the dev supervisor. Lives in `systems/component/src/build/`; not a top-level system. |
 | [cache](systems/cache/) | charter | Deferred. The internal `CacheStore` (powers ISR + image optimization) lives inside `@place/component`; the charter remains as design intent. |
 
 On top of the platform:
@@ -51,21 +57,26 @@ Requires [Bun](https://bun.sh) ≥ 1.2.
 
 ```sh
 bun install                 # one-time
-bun run ci                  # lint + typecheck + 1446 tests
-bun run dev                 # sandbox playground   → http://localhost:5173
-bun run commonplace         # commonplace book app → http://localhost:5174
-bun run docs                # docs site            → http://localhost:5175
-bun run sync-server         # Bun + bun:sqlite sync server → http://localhost:5180
+bun run ci                  # lint + typecheck + 1691 tests
+bun run docs                # docs site (the canonical example) → http://localhost:5175
 bun run bench               # benchmark vs Solid
 ```
+
+The docs site dogfoods every shipped system — router, security,
+design, reactivity, persistence, search, data via the search palette,
+capability via `RouterCap` + `SessionCap`, and the new
+`criticalAction()` substrate via the API reference pages. It's
+islands-based, hits Lighthouse 100, and is the canonical example
+for app patterns.
 
 ## Navigation
 
 - **[docs/platform/](docs/platform/)** — platform-level concerns
   (system map, charter, naming, interfaces, testing strategy,
   prior-art failures). **Start here.**
-- **[docs/decisions/](docs/decisions/)** — 50 ADRs. ADR 0001 is the
-  stack choice (Bun-everywhere + TypeScript latest).
+- **[docs/decisions/](docs/decisions/)** — 56 ADRs. ADR 0001 is the
+  stack choice (Bun-everywhere + TypeScript latest); ADR 0055 is the
+  high-assurance `criticalAction()` substrate.
 - **[docs/roadmap.md](docs/roadmap.md)** — long-form project history.
 - **[docs/journal/](docs/journal/)** — design journal, one entry per
   session.
@@ -77,11 +88,18 @@ bun run bench               # benchmark vs Solid
   honest catalog of what is load-tested vs not.
 - **[systems/](systems/)** — one folder per system; each holds its own
   charter, design docs, source, and tests.
-- **[examples/](examples/)** — `sandbox` (reactivity playground),
-  `commonplace` (the reference app), `docs` (this framework's docs
-  site, built on itself), `sync-server` (single-file Bun sync server).
-- **[tests/](tests/)** — cross-cutting e2e + integration + conformance
-  tests. Per-system tests live inside each system.
+- **[examples/](examples/)** — `docs` (this framework's docs site,
+  built on itself; the canonical example) and `overlay-preview`
+  (dev-overlay sandbox). The Round-6 `sandbox` / `commonplace` /
+  `sync-server` apps were retired in commit `d7b5875` (see
+  [ADR 0009](docs/decisions/0009-commonplace-flagship.md)) — they
+  ran on the pre-islands hydration model that the framework has
+  since superseded.
+- **[tests/](tests/)** — cross-cutting tests:
+  [`conformance/`](tests/conformance/) for charter clauses;
+  [`properties/`](tests/properties/) for fast-check property tests
+  (51 across 5 systems). Per-system unit tests live inside each
+  system at `systems/<name>/tests/`.
 
 ## Conventions
 
