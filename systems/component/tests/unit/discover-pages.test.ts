@@ -3,9 +3,23 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { div, page } from '../../src/index.ts'
 import { discoverPages } from '../../src/server.ts'
+
+// Resolve absolute paths to the package entry points from THIS test file's
+// location (not process.cwd()) so the test works whether it's run from the
+// repo root (bun run ci) or from the package dir (npm publish's
+// prepublishOnly hook).
+const PKG_INDEX = fileURLToPath(new URL('../../src/index.ts', import.meta.url)).replaceAll(
+  '\\',
+  '/',
+)
+const PKG_SERVER = fileURLToPath(new URL('../../src/server.ts', import.meta.url)).replaceAll(
+  '\\',
+  '/',
+)
 
 // `discoverPages(dir)` walks a directory and dynamic-imports every
 // `*.page.{ts,tsx}` file plus subdirectory `index.{ts,tsx}` files.
@@ -35,7 +49,7 @@ async function writePageFile(rel: string, src: string): Promise<string> {
  */
 function pageModule(routePath: string, marker: string): string {
   return `
-import { page } from '${join(process.cwd(), 'systems/component/src/index.ts').replace(/\\\\/g, '/')}'
+import { page } from '${PKG_INDEX}'
 export default page('${routePath}', {
   view: () => ({ toHtml: () => '<p>${marker}</p>' }),
 })
@@ -53,7 +67,7 @@ function routesBarrel(
   const imps = leafImports.map((l, i) => `import p${i} from '${l.rel}'`).join('\n')
   const refs = leafImports.map((_, i) => `p${i}`).join(', ')
   return `
-import { routes } from '${join(process.cwd(), 'systems/component/src/server.ts').replace(/\\\\/g, '/')}'
+import { routes } from '${PKG_SERVER}'
 ${imps}
 export default routes('${prefix}', [${refs}])
 `
