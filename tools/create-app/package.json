@@ -1,19 +1,38 @@
 {
   "name": "@place-ts/create-app",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "description": "Scaffolder — `bunx @place-ts/create-app <name>` creates a new place-ts project from a starter template.",
+  "keywords": ["place", "place-ts", "create-app", "scaffold", "starter"],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/tools/create-app#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "tools/create-app"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "create-place-app": "./src/cli.ts"
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   },
   "files": [
     "src",
     "templates",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ]
 }

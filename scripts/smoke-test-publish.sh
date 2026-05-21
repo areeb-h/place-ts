@@ -65,7 +65,7 @@ sed "s/__APP_NAME__/$APP_NAME/g" \
   "$REPO/tools/create-app/templates/minimal/src/pages/home.page.tsx" > "$SCRATCH/src/pages/home.page.tsx"
 cp "$REPO/tools/create-app/templates/minimal/bunfig.toml" "$SCRATCH/bunfig.toml"
 cp "$REPO/tools/create-app/templates/minimal/tsconfig.json" "$SCRATCH/tsconfig.json"
-cp "$REPO/tools/create-app/templates/minimal/.gitignore" "$SCRATCH/.gitignore"
+cp "$REPO/tools/create-app/templates/minimal/_gitignore" "$SCRATCH/.gitignore"
 
 STEP="rewrite deps to point at local tarballs"
 echo "[3/6] $STEP"

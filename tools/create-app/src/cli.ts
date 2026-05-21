@@ -113,7 +113,12 @@ export async function copyTemplate(
       if (stat.size > 1_000_000) continue
       const text = await readFile(srcPath, 'utf-8')
       const replaced = text.replaceAll('__APP_NAME__', appName)
-      await writeFile(destPath, replaced)
+      // npm pack drops files starting with `.` (npm convention for
+      // dotfile noise). Templates that need to ship a dotfile (e.g.
+      // `.gitignore`) are stored with a `_` prefix and renamed here.
+      const finalName = e.name.startsWith('_') ? `.${e.name.slice(1)}` : e.name
+      const finalDest = join(targetPath, finalName)
+      await writeFile(finalDest, replaced)
     }
   }
 }
