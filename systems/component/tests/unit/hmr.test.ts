@@ -226,28 +226,49 @@ describe('placeHmr() — typed-envelope HMR client', () => {
     expect(reloadCount).toBe(1)
   })
 
-  test('onopen never reloads; reload happens only on a changed server boot id', () => {
-    // The HMR client reloads on a genuine server restart — detected by
-    // a changed `boot` id in the `hello` envelope — never on a bare
-    // reconnect. A flaky socket can reconnect freely without looping.
+  test('onopen never triggers refresh; soft-refresh fires only on a changed boot id', () => {
+    // The HMR client soft-refreshes on a genuine server restart —
+    // detected by a changed `boot` id in the `hello` envelope — never
+    // on a bare reconnect. A flaky socket can reconnect freely without
+    // looping. (Pre-0.4.0 this called location.reload(); 0.4.0+ calls
+    // softRefresh() which fetches the current URL and replaces <main>.)
     try {
       sessionStorage.removeItem('__place_boot')
     } catch {
       // sessionStorage unavailable — the runtime degrades; test n/a.
     }
-    const ws = boot()
-    // Opening the socket is not a reload trigger.
-    ws.onopen?.(new Event('open'))
-    expect(reloadCount).toBe(0)
-    // First `hello`: record the boot id, no reload.
-    ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-A' }) })
-    expect(reloadCount).toBe(0)
-    // Reconnect to the SAME server (same boot id): no reload.
-    ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-A' }) })
-    expect(reloadCount).toBe(0)
-    // A CHANGED boot id means the server restarted → reload once.
-    ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-B' }) })
-    expect(reloadCount).toBe(1)
+    // Stub fetch so softRefresh() doesn't crash; capture call count.
+    let fetchCalls = 0
+    const originalFetch = globalThis.fetch
+    globalThis.fetch = (() => {
+      fetchCalls++
+      // Return a never-resolving promise — we only care that fetch
+      // was invoked, not what it does next. The runtime catches
+      // rejections, so this is safe.
+      return new Promise(() => {})
+    }) as unknown as typeof fetch
+
+    try {
+      const ws = boot()
+      // Opening the socket is not a refresh trigger.
+      ws.onopen?.(new Event('open'))
+      expect(fetchCalls).toBe(0)
+      expect(reloadCount).toBe(0)
+      // First `hello`: record the boot id, no refresh.
+      ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-A' }) })
+      expect(fetchCalls).toBe(0)
+      // Reconnect to the SAME server (same boot id): no refresh.
+      ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-A' }) })
+      expect(fetchCalls).toBe(0)
+      // A CHANGED boot id means the server restarted → soft refresh
+      // (one fetch of the current URL). Full location.reload() does
+      // NOT happen on this path anymore.
+      ws.onmessage?.({ data: JSON.stringify({ t: 'hello', boot: 'srv-B' }) })
+      expect(fetchCalls).toBe(1)
+      expect(reloadCount).toBe(0)
+    } finally {
+      globalThis.fetch = originalFetch
+    }
   })
 
   test('swap of multiple islands injects one <script> per update', () => {
