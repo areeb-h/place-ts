@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/create-app",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Scaffolder — `bunx @place-ts/create-app <name>` creates a new place-ts project from a starter template.",
   "keywords": ["place", "place-ts", "create-app", "scaffold", "starter"],
@@ -22,7 +22,7 @@
     "access": "public"
   },
   "bin": {
-    "create-place-app": "./bin/create-place-app.mjs"
+    "create-place-app": "./create-place-app.mjs"
   },
   "scripts": {
     "test": "vitest run",
@@ -30,7 +30,7 @@
     "prepublishOnly": "bun run typecheck && bun run test"
   },
   "files": [
-    "bin",
+    "create-place-app.mjs",
     "src",
     "templates",
     "README.md",
