@@ -568,7 +568,23 @@ export {
   keyed,
   revalidate,
 } from './component.ts'
-export { type FontOptions, type FontResult, font, fonts } from './font.ts'
+// `font` is exported as a namespace: `font(...)` for self-hosted
+// @font-face declarations, `font.google(family, opts)` for Google
+// Fonts (download-once-at-boot, self-hosted from a framework route).
+// `fonts(...)` combines multiple `font(...)` results.
+import { font as _fontFace } from './font.ts'
+import { googleFont as _googleFont } from './font-google.ts'
+export const font = Object.assign(_fontFace, { google: _googleFont })
+export { type FontOptions, type FontResult, fonts } from './font.ts'
+export {
+  combineResolvedFonts,
+  type GoogleFontDescriptor,
+  type GoogleFontOptions,
+  googleFont,
+  isGoogleFontDescriptor,
+  type ResolvedGoogleFont,
+  resolveGoogleFont,
+} from './font-google.ts'
 // `<Form action={...}>` JSX helper for typed action() submission. See
 // ./form.ts — works with JS (fetch+JSON) and without (form-encoded POST).
 export { Form, type FormProps } from './form.ts'

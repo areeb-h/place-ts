@@ -156,6 +156,30 @@ export interface AppConfig extends Omit<ServeOptions, 'routes' | 'port'> {
    *  newId()]`, etc. The `router:` first-class slot covers the most
    *  common case. Ignored server-side. */
   caps?: readonly CapInstall[]
+  /**
+   * Google Fonts to self-host. Pass descriptors built with
+   * `font.google(family, opts)`. At server boot, the framework
+   * downloads each font from Google ONCE, caches the woff2 files
+   * under `.place/fonts/<hash>/`, and serves them from the framework's
+   * own route (`/_place/fonts/...`). No runtime calls to googleapis.com
+   * — privacy, speed, offline-friendly.
+   *
+   *   import { font } from '@place-ts/component'
+   *
+   *   const sans = font.google('Inter', {
+   *     weights: [400, 500, 700],
+   *     variable: '--font-sans',
+   *     preload: true,
+   *   })
+   *   app({ fonts: [sans], ... })
+   *
+   * The generated CSS (with `@font-face` blocks + `:root { --font-sans:
+   * "Inter", … }` rules) is prepended to the Tailwind base, so utility
+   * classes like `font-sans` pick up the custom family automatically.
+   * Preload links flagged per-font are injected per-page via the
+   * head pipeline.
+   */
+  fonts?: readonly import('./font-google.ts').GoogleFontDescriptor[]
 }
 
 /**
@@ -494,6 +518,46 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     return opts as ServeOptions
   }
 
+  // Resolve Google Fonts at boot time. Downloads font files from
+  // googleapis.com on first run, caches under `.place/fonts/`, mounts
+  // them at `/_place/fonts/...` via the static-routes mechanism, and
+  // prepends the @font-face CSS to the Tailwind base so utility
+  // classes like `font-sans` pick up the custom family.
+  const resolveFontsAndPatchOpts = async (opts: ServeOptions): Promise<ServeOptions> => {
+    if (!config.fonts || config.fonts.length === 0) return opts
+    const { resolveGoogleFont, combineResolvedFonts } = await import('./font-google.ts')
+    const resolved = await Promise.all(config.fonts.map((d) => resolveGoogleFont(d)))
+    const combined = combineResolvedFonts(resolved)
+    // `combined.styles` is an inline StyleSrc by construction
+    // (combineResolvedFonts always returns `{ inline: '…' }`). Narrow
+    // the type for the base-string append below.
+    const combinedCss =
+      typeof combined.styles === 'object' && 'inline' in combined.styles
+        ? combined.styles.inline
+        : ''
+    // Mount the framework's font cache dir as a static prefix.
+    const patched: ServeOptions = {
+      ...opts,
+      static: { ...(opts.static ?? {}), '/_place/fonts': '.place/fonts' },
+    }
+    // Prepend font CSS to the existing tailwind base (if any). The
+    // @font-face rules must come BEFORE any utility class that uses
+    // the family, otherwise the browser sees the class name before
+    // the face declaration.
+    if (patched.tailwind && typeof patched.tailwind === 'object') {
+      const existingBase = patched.tailwind.base
+      const existingBaseStr =
+        typeof existingBase === 'object' && existingBase !== null && 'base' in existingBase
+          ? existingBase.base
+          : (existingBase as string | undefined)
+      const newBase = existingBaseStr ? `${combinedCss}\n${existingBaseStr}` : combinedCss
+      patched.tailwind = { ...patched.tailwind, base: newBase }
+    } else if (patched.tailwind === true || patched.tailwind === undefined) {
+      // Tailwind not configured with an object — wrap so the base is set.
+      patched.tailwind = { base: combinedCss }
+    }
+    return patched
+  }
   return {
     routes,
     async serve(): Promise<Bun.Server<unknown>> {
@@ -511,15 +575,15 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       // logger handles) but NOT for per-request state — see the
       // `CapPerRuntime.server` doc for the discipline.
       installCapsFor('server')
-      return serve(resolveServeOpts())
+      return serve(await resolveFontsAndPatchOpts(resolveServeOpts()))
     },
-    run(): Promise<Bun.Server<unknown>> {
+    async run(): Promise<Bun.Server<unknown>> {
       // The app entry. `app()` runs only on the server in the islands
       // model — each island ships its own client bundle and mounts
       // itself, so there is no client-side `app` runtime to dispatch
       // to. `run()` installs server caps and starts Bun.serve.
       installCapsFor('server')
-      return serve(resolveServeOpts())
+      return serve(await resolveFontsAndPatchOpts(resolveServeOpts()))
     },
     async build(buildOptions: { outDir: string }): Promise<void> {
       if (typeof window !== 'undefined') {
@@ -534,7 +598,8 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       // `serve({ staticExport })` does the full setup then writes the
       // static site instead of binding a port; its return is the
       // cast-undefined sentinel — discarded here.
-      await serve({ ...resolveServeOpts(), staticExport: { outDir: buildOptions.outDir } })
+      const opts = await resolveFontsAndPatchOpts(resolveServeOpts())
+      await serve({ ...opts, staticExport: { outDir: buildOptions.outDir } })
     },
   }
 }
