@@ -1,9 +1,15 @@
 {
   "name": "@place-ts/create-app",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "type": "module",
   "description": "Scaffolder — `bunx @place-ts/create-app <name>` creates a new place-ts project from a starter template.",
-  "keywords": ["place", "place-ts", "create-app", "scaffold", "starter"],
+  "keywords": [
+    "place",
+    "place-ts",
+    "create-app",
+    "scaffold",
+    "starter"
+  ],
   "homepage": "https://github.com/areeb-h/place-ts/tree/main/tools/create-app#readme",
   "bugs": {
     "url": "https://github.com/areeb-h/place-ts/issues"

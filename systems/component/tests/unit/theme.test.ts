@@ -251,8 +251,9 @@ describe('resolveTailwindFromTheme — serve()-level shorthand', () => {
 
   test('theme + no tailwind option → no Tailwind compilation triggered', () => {
     // Auto-fill must NOT turn Tailwind on for users who opted out.
-    // Theme-only users get CSS-variable theming via meta.htmlClass +
-    // their own stylesheets, without paying the Tailwind compile cost.
+    // Theme-only users get CSS-variable theming via the top-level
+    // `htmlClass` field + their own stylesheets, without paying the
+    // Tailwind compile cost.
     expect(resolveTailwindFromTheme(tokens, undefined)).toBeUndefined()
     expect(resolveTailwindFromTheme(tokens, false)).toBe(false)
   })

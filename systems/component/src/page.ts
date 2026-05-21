@@ -21,7 +21,7 @@ import { action } from './action.ts'
 // inside runtime functions, so the cycles stay benign.
 import { component } from './index.ts'
 import { type PageMeta, renderDocument, type StyleSrc } from './meta.ts'
-import { mergeMeta, resolveMeta } from './render-page.ts'
+import { mergeDocumentClasses, mergeMeta, resolveMeta } from './render-page.ts'
 import type { RouteHandler } from './server-router.ts'
 import { renderToStream, renderToString } from './ssr.ts'
 import type { Child, View } from './types.ts'
@@ -286,6 +286,29 @@ export interface PageDef<U extends object = object, L extends object = object, S
    */
   meta?: PageMeta | string | ((props: PageViewProps<U, L, S>) => PageMeta | string)
   /**
+   * Class attribute on `<html>`. Document-shell styling — sibling of
+   * `meta:` (which is for tags that get emitted into `<head>`), not a
+   * nested field. Scanned by Tailwind because the value is a string
+   * literal in source.
+   *
+   *   page('/', { htmlClass: 'h-full', view: () => … })
+   *
+   * Concatenated with the layout chain's `htmlClass`: a root layout can
+   * set `h-full` and a page can add classes without losing the parent's.
+   */
+  htmlClass?: string
+  /**
+   * Class attribute on `<body>`. Same shape and concatenation rules as
+   * `htmlClass`. Common use: page background, text color, font family,
+   * antialiasing — things a CSS reset would normally handle.
+   *
+   *   page('/', {
+   *     bodyClass: 'bg-bg text-fg font-sans antialiased',
+   *     view: () => …,
+   *   })
+   */
+  bodyClass?: string
+  /**
    * Stylesheets. URL strings emit `<link rel="stylesheet">`, `{ inline }`
    * emits `<style>`. Pass an array to combine. The `tailwind()` helper
    * from `@place-ts/component/tailwind` returns an `{ inline }` source.
@@ -357,8 +380,9 @@ export interface PageDef<U extends object = object, L extends object = object, S
    * Each layout's `load()` runs (in chain order, before page.load()), and
    * the merged loadData flows into all layouts' `view`/`meta` plus the
    * page's. Layout meta merges with page meta (page wins on scalar
-   * conflicts); `htmlClass` / `bodyClass` concatenate. Layout styles are
-   * emitted in `<head>` BEFORE the page's, so page styles can override.
+   * conflicts). Top-level `htmlClass` / `bodyClass` (siblings of `meta`)
+   * concatenate across the chain. Layout styles are emitted in `<head>`
+   * BEFORE the page's, so page styles can override.
    *
    * Pass a single layout (`layout: rootLayout`) for the common case.
    */
@@ -574,9 +598,8 @@ export interface LayoutDef<L extends object = Record<string, never>, S extends s
   view: (props: L & { children: View; slots: LayoutSlots<S> }) => View
   /**
    * Layout-level metadata. Merged with the page's meta — scalar fields
-   * (title, description, etc.) follow last-write-wins (page wins);
-   * `htmlClass` and `bodyClass` are concatenated. For `og` / `twitter`
-   * objects, the page's value replaces the layout's entirely.
+   * (title, description, etc.) follow last-write-wins (page wins).
+   * `og` / `twitter` objects are replaced wholesale by the page's value.
    *
    * Setting `titleTemplate` here ('%s · my site') makes every page's
    * title compose with the template — see `PageMeta.titleTemplate`.
@@ -585,6 +608,24 @@ export interface LayoutDef<L extends object = Record<string, never>, S extends s
    * for symmetry with `PageDef.meta`.
    */
   meta?: PageMeta | string | ((props: L) => PageMeta | string)
+  /**
+   * Class attribute on `<html>`. Document-shell styling — sibling of
+   * `meta:`. Concatenated with any inner layout's and the page's
+   * `htmlClass` (root layout's classes ship first, page's classes last).
+   *
+   *   layout({ htmlClass: 'h-full', view: ({ children }) => … })
+   */
+  htmlClass?: string
+  /**
+   * Class attribute on `<body>`. Same shape and concatenation rules as
+   * `htmlClass`. Common use: site-wide background + text color + font.
+   *
+   *   layout({
+   *     bodyClass: 'bg-bg text-fg font-sans antialiased',
+   *     view: ({ children }) => …,
+   *   })
+   */
+  bodyClass?: string
   /**
    * Stylesheets emitted in `<head>` BEFORE the page's styles, so the
    * page's styles can override the layout's.
@@ -612,6 +653,8 @@ export interface AnyLayout {
   view: (props: any) => View
   // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
   meta?: PageMeta | string | ((props: any) => PageMeta | string)
+  htmlClass?: string
+  bodyClass?: string
   styles?: StyleSrc | StyleSrc[]
   readonly [PLACE_LAYOUT_BRAND]: true
 }
@@ -962,6 +1005,8 @@ export interface AnyPage {
   view: (props: any) => View
   // biome-ignore lint/suspicious/noExplicitAny: variance escape hatch.
   meta?: PageMeta | string | ((props: any) => PageMeta | string)
+  htmlClass?: string
+  bodyClass?: string
   styles?: StyleSrc | StyleSrc[]
   headers?: HeadersInit
   streaming?: boolean
@@ -1084,8 +1129,8 @@ export interface RenderPageOptions {
    */
   scriptNonce?: string
   /**
-   * Class to merge into `<html class="…">` after the page's own
-   * `meta.htmlClass`. Used by serve()-level concerns that want to
+   * Class to merge into `<html class="…">` after the layout/page chain's
+   * own `htmlClass`. Used by serve()-level concerns that want to
    * influence the document root without touching every page (e.g.
    * `serve({ theme })` injecting the active theme class). Empty string
    * is treated as "no merge".
@@ -1162,10 +1207,16 @@ export async function renderPageWithCustomView(
   const pageMeta = resolveMeta(p.meta, {})
   if (pageMeta) metas.push(pageMeta)
   const meta = metas.length === 0 ? undefined : mergeMeta(metas)
+  // Collect document-shell classes from the layout chain + page. Same
+  // concatenation rule as the happy-path renderPage — keep the error/
+  // notFound page visually consistent with the rest of the site.
+  const docClasses = mergeDocumentClasses(layouts, p)
   // Render view to HTML (sync path — error/notFound views shouldn't suspend).
   const body = wrapped.toHtml?.() ?? ''
   const docHtml = renderDocument(body, {
     ...(meta ? { meta } : {}),
+    ...(docClasses.htmlClass ? { htmlClass: docClasses.htmlClass } : {}),
+    ...(docClasses.bodyClass ? { bodyClass: docClasses.bodyClass } : {}),
     ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
   })
   const headers = new Headers({ 'Content-Type': 'text/html; charset=utf-8' })

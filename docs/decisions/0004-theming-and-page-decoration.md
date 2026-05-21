@@ -58,24 +58,25 @@ System preference (`prefers-color-scheme: dark`) is also handled — purely via 
 - Inline pre-paint script (the shadcn/Next/SvelteKit default) — same CSP issue.
 - HTTP `Sec-CH-Prefers-Color-Scheme` client hint — not universally supported, and the explicit-user-choice case still needs a cookie.
 
-### 3. `meta.htmlClass` / `meta.bodyClass` accept utility-class strings
+### 3. `htmlClass` / `bodyClass` as top-level layout/page fields
 
-`PageMeta` carries explicit class slots:
+`Layout` and `Page` configs carry explicit class slots — peers of `meta:`, not nested inside it, because they emit `class=` attributes on `<html>` / `<body>`, not metadata tags. (Pre-0.2.0 they lived under `meta.htmlClass` / `meta.bodyClass`; moved to the top level so the meta type stays focused on actual `<meta>` / `<link>` content.)
 
 ```ts
-meta: {
+layout({
   htmlClass: 'h-full',
   bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
-}
+  view: ({ children }) => …,
+})
 ```
 
-These are rendered into `<html class="…">` and `<body class="…">` in `renderDocument`. The Tailwind content scanner picks them up alongside everything else (they're string literals in source).
+These are rendered into `<html class="…">` and `<body class="…">` in `renderDocument`. The Tailwind content scanner picks them up alongside everything else (they're string literals in source). When a layout AND a page both set `htmlClass`/`bodyClass`, the values concatenate (root layout's classes first, page's last).
 
 **Rejected:** the `@layer base { body { @apply ... } }` pattern. Less type-safety, more compiler ceremony, lives in a different file than the page declaration that wants it.
 
 ### 4. `serve({ theme: tokens })` — request-time decoration without per-page boilerplate
 
-The framework reads the theme cookie per request and prefixes the active theme class onto every page's `meta.htmlClass`. Pages declare zero theme code:
+The framework reads the theme cookie per request and prefixes the active theme class onto every page's `htmlClass`. Pages declare zero theme code:
 
 ```ts
 serve({
@@ -87,7 +88,8 @@ serve({
 // page.tsx
 page({
   view: () => <div id="app" />,
-  meta: { htmlClass: 'h-full', bodyClass: 'bg-bg text-fg font-sans antialiased' },
+  htmlClass: 'h-full',
+  bodyClass: 'bg-bg text-fg font-sans antialiased',
 })
 ```
 
@@ -133,7 +135,7 @@ export const tokens = themeTokens({
 serve({
   tailwind: true,
   theme: tokens,
-  routes: { '/': page({ view, meta: { bodyClass: 'bg-bg text-fg' } }) },
+  routes: { '/': page({ view, bodyClass: 'bg-bg text-fg' }) },
 })
 
 // any client component

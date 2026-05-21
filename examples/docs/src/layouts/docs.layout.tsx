@@ -57,9 +57,11 @@ export const docsLayout = layout<Record<string, never>, 'headerActions' | 'tocOv
       'Smaller surface than Next, fewer footguns than Remix, more honest than TanStack.',
     themeColor: '#0a0a0c',
     icon: { href: FAVICON, type: 'image/svg+xml' },
-    htmlClass: 'h-full',
-    bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
   },
+  // Document-shell classes are top-level fields, peers of `meta:`.
+  // They emit on `<html>` and `<body>` rather than as `<meta>` / `<link>` tags.
+  htmlClass: 'h-full',
+  bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
   view: ({ children, slots }) => (
     <div class="flex flex-col h-full min-h-0">
       <header class="flex-shrink-0 border-b border-border/50 bg-bg/70 backdrop-blur-md sticky top-0 z-30">

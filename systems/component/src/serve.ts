@@ -523,7 +523,7 @@ export interface ServeOptions {
    *
    *   1. Every request has its `place-theme` cookie read; the active
    *      theme class is auto-prefixed onto every page's
-   *      `meta.htmlClass` — pages don't need to declare a `load()` or
+   *      `htmlClass` — pages don't need to declare a `load()` or
    *      pass `htmlClass: tokens.htmlClass(theme)` themselves.
    *   2. ISR cache keys include the theme name so light + dark visitors
    *      don't share entries.
@@ -1995,7 +1995,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     }
     // Resolve the active theme for this request, if a serve-level theme
     // is installed. The result is the class to prefix onto every page's
-    // `meta.htmlClass`. Computed once per request and threaded through
+    // top-level `htmlClass`. Computed once per request and threaded through
     // both ISR and non-ISR paths. Cheap (one cookie-string scan).
     const activeTheme =
       options.theme !== undefined

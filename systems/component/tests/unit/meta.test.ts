@@ -158,10 +158,8 @@ describe('page().meta — typed document <head>', () => {
     const body = await ssr(
       page({
         view: () => div({}, ['x']),
-        meta: {
-          htmlClass: 'h-full dark',
-          bodyClass: 'bg-zinc-950 text-zinc-100 font-sans antialiased',
-        },
+        htmlClass: 'h-full dark',
+        bodyClass: 'bg-zinc-950 text-zinc-100 font-sans antialiased',
       }),
     )
     // Both attrs ride on the root element open tags.
@@ -173,7 +171,7 @@ describe('page().meta — typed document <head>', () => {
     const body = await ssr(
       page({
         view: () => div({}, ['x']),
-        meta: { bodyClass: 'safe" onload=alert(1) "' },
+        bodyClass: 'safe" onload=alert(1) "',
       }),
     )
     // Quote escaped → no early closure of class="..." attribute.
@@ -183,7 +181,7 @@ describe('page().meta — typed document <head>', () => {
 
   test('renderPage option `htmlClassPrefix` prepends a class onto <html>', async () => {
     const body = await renderPage(
-      page({ view: () => div({}, ['x']), meta: { htmlClass: 'h-full' } }),
+      page({ view: () => div({}, ['x']), htmlClass: 'h-full' }),
       new Request('http://x/'),
       {},
       { htmlClassPrefix: 'theme-dark' },
@@ -192,7 +190,7 @@ describe('page().meta — typed document <head>', () => {
     expect(body).toContain('<html lang="en" class="theme-dark h-full">')
   })
 
-  test('htmlClassPrefix works when meta has no htmlClass of its own', async () => {
+  test('htmlClassPrefix works when page declares no htmlClass of its own', async () => {
     const body = await renderPage(
       page({ view: () => div({}, ['x']), meta: { title: 'h' } }),
       new Request('http://x/'),
@@ -214,7 +212,7 @@ describe('page().meta — typed document <head>', () => {
     // class, prepend.
     const themeClass = tokens.htmlClass('light')
     const body = await renderPage(
-      page({ view: () => div({}, ['x']), meta: { htmlClass: 'h-full' } }),
+      page({ view: () => div({}, ['x']), htmlClass: 'h-full' }),
       new Request('http://x/'),
       {},
       { htmlClassPrefix: themeClass },

@@ -193,11 +193,10 @@ export async function renderPage(
       return renderRouteError(e, req, 'render')
     }
     let meta: PageMeta | undefined
+    let docClasses: { htmlClass?: string; bodyClass?: string } = {}
     try {
       // Collect metas: layouts first (in chain order), page last. Last-
-      // write-wins on scalar fields. `htmlClass` and `bodyClass` get
-      // CONCATENATED so a root layout can set `h-full` and a page can add
-      // `bg-bg text-fg` without losing the parent's classes.
+      // write-wins on scalar fields.
       const metas: PageMeta[] = []
       for (const l of layouts) {
         const lMeta = resolveMeta(l.meta, props)
@@ -206,6 +205,11 @@ export async function renderPage(
       const pageMeta = resolveMeta(p.meta, props)
       if (pageMeta) metas.push(pageMeta)
       meta = metas.length === 0 ? undefined : mergeMeta(metas)
+      // Document-shell classes (`htmlClass` / `bodyClass`) are top-level
+      // fields on Layout/Page, not nested in meta. Concatenate root-
+      // outward: outermost layout's classes ship first, page's last —
+      // so a page can extend without losing the layout's.
+      docClasses = mergeDocumentClasses(layouts, p)
     } catch (e) {
       return renderRouteError(e, req, 'render')
     }
@@ -241,12 +245,14 @@ export async function renderPage(
     const stylesForDoc: StyleSrc | StyleSrc[] | undefined =
       allStyles.length === 0 ? undefined : allStyles.length === 1 ? allStyles[0] : allStyles
     // Merge serve()-level htmlClass prefix (e.g. the active theme class).
-    // Prefix wins over user-supplied `meta.htmlClass`'s last-write because
-    // it goes first; the page's own classes follow.
+    // Prefix wins over user-supplied `htmlClass` because it goes first;
+    // the layout/page classes follow.
     if (options?.htmlClassPrefix) {
-      const userClass = meta?.htmlClass ?? ''
-      const merged = userClass ? `${options.htmlClassPrefix} ${userClass}` : options.htmlClassPrefix
-      meta = { ...(meta ?? {}), htmlClass: merged }
+      const userClass = docClasses.htmlClass ?? ''
+      docClasses = {
+        ...docClasses,
+        htmlClass: userClass ? `${options.htmlClassPrefix} ${userClass}` : options.htmlClassPrefix,
+      }
     }
     // Pre-build the nonce attribute fragment once. Empty when no nonce —
     // those deployments rely on `'unsafe-inline'` in the CSP.
@@ -277,6 +283,8 @@ export async function renderPage(
         const streamChunks = options?.enableSpaNav ? _getSharedChunkUrls() : []
         return renderDocument(body + tabsScript + dataScript, {
           ...(meta ? { meta } : {}),
+          ...(docClasses.htmlClass ? { htmlClass: docClasses.htmlClass } : {}),
+          ...(docClasses.bodyClass ? { bodyClass: docClasses.bodyClass } : {}),
           ...(stylesForDoc ? { styles: stylesForDoc } : {}),
           ...(streamEarlyHead.length > 0 ? { earlyHead: streamEarlyHead } : {}),
           ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
@@ -639,6 +647,8 @@ export async function renderPage(
         dataScript,
       {
         ...(meta ? { meta } : {}),
+        ...(docClasses.htmlClass ? { htmlClass: docClasses.htmlClass } : {}),
+        ...(docClasses.bodyClass ? { bodyClass: docClasses.bodyClass } : {}),
         ...(stylesForDoc ? { styles: stylesForDoc } : {}),
         ...(earlyHead.length > 0 ? { earlyHead } : {}),
         ...(options?.bootstrap ? { bootstrap: options.bootstrap } : {}),
@@ -685,14 +695,16 @@ export async function renderPage(
 // Layouts and the page each contribute a PageMeta. Merging rules:
 //   - Scalar fields (title, description, themeColor, etc.) follow
 //     last-write-wins — the page's value beats the layout's.
-//   - `htmlClass` and `bodyClass` CONCATENATE — a root layout can set
-//     `h-full` and a page can add `bg-bg text-fg` without one
-//     overwriting the other.
 //   - `keywords` (array) and `extra` (HeadEntry[]) CONCATENATE.
 //   - `og` and `twitter` (objects) follow last-write-wins — the page
 //     replaces the layout's entirely. Deep-merging would surprise more
 //     often than help (a layout's og:image set to a default image is
 //     usually intended to be REPLACED on a specific page, not retained).
+//
+// Document-shell classes (`htmlClass` / `bodyClass`) are NOT part of
+// PageMeta — they're top-level fields on Layout/Page configs because
+// they aren't metadata tags. They're merged separately by
+// `mergeDocumentClasses`.
 /**
  * Resolve a page or layout's `meta` declaration to a `PageMeta` object.
  *
@@ -720,27 +732,47 @@ export function resolveMeta(
 
 export function mergeMeta(metas: PageMeta[]): PageMeta {
   const out: PageMeta = {}
-  const htmlClasses: string[] = []
-  const bodyClasses: string[] = []
   const keywords: string[] = []
   const extra: NonNullable<PageMeta['extra']> = []
   for (const m of metas) {
-    if (m.htmlClass) htmlClasses.push(m.htmlClass)
-    if (m.bodyClass) bodyClasses.push(m.bodyClass)
     if (m.keywords) keywords.push(...m.keywords)
     if (m.extra) extra.push(...m.extra)
-    // Last-write-wins for the rest. Spread but skip the special-case
-    // fields above — we already collected them.
+    // Last-write-wins for the rest. Spread but skip the array fields
+    // above — they CONCATENATE, not replace.
     for (const [key, value] of Object.entries(m)) {
-      if (key === 'htmlClass' || key === 'bodyClass' || key === 'keywords' || key === 'extra') {
-        continue
-      }
+      if (key === 'keywords' || key === 'extra') continue
       if (value !== undefined) (out as Record<string, unknown>)[key] = value
     }
   }
-  if (htmlClasses.length > 0) out.htmlClass = htmlClasses.join(' ')
-  if (bodyClasses.length > 0) out.bodyClass = bodyClasses.join(' ')
   if (keywords.length > 0) out.keywords = keywords
   if (extra.length > 0) out.extra = extra
+  return out
+}
+
+/**
+ * Concatenate `htmlClass` / `bodyClass` across the layout chain + page.
+ * Root-outward order: outermost layout's classes ship first, page's last.
+ * A page extending `h-full` with `bg-bg` produces `h-full bg-bg` — neither
+ * one drops the other.
+ *
+ * Sources are the top-level fields on Layout / Page configs (NOT nested
+ * in meta — these classes aren't metadata, they're document-shell
+ * styling).
+ */
+export function mergeDocumentClasses(
+  layouts: readonly AnyLayout[],
+  page: AnyPage,
+): { htmlClass?: string; bodyClass?: string } {
+  const htmlParts: string[] = []
+  const bodyParts: string[] = []
+  for (const l of layouts) {
+    if (l.htmlClass) htmlParts.push(l.htmlClass)
+    if (l.bodyClass) bodyParts.push(l.bodyClass)
+  }
+  if (page.htmlClass) htmlParts.push(page.htmlClass)
+  if (page.bodyClass) bodyParts.push(page.bodyClass)
+  const out: { htmlClass?: string; bodyClass?: string } = {}
+  if (htmlParts.length > 0) out.htmlClass = htmlParts.join(' ')
+  if (bodyParts.length > 0) out.bodyClass = bodyParts.join(' ')
   return out
 }

@@ -9,11 +9,11 @@
 //      with no compile-time guarantee that theme classes match the
 //      tokens they reference.
 //
-//   2. **Server-rendered** — the chosen theme rides on `meta.htmlClass`
-//      so it ships in the SSR'd HTML. No flash-of-wrong-theme on first
-//      paint, no inline pre-paint script (which fights strict CSP).
-//      shadcn requires either a blocking `dangerouslySetInnerHTML`
-//      script or a flash.
+//   2. **Server-rendered** — the chosen theme rides on the layout/page
+//      `htmlClass` field so it ships in the SSR'd HTML. No flash-of-
+//      wrong-theme on first paint, no inline pre-paint script (which
+//      fights strict CSP). shadcn requires either a blocking
+//      `dangerouslySetInnerHTML` script or a flash.
 //
 //   3. **System preference + user override, both work without JS** —
 //      the emitted CSS includes `@media (prefers-color-scheme: …)`
@@ -44,7 +44,7 @@
 //   })
 //
 //   serve({ tailwind: { base: tokens.base, content: [...] }, ... })
-//   page({ meta: { htmlClass: tokens.htmlClass('dark'), bodyClass: 'bg-bg text-fg' } })
+//   page({ htmlClass: tokens.htmlClass('dark'), bodyClass: 'bg-bg text-fg', view: () => ... })
 
 /**
  * Per-theme tokens. Keys are CSS custom property names (must start with
@@ -434,8 +434,9 @@ function classNameFor(prefix: string, theme: string): string {
  * Build a typed, SSR-safe theme system from a token map. Returns
  * `{ base, htmlClass, names, default, themes }`. Drop `base` into
  * `serve({ tailwind: { base } })` (or pass directly via
- * `app({ theme })`); use `htmlClass(theme)` on `meta.htmlClass` to
- * pick a theme per request (e.g. from a cookie).
+ * `app({ theme })`); pass `htmlClass(theme)` to a layout/page's
+ * top-level `htmlClass` field to pick a theme per request (e.g. from
+ * a cookie).
  *
  * @see {@link theme} — the high-DX wrapper.
  */
@@ -661,7 +662,7 @@ export function themeTokens<Themes extends Readonly<Record<string, ThemeMap>>>(
 //
 // The standard pattern: a `theme` cookie stores the user's choice;
 // the server reads it on every request, picks the matching theme,
-// passes it to `meta.htmlClass`. The client toggle sets the cookie
+// passes it to the layout/page `htmlClass`. The client toggle sets the cookie
 // (and the class) when the user picks a different theme.
 //
 // `readThemeFromRequest` returns the user-chosen theme, or the
@@ -856,7 +857,8 @@ export function themeEarlyScript(
 //      `themeTokens()` unchanged.
 //
 // The output is the same `ThemeTokens` shape `themeTokens()` returns
-// — fully back-compat with `app({ theme })` and `meta.htmlClass()`.
+// — fully compatible with `app({ theme })` and the layout/page
+// `htmlClass` field.
 
 /**
  * One color mode (e.g. dark or light). Each key maps to a CSS color

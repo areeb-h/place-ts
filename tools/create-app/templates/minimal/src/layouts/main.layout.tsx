@@ -14,9 +14,11 @@ export const mainLayout = layout({
   meta: {
     titleTemplate: '%s · __APP_NAME__',
     description: 'A place-ts app.',
-    htmlClass: 'h-full',
-    bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
   },
+  // Document-shell classes are top-level peers of `meta:` — they emit on
+  // `<html>` and `<body>`, not as `<meta>` / `<link>` tags.
+  htmlClass: 'h-full',
+  bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
   view: ({ children }) => (
     <div class="flex flex-col min-h-screen">
       <header class="sticky top-0 z-30 border-b border-border/60 bg-bg/80 backdrop-blur-md">

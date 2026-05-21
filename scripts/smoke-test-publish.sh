@@ -14,8 +14,12 @@ set -u
 set -o pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-SCRATCH="/tmp/place-smoke-$(date +%s)"
+# Scratch parent dir is timestamped to avoid collisions across runs.
+# The scaffolded app lives at $PARENT/$APP_NAME — `welcome to $APP_NAME`
+# is what the rendered HTML must contain.
+PARENT="/tmp/place-smoke-$(date +%s)"
 APP_NAME="place-smoke-app"
+SCRATCH="$PARENT/$APP_NAME"
 
 cleanup() {
   if [[ -n "${SERVER_PID:-}" ]]; then
@@ -42,7 +46,7 @@ on_success() {
   echo
   echo "✓ smoke test PASSED — publish surface works end-to-end"
   cleanup
-  rm -rf "$SCRATCH"
+  rm -rf "$PARENT"
 }
 trap on_failure ERR
 
@@ -53,43 +57,47 @@ for d in capability component data design devtools persistence reactivity routin
   echo "      ✓ $d"
 done
 
-STEP="set up scratch dir"
+STEP="scaffold app via create-app CLI"
 echo "[2/6] $STEP at $SCRATCH"
-mkdir -p "$SCRATCH/src/pages"
-# Copy the template + substitute APP_NAME.
-sed "s/__APP_NAME__/$APP_NAME/g" \
-  "$REPO/tools/create-app/templates/minimal/package.json" > "$SCRATCH/package.json"
-sed "s/__APP_NAME__/$APP_NAME/g" \
-  "$REPO/tools/create-app/templates/minimal/src/app.ts" > "$SCRATCH/src/app.ts"
-sed "s/__APP_NAME__/$APP_NAME/g" \
-  "$REPO/tools/create-app/templates/minimal/src/pages/home.page.tsx" > "$SCRATCH/src/pages/home.page.tsx"
-cp "$REPO/tools/create-app/templates/minimal/bunfig.toml" "$SCRATCH/bunfig.toml"
-cp "$REPO/tools/create-app/templates/minimal/tsconfig.json" "$SCRATCH/tsconfig.json"
-cp "$REPO/tools/create-app/templates/minimal/_gitignore" "$SCRATCH/.gitignore"
+# Use the canonical scaffolder so the smoke test exercises whatever shape
+# the template actually ships — no parallel file-list to keep in sync.
+# `--no-install` because we'll install ourselves after rewriting deps to
+# local tarballs (the registry doesn't have these versions yet — that's
+# the point of the smoke test).
+mkdir -p "$PARENT"
+(cd "$PARENT" && bun "$REPO/tools/create-app/src/cli.ts" "$APP_NAME" --yes --no-install >/dev/null 2>&1)
+# The CLI scaffolds under $PARENT/$APP_NAME which IS $SCRATCH.
 
 STEP="rewrite deps to point at local tarballs"
 echo "[3/6] $STEP"
-# The minimal template only declares @place-ts/component but the package
-# depends transitively on @place-ts/capability, @place-ts/reactivity,
-# @place-ts/routing. Two-pronged fix:
-#   1. Declare all four @place-ts/* deps at the root so they all resolve.
-#   2. Add `overrides` for every @place-ts/* so transitive references in
-#      the tarball (which read `@place-ts/capability: 0.1.0` — a version
-#      spec, not a file:) get force-redirected to the local tarball
-#      instead of being fetched from the registry (which doesn't have
-#      them yet — that's the whole point of this smoke test).
+# The template declares its first-party @place-ts/* deps and tailwind. The
+# registry doesn't have these versions yet (that's the point of this
+# smoke test), so we:
+#   1. Replace every @place-ts/* dep with a `file:` URL pointing at the
+#      local tarball we just packed.
+#   2. Add `overrides` for every @place-ts/* so transitive references
+#      inside the tarballs (e.g. component depends on capability: ^0.1.0,
+#      a version spec NOT a file: URL) also resolve to our tarballs.
+# Non-@place-ts deps (tailwind etc.) keep their registry sources.
 node --input-type=module -e "
 import { readFileSync, writeFileSync } from 'node:fs'
 const p = '$SCRATCH/package.json'
 const pkg = JSON.parse(readFileSync(p, 'utf8'))
 const local = {
   '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
-  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.1.0.tgz',
+  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.2.0.tgz',
+  '@place-ts/data':       'file:$REPO/systems/data/place-ts-data-0.1.0.tgz',
+  '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.1.0.tgz',
+  '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.0.tgz',
+  '@place-ts/persistence':'file:$REPO/systems/persistence/place-ts-persistence-0.1.0.tgz',
   '@place-ts/reactivity': 'file:$REPO/systems/reactivity/place-ts-reactivity-0.1.0.tgz',
   '@place-ts/routing':    'file:$REPO/systems/routing/place-ts-routing-0.1.0.tgz',
+  '@place-ts/search':     'file:$REPO/systems/search/place-ts-search-0.1.0.tgz',
   '@place-ts/security':   'file:$REPO/systems/security/place-ts-security-0.1.0.tgz',
 }
-pkg.dependencies = local
+// Merge: keep tailwind + any other non-@place-ts/* deps, override every
+// @place-ts/* with the local tarball.
+pkg.dependencies = { ...(pkg.dependencies ?? {}), ...local }
 pkg.overrides = local
 writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
 console.log('   rewrote deps + overrides to local tarballs')

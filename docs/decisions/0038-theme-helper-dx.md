@@ -61,7 +61,7 @@ Siblings reference the anchors via `var(--color-…)` and `color-mix()`, so a th
 
 Any sibling listed explicitly on the mode wins over the default; consumers tune what they want, defaults fill in.
 
-Returns the same `ThemeTokens` shape `themeTokens()` returns — fully back-compat with `app({ theme })` and `meta.htmlClass(theme)`.
+Returns the same `ThemeTokens` shape `themeTokens()` returns — fully compatible with `app({ theme })` and the top-level `htmlClass` field on `layout()` / `page()`.
 
 ### 2. App defaults: `security: 'standard'`
 

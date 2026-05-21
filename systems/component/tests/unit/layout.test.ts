@@ -110,12 +110,14 @@ describe('layout() — composable wrappers around pages', () => {
   test('htmlClass and bodyClass CONCATENATE across layout + page', async () => {
     const root = layout({
       view: ({ children }) => div({}, [children]),
-      meta: { htmlClass: 'h-full', bodyClass: 'antialiased' },
+      htmlClass: 'h-full',
+      bodyClass: 'antialiased',
     })
     const home = page({
       layout: root,
       view: () => span({}, ['x']),
-      meta: { htmlClass: 'dark', bodyClass: 'bg-bg text-fg' },
+      htmlClass: 'dark',
+      bodyClass: 'bg-bg text-fg',
     })
     const html = await ssr(home)
     // Both htmlClass values present, layout's first.
@@ -215,7 +217,7 @@ describe('layout() — composable wrappers around pages', () => {
     // own layout (which wraps the page).
     const root = layout({
       view: ({ children }) => div({ class: 'root' }, [children]),
-      meta: { htmlClass: 'h-full' },
+      htmlClass: 'h-full',
     })
     const userL = layout({
       view: ({ children }) => div({ class: 'user' }, [children]),
@@ -223,7 +225,7 @@ describe('layout() — composable wrappers around pages', () => {
     const home = page({
       layout: userL,
       view: () => span({ class: 'inner' }, ['x']),
-      meta: { htmlClass: 'dark' },
+      htmlClass: 'dark',
     })
     const res = await renderPage(
       home,

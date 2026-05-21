@@ -21,8 +21,8 @@ export default page('/about', {
       <h2>Layouts persist across navigation</h2>
       <p>
         Click <Link to="/">Home</Link> in the header. Only the <code>{'{children}'}</code> slot
-        re-renders — the header, footer, and any reactive state in <code>main.layout.tsx</code>{' '}
-        stay alive. Same for going back here.
+        re-renders — the header, footer, and any reactive state in <code>main.layout.tsx</code> stay
+        alive. Same for going back here.
       </p>
 
       <h2>Where to look next</h2>

@@ -132,26 +132,6 @@ export interface PageMeta {
   themeColor?: string
   /** <meta name="color-scheme">. e.g. 'light dark'. */
   colorScheme?: string
-  /**
-   * Class attribute on `<html>`. Scanned by Tailwind (the value is a
-   * string literal in source), so utility classes here just work:
-   *
-   *   meta: { htmlClass: 'h-full' }
-   *
-   * The alternative — declaring base styles via `@layer base` in
-   * tailwind's base CSS — is more typing for a worse outcome (you have
-   * to teach the Tailwind compiler about classes the page already knows
-   * about). Put document-shape utilities here.
-   */
-  htmlClass?: string
-  /**
-   * Class attribute on `<body>`. Same reasoning as `htmlClass`. The most
-   * common use: page background, text color, font family, antialiasing —
-   * the things a CSS reset would normally handle.
-   *
-   *   meta: { bodyClass: 'bg-zinc-950 text-zinc-100 font-sans antialiased' }
-   */
-  bodyClass?: string
   /** <link rel="icon">. String shorthand or { href, type, sizes }. */
   icon?: string | { href: string; type?: string; sizes?: string }
   /** Open Graph protocol fields. */
@@ -329,6 +309,22 @@ export function renderStyles(styles: StyleSrc | StyleSrc[] | undefined): string 
 
 export interface DocumentParts {
   meta?: PageMeta
+  /**
+   * Class attribute on `<html>`. Document-shell styling — not metadata,
+   * not a `<meta>` tag. Apps set this via the top-level `htmlClass`
+   * field on `layout()` / `page()`. Scanned by Tailwind: utility classes
+   * here just work because the value is a string literal in source.
+   *
+   * Multiple sources (layout chain + page) are concatenated upstream
+   * before this point — `renderDocument` writes the final string verbatim.
+   */
+  htmlClass?: string
+  /**
+   * Class attribute on `<body>`. Same shape and reasoning as `htmlClass`.
+   * Common uses: page background, text color, font family, antialiasing —
+   * things a CSS reset would normally handle.
+   */
+  bodyClass?: string
   styles?: StyleSrc | StyleSrc[]
   /**
    * Inline script(s) emitted at the TOP of `<head>` — BEFORE styles
@@ -402,12 +398,8 @@ export function renderDocument(body: string, parts: DocumentParts): string {
           )
           .join('')
       : ''
-  const htmlClassAttr = parts.meta?.htmlClass
-    ? ` class="${escapeHtmlAttrFull(parts.meta.htmlClass)}"`
-    : ''
-  const bodyClassAttr = parts.meta?.bodyClass
-    ? ` class="${escapeHtmlAttrFull(parts.meta.bodyClass)}"`
-    : ''
+  const htmlClassAttr = parts.htmlClass ? ` class="${escapeHtmlAttrFull(parts.htmlClass)}"` : ''
+  const bodyClassAttr = parts.bodyClass ? ` class="${escapeHtmlAttrFull(parts.bodyClass)}"` : ''
   // Early-head inline scripts run BEFORE any other head content so
   // attribute-setting (e.g. `data-place-platform`) feeds the very first
   // style resolution. Each entry is wrapped in a nonced `<script>`.

@@ -6,7 +6,7 @@ import { CodeBlock } from '@place-ts/design'
 const BASIC = `import { layout } from '@place-ts/component'
 
 export const rootLayout = layout({
-  meta: { bodyClass: 'bg-bg text-fg' },
+  bodyClass: 'bg-bg text-fg',
   view: ({ children }) => (
     <div class="min-h-screen flex flex-col">
       <Header />
