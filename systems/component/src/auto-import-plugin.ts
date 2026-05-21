@@ -49,6 +49,7 @@ export const PLACE_AUTO_IMPORTS: AutoImportRegistry = {
   cookieState: '@place/component',
   // ----- Components -----
   island: '@place/component',
+  view: '@place/component',
   Tab: '@place/component',
   Tabs: '@place/component',
   tabsState: '@place/component',
@@ -130,27 +131,33 @@ export function autoImportTransform(
     set.add(ident)
     grouped.set(mod, set)
   }
-  // `island(fn)` sugar → `island(import.meta.url, fn)`. The single-arg
-  // form is the right author shape — `import.meta.url` is pure
-  // boilerplate the framework needs but the user doesn't care about.
-  // The transform runs after scope analysis so we only rewrite when
-  // `island` actually resolves to the framework's primitive (in-scope
-  // or about-to-be-auto-imported); user-defined locals named `island`
-  // are left alone.
-  const islandIsFrameworkRef =
-    alreadyImported.has('island') ||
-    inScope.has('island') ||
-    (grouped.get('@place/component')?.has('island') ?? false) ||
-    /\bisland\b/.test(scannable)
+  // `island(fn)` / `view(fn)` sugar → `<ident>(import.meta.url, fn)`.
+  // The single-arg form is the right author shape — `import.meta.url`
+  // is pure boilerplate the framework needs but the user doesn't care
+  // about. The transform runs after scope analysis so we only rewrite
+  // when `island` / `view` actually resolve to the framework's
+  // primitive (in-scope or about-to-be-auto-imported); user-defined
+  // locals with the same name are left alone.
   let transformed = source
-  if (islandIsFrameworkRef) {
-    transformed = injectIslandSrcUrlArg(transformed)
-    // The transform also needs `island` in scope — promote it into the
-    // grouped imports if it isn't already. (User-explicit imports stay
-    // unchanged; this only matters for the auto-import case.)
-    if (!alreadyImported.has('island') && !inScope.has('island') && /\bisland\b/.test(scannable)) {
+  for (const ident of ['island', 'view'] as const) {
+    const isFrameworkRef =
+      alreadyImported.has(ident) ||
+      inScope.has(ident) ||
+      (grouped.get('@place/component')?.has(ident) ?? false) ||
+      new RegExp(`\\b${ident}\\b`).test(scannable)
+    if (!isFrameworkRef) continue
+    transformed = injectFactorySrcUrlArg(transformed, ident)
+    // The transform also needs the identifier in scope — promote it
+    // into the grouped imports if it isn't already. (User-explicit
+    // imports stay unchanged; this only matters for the auto-import
+    // case.)
+    if (
+      !alreadyImported.has(ident) &&
+      !inScope.has(ident) &&
+      new RegExp(`\\b${ident}\\b`).test(scannable)
+    ) {
       const set = grouped.get('@place/component') ?? new Set<string>()
-      set.add('island')
+      set.add(ident)
       grouped.set('@place/component', set)
     }
   }
@@ -164,9 +171,10 @@ export function autoImportTransform(
 }
 
 /**
- * Rewrite `island(<args>)` → `island(import.meta.url, <args>)` when
+ * Rewrite `<ident>(<args>)` → `<ident>(import.meta.url, <args>)` when
  * the first argument isn't already a srcUrl (a literal string or
- * `import.meta.url`).
+ * `import.meta.url`). Used for both `island(...)` and `view(...)`
+ * (the latter being the public successor per ADR 0030).
  *
  * **Cases handled** (idempotent — second pass is a no-op):
  *   - `island(fn)`               → `island(import.meta.url, fn)`
@@ -178,6 +186,7 @@ export function autoImportTransform(
  *   - Identifier `island` inside strings/comments — `maskCommentsAndStrings`
  *     replaces those with placeholders before scanning, so we never
  *     match inside JSDoc, string literals, or template literals.
+ *   - Same set, mirrored for `view`.
  *
  * **Implementation:** balanced-paren state machine — JS regex can't
  * do recursive balance, and ANY parenthesized expression inside the
@@ -186,9 +195,9 @@ export function autoImportTransform(
  * the first arg, and check whether it looks like a srcUrl to decide
  * if injection is needed.
  */
-function injectIslandSrcUrlArg(source: string): string {
+function injectFactorySrcUrlArg(source: string, identName: 'island' | 'view'): string {
   const scannable = maskCommentsAndStrings(source)
-  // Find every `island` IDENTIFIER position. Walk forward through
+  // Find every <identName> IDENTIFIER position. Walk forward through
   // optional generic type args (`<...>`) and whitespace to find the
   // opening paren. Generic args can be nested one level deep — common
   // patterns like `island<Props & Record<string, unknown>>(impl)`.
@@ -196,7 +205,7 @@ function injectIslandSrcUrlArg(source: string): string {
   // two-arg form).
   const out: string[] = []
   let cursor = 0
-  const idRe = /\bisland\b/g
+  const idRe = new RegExp(`\\b${identName}\\b`, 'g')
   let m: RegExpExecArray | null = null
   // biome-ignore lint/suspicious/noAssignInExpressions: canonical regex.exec loop pattern
   while ((m = idRe.exec(scannable)) !== null) {

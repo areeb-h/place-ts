@@ -39,5 +39,5 @@ const ViewportDemoImpl = (): View => {
   )
 }
 
-const ViewportDemo = island(ViewportDemoImpl)
+const ViewportDemo = view(ViewportDemoImpl)
 export default ViewportDemo

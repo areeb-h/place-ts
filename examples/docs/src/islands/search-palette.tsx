@@ -12,7 +12,7 @@
 // signal in a shared chunk so the two islands see the same instance
 // without dragging this palette impl into the trigger's bundle.
 
-import { Activity, globalKey, island, state } from '@place/component'
+import { Activity, globalKey, state, view } from '@place/component'
 import { RouterCap } from '@place/routing'
 import { FLAT_NAV, type FlatNavEntry } from '../nav-index.ts'
 
@@ -157,4 +157,4 @@ const SearchPaletteImpl = () => {
   )
 }
 
-export default island(SearchPaletteImpl)
+export default view(SearchPaletteImpl)

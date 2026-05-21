@@ -13,7 +13,7 @@
 // (2) NAV is genuinely module-singleton; passing it through props
 // implies it could vary per render.
 
-import { Activity, island, watch } from '@place/component'
+import { Activity, view, watch } from '@place/component'
 import { RouterCap } from '@place/routing'
 import { Sidebar } from '../components/sidebar.tsx'
 import { NAV } from '../nav-index.ts'
@@ -58,4 +58,4 @@ const MobileNavDrawerImpl = () => {
   )
 }
 
-export default island(MobileNavDrawerImpl)
+export default view(MobileNavDrawerImpl)

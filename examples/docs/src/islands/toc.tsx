@@ -16,7 +16,7 @@
 // own SSR-populated list before doing anything else, so the visual
 // state is correct from frame zero.
 
-import { island, state, watch } from '@place/component'
+import { state, view, watch } from '@place/component'
 import { RouterCap } from '@place/routing'
 
 interface Heading {
@@ -139,7 +139,7 @@ const ToCImpl = (props: ToCProps) => {
 // not regex on output), auto-injects stable `id="…"` attrs, and
 // passes the list to this resolver as `ctx.headings`. No string
 // parsing, no HTML manipulation, no app-level glue.
-export default island(ToCImpl, {
+export default view(ToCImpl, {
   ssrProps: ({ headings }) =>
     headings.length === 0 ? null : { props: { initialHeadings: headings } },
 })

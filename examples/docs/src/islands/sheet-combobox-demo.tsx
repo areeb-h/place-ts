@@ -6,7 +6,7 @@
 //   - One inline, with custom renderOption (an emoji-prefixed row)
 //     showing the customization story.
 
-import { island, state, type View } from '@place/component'
+import { state, view, type View } from '@place/component'
 import { Button, Combobox, type ComboboxItemState, Sheet } from '@place/design'
 
 interface Framework {
@@ -155,5 +155,5 @@ const SheetComboboxDemoImpl = (): View => {
   )
 }
 
-const SheetComboboxDemo = island(SheetComboboxDemoImpl)
+const SheetComboboxDemo = view(SheetComboboxDemoImpl)
 export default SheetComboboxDemo

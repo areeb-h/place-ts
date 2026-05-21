@@ -10,10 +10,10 @@
 // interactivity (e.g. server-only print views, future SSG snapshots) —
 // the island is the consumer's choice, not the component's.
 
-// `island` auto-imported via the @place/component plugin.
+// `view` auto-imported via the @place/component plugin.
 import { CodeBlock as CodeBlockImpl, type CodeBlockProps } from '../components/code-block.tsx'
 
-const CodeBlockIsland = island<CodeBlockProps & Record<string, unknown>>(CodeBlockImpl)
+const CodeBlockIsland = view<CodeBlockProps & Record<string, unknown>>(CodeBlockImpl)
 
 // Re-export with the original name so consumers only have to swap the
 // IMPORT PATH (`components/` → `islands/`) without renaming bindings.

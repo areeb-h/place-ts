@@ -35,4 +35,4 @@ const SearchTriggerImpl = () => (
   </button>
 )
 
-export default island(SearchTriggerImpl)
+export default view(SearchTriggerImpl)

@@ -74,4 +74,4 @@ const ThemeToggleImpl = () => {
   )
 }
 
-export default island(ThemeToggleImpl)
+export default view(ThemeToggleImpl)

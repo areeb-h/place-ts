@@ -10,7 +10,7 @@
 // in the consuming TSX once Bun's chunk splitting proved it doesn't
 // duplicate the button component into the drawer's bundle.
 
-import { island, state } from '@place/component'
+import { state, view } from '@place/component'
 
 /** Shared open-state for the mobile-nav pair. Imported by the drawer. */
 export const open = state(false)
@@ -27,4 +27,4 @@ const MobileNavButtonImpl = () => (
   </button>
 )
 
-export default island(MobileNavButtonImpl)
+export default view(MobileNavButtonImpl)

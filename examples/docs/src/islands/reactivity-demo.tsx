@@ -15,7 +15,7 @@
 // `el.style.setProperty('--flash-age', …)` at runtime — CSP-safe
 // (ADR 0014), no per-request hash plumbing needed.
 
-import { derived, island, onMount, state, untrack, watch } from '@place/component'
+import { derived, onMount, state, untrack, view, watch } from '@place/component'
 
 const FLASH_MS = 600
 
@@ -143,4 +143,4 @@ const ReactivityDemoImpl = () => {
   )
 }
 
-export default island(ReactivityDemoImpl)
+export default view(ReactivityDemoImpl)

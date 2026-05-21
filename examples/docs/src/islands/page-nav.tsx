@@ -9,7 +9,7 @@
 // HTML reloads (current default), this could be static-server-
 // rendered — but the cap-based reactive shape is the cleanest read.
 
-import { island, Link } from '@place/component'
+import { Link, view } from '@place/component'
 import { RouterCap } from '@place/routing'
 import { FLAT_NAV } from '../nav-index.ts'
 
@@ -76,4 +76,4 @@ const PageNavImpl = () => {
   )
 }
 
-export default island(PageNavImpl)
+export default view(PageNavImpl)
