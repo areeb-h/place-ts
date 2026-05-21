@@ -62,6 +62,7 @@
     "@place/capability": "workspace:*",
     "@place/reactivity": "workspace:*",
     "@place/routing": "workspace:*",
+    "@place/security": "workspace:*",
     "devalue": "^5.8.0",
     "typescript": "^6.0.0"
   },

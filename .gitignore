@@ -50,3 +50,16 @@ bun-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Lighthouse user-data dirs — Chrome/Chromium spawned by `lighthouse`
+# tries to mkdir its cache under a WSL-path-mangled prefix when run
+# against `localhost:5175` in the docs preview; the resulting dir
+# names contain literal backslashes and "undefined" segments. They're
+# transient and should never be committed.
+**/lighthouse.*
+**/undefined:/
+
+# bun pm pack artefacts — local tarballs from the publish smoke test
+# (`scripts/smoke-test-publish.sh`). They're regenerated on demand
+# and should never enter history.
+systems/*/place-*.tgz
