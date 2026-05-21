@@ -24,10 +24,14 @@ import type {
   cookie as _cookie,
   cookieState as _cookieState,
   derived as _derived,
+  Form as _Form,
   Fragment as _Fragment,
   island as _island,
+  Link as _Link,
+  layout as _layout,
   onCleanup as _onCleanup,
   onMount as _onMount,
+  page as _page,
   Show as _Show,
   setTheme as _setTheme,
   state as _state,
@@ -70,4 +74,9 @@ declare global {
   // ----- Theme -----
   const setTheme: typeof _setTheme
   const themeTokens: typeof _themeTokens
+  // ----- Routing + top-level factories -----
+  const page: typeof _page
+  const layout: typeof _layout
+  const Link: typeof _Link
+  const Form: typeof _Form
 }

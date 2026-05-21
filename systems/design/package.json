@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/design",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Component library — opinionated primitives built on @place-ts/component + @place-ts/reactivity. NOT a 10th platform system; see ADR 0016.",
   "keywords": [
@@ -28,7 +28,8 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./base.css": "./src/base.css"
   },
   "files": [
     "src",

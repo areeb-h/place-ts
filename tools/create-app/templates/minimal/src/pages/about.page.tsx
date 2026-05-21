@@ -1,16 +1,18 @@
-// About page. Demonstrates multi-page routing — `discoverPages('./src/pages')`
-// in `app.ts` picks this file up automatically. No registration needed.
+// About page. `page` and `Link` are auto-imported via the
+// @place-ts/component preload plugin (bunfig.toml). Demonstrates
+// multi-page routing — `discoverPages('./src/pages')` in `app.ts`
+// picks this file up automatically.
 //
-// Layouts persist across navigation: clicking the home Link in the header
-// swaps only `{children}` in `src/layouts/main.layout.tsx`, not the
-// header/footer chrome.
+// Layouts persist across navigation: clicking the home Link in the
+// header swaps only `{children}` in `src/layouts/main.layout.tsx`,
+// not the header/footer chrome.
 
-import { Link, page } from '@place-ts/component'
+import { Prose } from '@place-ts/design'
 
 export default page('/about', {
   meta: { title: 'About' },
   view: () => (
-    <article class="prose">
+    <Prose>
       <h1>About __APP_NAME__</h1>
       <p>
         This page lives at <code>src/pages/about.page.tsx</code>. Adding a new page is the same
@@ -30,6 +32,6 @@ export default page('/about', {
         <code>src/app.ts</code> wires everything together — pages, layout, theme, styles, islands
         dir, router. Comments inline tell you what each option does.
       </p>
-    </article>
+    </Prose>
   ),
 })

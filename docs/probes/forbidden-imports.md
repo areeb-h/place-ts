@@ -6,7 +6,7 @@
 > This is the Tier 20 entrypoint-split enforcement: client safety is
 > an impossible import graph, not define-based dead-code elimination.
 
-## CLEAN — 30 client bundles, zero forbidden tokens
+## CLEAN — 31 client bundles, zero forbidden tokens
 
 | Bundle | Raw | Gzipped |
 |---|--:|--:|
@@ -32,6 +32,7 @@
 | `islands/search-palette-ml9WihVTVOof.js` | 2663 B | 1260 B |
 | `islands/search-trigger-L-JnWyVWmf9C.js` | 3398 B | 1622 B |
 | `islands/search-trigger-ckyMk-xm8ED6.js` | 3398 B | 1627 B |
+| `islands/sheet-combobox-demo-_esyjRQbrD8C.js` | 30401 B | 9939 B |
 | `islands/sheet-combobox-demo-hB7mYqtt1F-z.js` | 30401 B | 9955 B |
 | `islands/sheet-combobox-demo-hfNMkEz_2RQ1.js` | 30401 B | 9956 B |
 | `islands/theme-toggle--7ISToNFiUqX.js` | 4058 B | 1867 B |
@@ -40,5 +41,5 @@
 | `islands/toc-FbIgzXj6ioLT.js` | 4229 B | 2101 B |
 | `islands/viewport-demo-SWPsd2-8dnJj.js` | 3905 B | 1566 B |
 | `islands/viewport-demo-wsg7DO9uF1J6.js` | 3905 B | 1564 B |
-| **total (30)** | **245380 B** | **95519 B** |
+| **total (31)** | **275781 B** | **105458 B** |
 

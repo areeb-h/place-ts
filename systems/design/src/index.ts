@@ -74,6 +74,7 @@ export {
   type CardPadding,
 } from './presentational.tsx'
 export { Copy, type CopyProps } from './Copy.tsx'
+export { Prose, type ProseProps } from './Prose.tsx'
 export {
   Disclosure,
   type DisclosureIntent,

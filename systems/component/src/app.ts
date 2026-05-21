@@ -114,18 +114,22 @@ export interface AppConfig extends Omit<ServeOptions, 'routes' | 'port'> {
    * `@keyframes`, semantic classes consumed by raw-HTML emitters
    * (e.g. a syntax tokenizer), etc.
    *
-   * Accepts a single string OR an array of strings. Arrays are
-   * concatenated with newline separators — the canonical pattern
-   * for layered styles:
+   * **Three shapes accepted, mixable in arrays:**
    *
-   *   import { styles as designStyles } from '@place-ts/design'
-   *   import { styles as appStyles } from './styles.ts'
+   *   1. Inline CSS string — the legacy shape:
+   *      `styles: '::selection { background: red; }'`
    *
-   *   app({ pages, theme, styles: [designStyles, appStyles] }).run()
+   *   2. File path ending in `.css` — read from disk at app() startup,
+   *      then included verbatim. New in 0.3.0 — the recommended shape:
+   *      `styles: './src/styles.css'`
    *
-   * The array form replaces the previous template-literal pattern
-   * (`styles: \`${designStyles}\n${appStyles}\``) — readable, typed,
-   * easy to extend with more layers.
+   *   3. Array of any combination of the above; concatenated in order:
+   *      `styles: ['./src/styles.css', extraInlineStyles]`
+   *
+   * Paths are resolved relative to `process.cwd()` (the directory you
+   * ran `bun dev` from — typically the app root). The framework
+   * detects path strings by the `.css` extension + a relative/absolute
+   * path prefix (`./`, `/`, or a Windows `X:\`).
    *
    * Concatenated to `tailwind.base` automatically — apps don't have
    * to know about that wiring. If the caller already passes
@@ -251,12 +255,72 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
   const { pages: _pages, caps: _caps, styles: globalStylesRaw, ...rest } = config
   const serveOpts = rest as Omit<ServeOptions, 'routes'>
 
+  // **Zero-config defaults (0.3.0).** Apps following the conventional
+  // layout don't have to declare these explicitly — the framework
+  // looks at the filesystem at startup and fills in the obvious paths.
+  // Explicit values always win.
+  //
+  // Server-only: this block runs once per app() construction, before
+  // serve() boots. The fs check is cheap and only happens during the
+  // SSR entry's evaluation.
+  if (typeof process !== 'undefined') {
+    try {
+      const { existsSync } = require('node:fs') as typeof import('node:fs')
+      if (serveOpts.islandsDir === undefined && existsSync('./src/islands')) {
+        serveOpts.islandsDir = './src/islands'
+      }
+    } catch (_) {
+      // Defensive: fs may not be available in unusual runtimes — defaults
+      // just don't apply, no harm done.
+    }
+  }
+  // `styles` default: if no styles passed AND `./src/styles.css` exists,
+  // use it. Resolved through the same path-handling pipeline below.
+  let stylesRawWithDefault = globalStylesRaw
+  if (stylesRawWithDefault === undefined && typeof process !== 'undefined') {
+    try {
+      const { existsSync } = require('node:fs') as typeof import('node:fs')
+      if (existsSync('./src/styles.css')) {
+        stylesRawWithDefault = './src/styles.css'
+      }
+    } catch (_) {
+      // Same defensive fallback.
+    }
+  }
+
   // Normalize `styles` to a single string. Accept either a string OR
-  // an array (DX win — `styles: [designStyles, appStyles]` instead of
-  // the brittle template-literal concatenation).
-  const globalStyles = Array.isArray(globalStylesRaw)
-    ? globalStylesRaw.filter((s) => typeof s === 'string' && s.length > 0).join('\n')
-    : globalStylesRaw
+  // an array; entries that look like CSS file paths are read from
+  // disk synchronously at app() construction (one-time startup cost,
+  // no per-request work).
+  const normalizeStylesEntry = (s: string): string => {
+    if (typeof s !== 'string' || s.length === 0) return ''
+    // Path heuristic: looks like a relative/absolute path AND ends in
+    // `.css`. Anything else is treated as inline CSS source.
+    const looksLikePath =
+      s.endsWith('.css') &&
+      (s.startsWith('./') || s.startsWith('../') || s.startsWith('/') || /^[A-Za-z]:[/\\]/.test(s))
+    if (!looksLikePath) return s
+    // Server-only: this code path never runs in a browser build (app()
+    // is the SSR entry). `node:fs` is fine here.
+    try {
+      const { readFileSync } = require('node:fs') as typeof import('node:fs')
+      return readFileSync(s, 'utf8')
+    } catch (err) {
+      throw new Error(
+        `app(): failed to read styles file '${s}'. Path is resolved relative ` +
+          `to process.cwd(); did you mean '${s.startsWith('./') ? s : `./${s}`}'? ` +
+          `Underlying error: ${(err as Error).message}`,
+      )
+    }
+  }
+  const globalStyles = Array.isArray(stylesRawWithDefault)
+    ? stylesRawWithDefault
+        .map(normalizeStylesEntry)
+        .filter((s) => s.length > 0)
+        .join('\n')
+    : typeof stylesRawWithDefault === 'string'
+      ? normalizeStylesEntry(stylesRawWithDefault)
+      : undefined
 
   // Resolve `styles` into a Tailwind base string. Tailwind base ordering:
   //   1. theme.base (from `themeTokens()` — contains `@import "tailwindcss"`,

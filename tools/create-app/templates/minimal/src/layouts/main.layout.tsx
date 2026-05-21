@@ -2,13 +2,14 @@
 // a footer. Layouts persist across SPA navigations — when you click a
 // <Link>, only the `{children}` slot re-renders, not this whole tree.
 //
+// `layout` and `Link` are auto-imported via the @place-ts/component
+// preload plugin (bunfig.toml) — no explicit import needed.
+//
 // `meta` here is the layout-level default — pages override individual
 // fields (`title`, `description`) via their own `meta:`. The
 // `titleTemplate` formats every page's title as
 // `<page title> · __APP_NAME__`. Pages that want to opt out can set
 // `meta: { title: '…', titleAbsolute: true }`.
-
-import { Link, layout } from '@place-ts/component'
 
 export const mainLayout = layout({
   meta: {
