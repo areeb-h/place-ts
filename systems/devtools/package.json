@@ -1,20 +1,44 @@
 {
   "name": "@place/devtools",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "In-app developer tools — a dev-only island that observes the reactive graph, islands, routing, and load performance. NOT a platform system; a curated dev package.",
+  "keywords": [
+    "place",
+    "place-ts",
+    "devtools",
+    "dev"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/devtools#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/devtools"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
     "@place/component": "workspace:*",

@@ -1,20 +1,48 @@
 {
   "name": "@place/security",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Security primitives for the place platform: signed tokens, CSRF, rate limiting, session capability, and secure-by-default cookie helpers. Web Crypto-based, runs in browser + Bun + Node 19+. Tight surface area: secure defaults, few options.",
+  "keywords": [
+    "place",
+    "place-ts",
+    "security",
+    "csrf",
+    "session",
+    "rate-limit",
+    "csp",
+    "macaroon"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/security#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/security"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
     "@place/capability": "workspace:*",

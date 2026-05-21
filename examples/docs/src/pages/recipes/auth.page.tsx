@@ -208,7 +208,10 @@ export default page('/auth', {
         High-assurance actions: provisioning for <code>criticalAction()</code>
       </h2>
       <p>
-        Apps that use <Link to="/api/critical-action"><code>criticalAction()</code></Link>{' '}
+        Apps that use{' '}
+        <Link to="/api/critical-action">
+          <code>criticalAction()</code>
+        </Link>{' '}
         provision a per-session HMAC key (for envelope signing) and a macaroon (for capability
         gates). The auth handler returns both; the browser installs them as part of the sign-in
         flow.
@@ -217,11 +220,11 @@ export default page('/auth', {
       <CodeBlock code={CRITICAL_INSTALL} />
       <Callout kind="tip" title="<Can> and macaroons coexist">
         <code>&lt;Can&gt;</code> is the UI gate; macaroons are the request-time gate. Same logical
-        permission, different jobs — one hides the button, the other refuses to run the action
-        when the button is clicked anyway (via DevTools, a stale tab, a replayed request). Wire
-        both off the same policy data, attenuate the macaroon to match the user's effective
-        permissions at auth time. Macaroons attenuate further on the server inside delegating
-        flows; <code>&lt;Can&gt;</code> stays render-time.
+        permission, different jobs — one hides the button, the other refuses to run the action when
+        the button is clicked anyway (via DevTools, a stale tab, a replayed request). Wire both off
+        the same policy data, attenuate the macaroon to match the user's effective permissions at
+        auth time. Macaroons attenuate further on the server inside delegating flows;{' '}
+        <code>&lt;Can&gt;</code> stays render-time.
       </Callout>
 
       <h2 id="see-also">See also</h2>

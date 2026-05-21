@@ -1,9 +1,33 @@
 {
   "name": "@place/reactivity",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Time-indexed reactive primitives — derivation as primary, graph as artefact",
+  "keywords": [
+    "place",
+    "place-ts",
+    "reactivity",
+    "signals",
+    "state",
+    "derived"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/reactivity#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/reactivity"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./motion": "./src/motion/index.ts",
@@ -12,11 +36,13 @@
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   }
 }

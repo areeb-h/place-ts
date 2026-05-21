@@ -81,7 +81,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   }
 
   process.stdout.write(
-    `\nDone. Next steps:\n\n  cd ${filled.name}\n  bun dev\n\nDocs: https://github.com/place-ts (TODO real URL when published)\n`,
+    `\nDone. Next steps:\n\n  cd ${filled.name}\n  bun dev\n\nDocs: https://github.com/areeb-h/place-ts\n`,
   )
   return 0
 }

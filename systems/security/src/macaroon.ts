@@ -73,11 +73,7 @@
 // macaroon adds ~10 µs total to a request whose actual work is
 // typically 1–10 ms.
 
-import {
-  type CryptoProvider,
-  bunCryptoProvider,
-  useCryptoProvider,
-} from './index.ts'
+import { bunCryptoProvider, type CryptoProvider, useCryptoProvider } from './index.ts'
 
 const enc = new TextEncoder()
 const dec = new TextDecoder()
@@ -277,9 +273,7 @@ export async function verifyMacaroon(
     tag = await provider.hmacSha256(tag, enc.encode(c))
   }
   const expectedSig = base64urlEncode(tag)
-  if (
-    !provider.timingSafeEqual(enc.encode(expectedSig), enc.encode(m.sig))
-  ) {
+  if (!provider.timingSafeEqual(enc.encode(expectedSig), enc.encode(m.sig))) {
     return { ok: false, reason: 'bad-sig', caveatIndex: -1 }
   }
   // 2. Walk caveats checking each against ctx. We accumulate

@@ -774,7 +774,10 @@ describe('HMAC envelope — Phase 2b', () => {
     )
     const sig = await crypto.subtle.sign('HMAC', tagBuf, canonical as BufferSource)
     const b64u = (bytes: Uint8Array): string =>
-      btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
     const wire = `${b64u(canonical)}.${b64u(new Uint8Array(sig))}`
     const result = await verifyEnvelope(wire, baseOpts(body), provider)
     expect(result.ok).toBe(false)
@@ -809,7 +812,10 @@ describe('HMAC envelope — Phase 2b', () => {
     )
     const sig = await crypto.subtle.sign('HMAC', cryptoKey, canonical as BufferSource)
     const b64u = (bytes: Uint8Array): string =>
-      btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+      btoa(String.fromCharCode(...bytes))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
     const wire = `${b64u(canonical)}.${b64u(new Uint8Array(sig))}`
     const result = await verifyEnvelope(wire, baseOpts(body))
     expect(result.ok).toBe(false)

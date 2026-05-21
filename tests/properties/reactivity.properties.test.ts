@@ -51,7 +51,10 @@ describe('reactivity — property: batch glitch-freedom', () => {
   test('N writes to M distinct states inside a batch fire each unique watch once', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.tuple(fc.integer({ min: 0, max: 4 }), fc.integer()), { minLength: 1, maxLength: 30 }),
+        fc.array(fc.tuple(fc.integer({ min: 0, max: 4 }), fc.integer()), {
+          minLength: 1,
+          maxLength: 30,
+        }),
         async (writes) => {
           // 5 cells, M watches each reading one cell. Fire counts per cell.
           const cells = Array.from({ length: 5 }, () => state(0))
@@ -262,7 +265,10 @@ describe('reactivity — property: derived equals function of inputs', () => {
   test('derived(() => a() + b()) equals a()+b() after any write sequence', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.array(fc.tuple(fc.constantFrom('a', 'b'), fc.integer()), { minLength: 1, maxLength: 30 }),
+        fc.array(fc.tuple(fc.constantFrom('a', 'b'), fc.integer()), {
+          minLength: 1,
+          maxLength: 30,
+        }),
         async (writes) => {
           const a = state(0)
           const b = state(0)

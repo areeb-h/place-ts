@@ -23,11 +23,11 @@ import type { IslandRegistration } from '../index.ts'
 import { validateIslandName, validateIslandSrc } from '../island-validation.ts'
 import {
   classifyIslandSource,
-  validateAssertedLevel,
   predictBytesAtLevel,
   renderReport,
   type ViewManifest,
   type ViewManifestEntry,
+  validateAssertedLevel,
 } from './view-classifier.ts'
 import { classifyIslandWithTypes, createTypedClassifierContext } from './view-classifier-types.ts'
 

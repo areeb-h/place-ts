@@ -36,6 +36,7 @@ import type {
   tabsState as _tabsState,
   themeTokens as _themeTokens,
   untrack as _untrack,
+  view as _view,
   watch as _watch,
 } from './index.ts'
 
@@ -59,6 +60,7 @@ declare global {
   const cookieState: typeof _cookieState
   // ----- Components -----
   const island: typeof _island
+  const view: typeof _view
   const Tab: typeof _Tab
   const Tabs: typeof _Tabs
   const tabsState: typeof _tabsState

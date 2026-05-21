@@ -1,20 +1,45 @@
 {
   "name": "@place/design",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Component library — opinionated primitives built on @place/component + @place/reactivity. NOT a 10th platform system; see ADR 0016.",
+  "keywords": [
+    "place",
+    "place-ts",
+    "design",
+    "components",
+    "ui"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/design#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/design"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
     "@place/component": "workspace:*",

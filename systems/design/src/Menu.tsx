@@ -217,9 +217,8 @@ export const Menu = (props: MenuProps): View => {
     // alter selector parsing — quotes, brackets, backslashes — into
     // their escaped forms so the selector is structurally safe
     // regardless of the id's contents.
-    const safeId = (
+    const safeId =
       typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(menuId) : menuId
-    )
     const trigger = document.querySelector(
       `[popovertarget="${safeId}"], [commandfor="${safeId}"]`,
     ) as HTMLElement | null

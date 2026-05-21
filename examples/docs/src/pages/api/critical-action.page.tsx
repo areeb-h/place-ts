@@ -236,12 +236,15 @@ export default page('/critical-action', {
         <code>criticalAction()</code>
       </h1>
       <p>
-        The high-assurance sibling of <Link to="/api/action"><code>action()</code></Link>. Same
-        author shape — one declaration produces a typed <code>.call()</code> and a route handler —
-        but every request is verified against an HMAC envelope <em>before</em> the handler body
-        runs. Envelope signing binds the request to its session, origin, action, body bytes, and a
-        monotonic counter. Optional capability checks (<code>requires</code>) and tamper-evident
-        audit logging complete the substrate.
+        The high-assurance sibling of{' '}
+        <Link to="/api/action">
+          <code>action()</code>
+        </Link>
+        . Same author shape — one declaration produces a typed <code>.call()</code> and a route
+        handler — but every request is verified against an HMAC envelope <em>before</em> the handler
+        body runs. Envelope signing binds the request to its session, origin, action, body bytes,
+        and a monotonic counter. Optional capability checks (<code>requires</code>) and
+        tamper-evident audit logging complete the substrate.
       </p>
       <p>
         Designed for the actions where being wrong matters: payments, role changes, deletions,
@@ -259,11 +262,11 @@ export default page('/critical-action', {
       <h2>App boot — install the secret</h2>
       <CodeBlock code={APP_BOOT} />
       <p>
-        The secret roots the daily per-session HMAC key derivation
-        (HKDF-SHA256, info <code>"place-action-session-v1"</code>) and the macaroon key derivation
-        (info <code>"place-macaroon-v1"</code> — domain-separated so a leak of one key doesn't help
-        with the other). Rotate the secret by deploying with a new value; sessions issued under
-        the old value remain valid for one day, then fail.
+        The secret roots the daily per-session HMAC key derivation (HKDF-SHA256, info{' '}
+        <code>"place-action-session-v1"</code>) and the macaroon key derivation (info{' '}
+        <code>"place-macaroon-v1"</code> — domain-separated so a leak of one key doesn't help with
+        the other). Rotate the secret by deploying with a new value; sessions issued under the old
+        value remain valid for one day, then fail.
       </p>
 
       <h2>Defining a critical action</h2>
@@ -276,81 +279,102 @@ export default page('/critical-action', {
         Capability gates — <code>perm()</code> + <code>requires:</code>
       </h2>
       <p>
-        Macaroon-based capability checks. Each <code>perm('op.name')</code> in{' '}
-        <code>requires</code> is verified independently against the macaroon attached to the
-        request (<code>X-Place-Macaroon</code> header, sent automatically by{' '}
-        <code>.call()</code> when one is installed). A macaroon with no <code>op=</code> caveats
-        permits everything; with <code>op=admin.*</code> it permits any <code>admin.*</code>
-        ; with <code>op=admin.users.delete</code> it permits only that exact op. Multiple{' '}
-        <code>op=</code> caveats compose by intersection — order doesn't matter.
+        Macaroon-based capability checks. Each <code>perm('op.name')</code> in <code>requires</code>{' '}
+        is verified independently against the macaroon attached to the request (
+        <code>X-Place-Macaroon</code> header, sent automatically by <code>.call()</code> when one is
+        installed). A macaroon with no <code>op=</code> caveats permits everything; with{' '}
+        <code>op=admin.*</code> it permits any <code>admin.*</code>; with{' '}
+        <code>op=admin.users.delete</code> it permits only that exact op. Multiple <code>op=</code>{' '}
+        caveats compose by intersection — order doesn't matter.
       </p>
       <CodeBlock code={PERM_DECL} />
       <Callout kind="tip" title="Attenuation, not amplification">
         Anyone holding a macaroon can attenuate it further (the chain extends — new HMAC keyed on
-        the existing tag) but cannot widen it (that would require the root key, which never
-        leaves the server). A captured token narrows; it doesn't escalate.
+        the existing tag) but cannot widen it (that would require the root key, which never leaves
+        the server). A captured token narrows; it doesn't escalate.
       </Callout>
 
       <h2>Auth flow — provision both keys</h2>
       <p>
         Apps mint per-session HMAC keys + macaroons during their auth handler. The framework
         deliberately doesn't auto-attach an auth endpoint — your login / signup / refresh flow is
-        app-specific (OAuth, password, magic link, …) and the key delivery rides whichever
-        response shape you already use.
+        app-specific (OAuth, password, magic link, …) and the key delivery rides whichever response
+        shape you already use.
       </p>
       <CodeBlock code={PROVISION} />
       <CodeBlock code={INSTALL} />
       <Callout kind="note" title="Why non-extractable">
-        <code>installActionKey()</code> imports the raw bytes as a WebCrypto <code>CryptoKey</code>
-        {' '}with <code>extractable: false</code>. Once imported, JavaScript on the page cannot
-        read the bytes back — only use them to sign. This bounds the impact of an XSS bug: an
-        attacker who runs in the page context can still <em>use</em> the key (to sign for actions
-        the user could perform anyway), but cannot exfiltrate it for offline use. The macaroon
-        wire string IS readable from IndexedDB (it's a bearer token by design), so attenuate
-        broadly server-side and use <code>expires=</code> caveats to bound its lifetime.
+        <code>installActionKey()</code> imports the raw bytes as a WebCrypto <code>CryptoKey</code>{' '}
+        with <code>extractable: false</code>. Once imported, JavaScript on the page cannot read the
+        bytes back — only use them to sign. This bounds the impact of an XSS bug: an attacker who
+        runs in the page context can still <em>use</em> the key (to sign for actions the user could
+        perform anyway), but cannot exfiltrate it for offline use. The macaroon wire string IS
+        readable from IndexedDB (it's a bearer token by design), so attenuate broadly server-side
+        and use <code>expires=</code> caveats to bound its lifetime.
       </Callout>
 
       <h2>Calling from the client</h2>
       <CodeBlock code={CALL} />
 
-      <h2>Custom audit events — <code>ctx.audit()</code></h2>
+      <h2>
+        Custom audit events — <code>ctx.audit()</code>
+      </h2>
       <p>
         Every critical action invocation auto-appends one tamper-evident entry to the audit log
-        (success: <code>action</code> + payload-hash + result-hash; failure: <code>action#error</code>
-        + payload-hash, no result-hash). <code>ctx.audit(event, payload?)</code> appends additional
-        entries with whatever handler-emitted context the action wants to record. Entries are
-        hash-chained — any retroactive modification breaks <code>verify()</code>.
+        (success: <code>action</code> + payload-hash + result-hash; failure:{' '}
+        <code>action#error</code>+ payload-hash, no result-hash).{' '}
+        <code>ctx.audit(event, payload?)</code> appends additional entries with whatever
+        handler-emitted context the action wants to record. Entries are hash-chained — any
+        retroactive modification breaks <code>verify()</code>.
       </p>
       <CodeBlock code={CTX_AUDIT} />
 
-      <h2><code>app:</code> caveats — tenant scoping etc.</h2>
+      <h2>
+        <code>app:</code> caveats — tenant scoping etc.
+      </h2>
       <CodeBlock code={APP_CAVEAT} />
 
-      <h2><code>action()</code> vs <code>criticalAction()</code></h2>
+      <h2>
+        <code>action()</code> vs <code>criticalAction()</code>
+      </h2>
       <CodeBlock code={VS_ACTION} lang="text" />
 
-      <h2>What's enforced before <code>fn</code> runs</h2>
+      <h2>
+        What's enforced before <code>fn</code> runs
+      </h2>
       <ol>
         <li>Same-origin guard (cross-origin → 403).</li>
-        <li>Content-Length pre-check against <code>maxBodyBytes</code> (oversize → 413).</li>
-        <li><code>SessionCap.tryUse()</code> — no session → 403.</li>
-        <li><code>X-Place-Envelope</code> header present → else 403.</li>
+        <li>
+          Content-Length pre-check against <code>maxBodyBytes</code> (oversize → 413).
+        </li>
+        <li>
+          <code>SessionCap.tryUse()</code> — no session → 403.
+        </li>
+        <li>
+          <code>X-Place-Envelope</code> header present → else 403.
+        </li>
         <li>Read body bytes; size guard again (post-stream).</li>
         <li>
-          Verify envelope: constant-time HMAC compare on tag, then check{' '}
-          <code>action_id</code> + <code>origin</code> + <code>session_id</code> +{' '}
-          <code>body_hash</code> + <code>iat</code> within <code>maxAgeSec</code>. Tries current
-          day then previous day for clock-rollover tolerance.
+          Verify envelope: constant-time HMAC compare on tag, then check <code>action_id</code> +{' '}
+          <code>origin</code> + <code>session_id</code> + <code>body_hash</code> + <code>iat</code>{' '}
+          within <code>maxAgeSec</code>. Tries current day then previous day for clock-rollover
+          tolerance.
         </li>
-        <li>Replay defense via <code>NonceStoreCap</code> (IPsec ESP sliding window per session).</li>
         <li>
-          When <code>requires</code> is non-empty: deserialize <code>X-Place-Macaroon</code>;
-          derive macaroon key; verify HMAC chain + every caveat; check each declared{' '}
-          <code>perm()</code> against the macaroon's effective op-authority.
+          Replay defense via <code>NonceStoreCap</code> (IPsec ESP sliding window per session).
+        </li>
+        <li>
+          When <code>requires</code> is non-empty: deserialize <code>X-Place-Macaroon</code>; derive
+          macaroon key; verify HMAC chain + every caveat; check each declared <code>perm()</code>{' '}
+          against the macaroon's effective op-authority.
         </li>
         <li>JSON parse + prototype-pollution guard.</li>
-        <li>Schema validate (<code>def.input</code>) — failure → 400.</li>
-        <li>Run <code>fn</code>; auto-append audit entry; return JSON.</li>
+        <li>
+          Schema validate (<code>def.input</code>) — failure → 400.
+        </li>
+        <li>
+          Run <code>fn</code>; auto-append audit entry; return JSON.
+        </li>
       </ol>
       <p>
         Every failure returns <code>403 Forbidden</code> with identical body bytes — the typed
@@ -360,7 +384,9 @@ export default page('/critical-action', {
       <h2>Related</h2>
       <ul>
         <li>
-          <Link to="/api/action"><code>action()</code> — non-critical actions</Link>
+          <Link to="/api/action">
+            <code>action()</code> — non-critical actions
+          </Link>
         </li>
         <li>
           <Link to="/api/security">

@@ -214,11 +214,13 @@ export default page('/security', {
         compliance audits), <code>action()</code>'s same-origin + CSRF defaults are not enough. A
         valid CSRF token can be replayed; a same-origin XSS bug can still drive an{' '}
         <code>action()</code> handler with any body. <code>criticalAction()</code> raises every
-        request to a signed HMAC envelope that binds the session, origin, action, body bytes, and
-        a monotonic counter — and gates execution behind macaroon-based capability checks.
+        request to a signed HMAC envelope that binds the session, origin, action, body bytes, and a
+        monotonic counter — and gates execution behind macaroon-based capability checks.
       </p>
       <CodeBlock code={HIGH_ASSURANCE} />
-      <p>The pipeline that runs before <code>fn</code>:</p>
+      <p>
+        The pipeline that runs before <code>fn</code>:
+      </p>
       <ol>
         <li>Same-origin guard.</li>
         <li>Body-size pre-check (Content-Length).</li>

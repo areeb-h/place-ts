@@ -15,7 +15,7 @@
 // form still wraps.
 
 import { beforeEach, describe, expect, test } from 'vitest'
-import { _setIslandRegistry, island, Island, type View } from '../../src/index.ts'
+import { _setIslandRegistry, Island, island, type View } from '../../src/index.ts'
 
 describe('Island JSX wrapper — no double marker', () => {
   beforeEach(() => {
@@ -92,8 +92,7 @@ describe('Island JSX wrapper — no double marker', () => {
       'props-marker': { component: propsIsland, src: SRC },
     })
 
-    const html =
-      Island({ name: 'props-marker', props: { title: 'hello' } }).toHtml?.() ?? ''
+    const html = Island({ name: 'props-marker', props: { title: 'hello' } }).toHtml?.() ?? ''
     const markers = html.match(/data-view-id="props-marker"/g) ?? []
     expect(markers.length).toBe(1)
     expect(html).toContain('data-view-props=')

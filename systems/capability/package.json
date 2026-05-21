@@ -1,19 +1,42 @@
 {
   "name": "@place/capability",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Scoped capability handlers — runtime foundation for Phase 4 typed effects. Replaces React-style implicit context globals with explicit, lexically-scoped providers.",
+  "keywords": [
+    "place",
+    "place-ts",
+    "capability"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/capability#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/capability"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   }
 }

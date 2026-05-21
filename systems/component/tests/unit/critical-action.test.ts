@@ -1,17 +1,17 @@
 // @vitest-environment happy-dom
 
 import {
-  attenuate,
   AuditLogCap,
+  attenuate,
   bunCryptoProvider,
   inMemoryAuditLog,
   inMemoryNonceStore,
   mintMacaroon,
   NonceStoreCap,
   rotatingKey,
-  serializeMacaroon,
   type Session,
   SessionCap,
+  serializeMacaroon,
   sha256Base64url,
   signEnvelope,
 } from '@place/security'

@@ -1,20 +1,46 @@
 {
   "name": "@place/data",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Data primitives over @place/reactivity. v0.1 ships a single primitive: collection<T>(state, options?) — keyed CRUD over a State<T[]> with reactive lookups + optional sorting. Replaces the hand-rolled CRUD shape that repeats per-entity in real apps.",
+  "keywords": [
+    "place",
+    "place-ts",
+    "data",
+    "collection",
+    "crud",
+    "reactive"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/data#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/data"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
     "@place/reactivity": "workspace:*"

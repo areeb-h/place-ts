@@ -332,9 +332,9 @@ export default page('/security', {
         Envelope — <code>signEnvelope</code> + <code>verifyEnvelope</code> (ADR 0055)
       </h2>
       <p>
-        HMAC envelope substrate. The canonical metadata blob binds an <code>actionId</code>,
-        body hash, monotonic counter, issued-at timestamp, origin, session id, and key id — then
-        signs it with a per-session HMAC key. Constant-time verify on the way in. Used by{' '}
+        HMAC envelope substrate. The canonical metadata blob binds an <code>actionId</code>, body
+        hash, monotonic counter, issued-at timestamp, origin, session id, and key id — then signs it
+        with a per-session HMAC key. Constant-time verify on the way in. Used by{' '}
         <Link to="/api/critical-action">
           <code>criticalAction()</code>
         </Link>{' '}
@@ -343,7 +343,8 @@ export default page('/security', {
       <CodeBlock code={ENVELOPE_EX} />
 
       <h2 id="macaroon">
-        Macaroons — <code>mintMacaroon</code> + <code>attenuate</code> + <code>verifyMacaroon</code> (ADR 0055)
+        Macaroons — <code>mintMacaroon</code> + <code>attenuate</code> + <code>verifyMacaroon</code>{' '}
+        (ADR 0055)
       </h2>
       <p>
         HMAC-chained bearer tokens with attenuating caveats — the Stanford / Google paper, in 300
@@ -358,8 +359,8 @@ export default page('/security', {
         <code>&lt;Can do="…"&gt;</code> is a render-time predicate — fast, sync, perfect for UI
         gating. Macaroons are <em>tokens</em>: they carry authority WITH the request, so a
         sub-system handling part of the work can trust an attenuated token without re-fetching the
-        session. They compose. UI gating and request-time authorization are different jobs — this
-        is the second one.
+        session. They compose. UI gating and request-time authorization are different jobs — this is
+        the second one.
       </Callout>
 
       <h2 id="audit">
@@ -368,11 +369,11 @@ export default page('/security', {
       <p>
         Hash-chained tamper-evident log. Each entry binds the previous via{' '}
         <code>prev_hash = sha256(canonical(entry_{`{i-1}`}))</code>; any retroactive modification
-        breaks <code>verify()</code> and reports the broken index.{' '}
-        <code>criticalAction()</code> auto-appends one entry per invocation;{' '}
-        <code>ctx.audit(event, payload?)</code> appends handler-emitted events alongside. The
-        in-memory adapter is a ring buffer (default 10k entries); apps with retention requirements
-        plug in a durable adapter conforming to the <code>AuditLog</code> interface.
+        breaks <code>verify()</code> and reports the broken index. <code>criticalAction()</code>{' '}
+        auto-appends one entry per invocation; <code>ctx.audit(event, payload?)</code> appends
+        handler-emitted events alongside. The in-memory adapter is a ring buffer (default 10k
+        entries); apps with retention requirements plug in a durable adapter conforming to the{' '}
+        <code>AuditLog</code> interface.
       </p>
       <CodeBlock code={AUDIT_EX} />
 

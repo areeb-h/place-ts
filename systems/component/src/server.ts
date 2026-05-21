@@ -39,8 +39,8 @@ export {
   criticalAction,
   deriveMacaroonKey,
   deriveSessionKey,
-  perm,
   type PermDeclaration,
+  perm,
   provisionActionKey,
   provisionMacaroon,
 } from './critical-action.ts'
@@ -90,13 +90,13 @@ export {
   shape,
   slugifyHeading,
   type ValidationFailure,
+  type ViewLevel,
+  type ViewOptions,
   // ADR 0030 — unified view() factory + types. `view()` is the public
   // primitive; `island()` (still exported on the root barrel) is its
   // deprecated alias. `level: 'static'` is the immediate win — pure
   // components ship 0 KB per-island JS.
   view,
-  type ViewLevel,
-  type ViewOptions,
 } from './index.ts'
 
 export {

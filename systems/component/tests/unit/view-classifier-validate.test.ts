@@ -161,7 +161,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
       expect(msg).toContain("'state'") // identifier
       expect(msg).toContain("'state'") // effect kind also contains the word
       expect(msg).toContain("Classifier prediction: 'thaw'")
-      expect(msg).toContain("Fix:")
+      expect(msg).toContain('Fix:')
     }
   })
 

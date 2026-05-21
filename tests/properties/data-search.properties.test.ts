@@ -7,9 +7,8 @@
 
 import * as fc from 'fast-check'
 import { describe, expect, test } from 'vitest'
-
-import { state } from '../../systems/reactivity/src/index.ts'
 import { collection } from '../../systems/data/src/index.ts'
+import { state } from '../../systems/reactivity/src/index.ts'
 import { searchable } from '../../systems/search/src/index.ts'
 
 interface Item {
@@ -115,10 +114,9 @@ describe('search — property: searchable invariants', () => {
   test('empty query returns the full list unchanged', () => {
     fc.assert(
       fc.property(fc.array(itemArb, { maxLength: 6 }), (items) => {
-        const filter = searchable<Item>(
-          () => items,
-          { fields: (it) => [it.title, ...it.tags] },
-        )(() => '')
+        const filter = searchable<Item>(() => items, { fields: (it) => [it.title, ...it.tags] })(
+          () => '',
+        )
         expect(filter()).toBe(items)
       }),
       { numRuns: 30 },
@@ -131,10 +129,9 @@ describe('search — property: searchable invariants', () => {
         fc.array(itemArb, { minLength: 1, maxLength: 8 }),
         fc.string({ minLength: 0, maxLength: 12 }),
         (items, query) => {
-          const filter = searchable<Item>(
-            () => items,
-            { fields: (it) => [it.title, ...it.tags] },
-          )(() => query)
+          const filter = searchable<Item>(() => items, { fields: (it) => [it.title, ...it.tags] })(
+            () => query,
+          )
           const out = filter()
           // Every output item must be `===` to an input item (no fresh objects).
           for (const o of out) expect(items).toContain(o)
@@ -156,10 +153,9 @@ describe('search — property: searchable invariants', () => {
             { id: '1', title: token, tags: [] },
             { id: '2', title: distractor, tags: [] },
           ]
-          const filter = searchable<Item>(
-            () => items,
-            { fields: (it) => [it.title] },
-          )(() => token.toUpperCase())
+          const filter = searchable<Item>(() => items, { fields: (it) => [it.title] })(() =>
+            token.toUpperCase(),
+          )
           const out = filter()
           expect(out.map((i) => i.id)).toContain('1')
           expect(out.map((i) => i.id)).not.toContain('2')
@@ -187,10 +183,9 @@ describe('search — property: searchable invariants', () => {
             { id: 'just-b', title: b, tags: [] },
             { id: 'neither', title: distractor, tags: [] },
           ]
-          const filter = searchable<Item>(
-            () => items,
-            { fields: (it) => [it.title] },
-          )(() => `${a} ${b}`)
+          const filter = searchable<Item>(() => items, { fields: (it) => [it.title] })(
+            () => `${a} ${b}`,
+          )
           const out = filter()
           expect(out.map((i) => i.id)).toEqual(['both'])
         },

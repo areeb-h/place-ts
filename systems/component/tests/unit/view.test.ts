@@ -11,13 +11,7 @@
 // emission level — covered by the SSR/streaming integration tests.
 
 import { beforeEach, describe, expect, test } from 'vitest'
-import {
-  _drainPendingIslands,
-  _getIslandRegistry,
-  _setIslandRegistry,
-  island,
-  view,
-} from '../../src/index.ts'
+import { _drainPendingIslands, _setIslandRegistry, island, view } from '../../src/index.ts'
 
 const SRC = 'file:///fake/src/test-view.tsx'
 

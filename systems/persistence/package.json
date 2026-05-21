@@ -1,20 +1,46 @@
 {
   "name": "@place/persistence",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "description": "Storage adapters for @place/reactivity state. v0.1 ships a synchronous localStorage adapter and a persistedState helper. IndexedDB / sync server adapters land when reactivity Phase 5 introduces async-as-pending.",
+  "keywords": [
+    "place",
+    "place-ts",
+    "persistence",
+    "localStorage",
+    "indexedDB",
+    "storage"
+  ],
+  "homepage": "https://github.com/areeb-h/place-ts/tree/main/systems/persistence#readme",
+  "bugs": {
+    "url": "https://github.com/areeb-h/place-ts/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/areeb-h/place-ts.git",
+    "directory": "systems/persistence"
+  },
+  "license": "MIT",
+  "author": "Areeb",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
   "files": [
     "src",
     "README.md",
-    "docs"
+    "docs",
+    "LICENSE"
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
     "@place/reactivity": "workspace:*"

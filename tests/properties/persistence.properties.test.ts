@@ -71,9 +71,7 @@ describe('persistence — property: save / load round-trip', () => {
   test('localStorageAdapter: load() after save round-trips JSON-safely', () => {
     fc.assert(
       fc.property(
-        fc
-          .string({ minLength: 1, maxLength: 8 })
-          .filter((s) => /^[a-z][a-z0-9_]*$/.test(s)),
+        fc.string({ minLength: 1, maxLength: 8 }).filter((s) => /^[a-z][a-z0-9_]*$/.test(s)),
         jsonValue,
         (key, value) => {
           // Each property iteration uses a fresh key so localStorage

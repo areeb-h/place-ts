@@ -52,8 +52,8 @@
 // validates against the classifier and rejects mismatches at build
 // time. The win curve is preserved without the footgun.
 
-import { island, type IslandComponent, type IslandOptions } from './islands.ts'
 import type { View } from './index.ts'
+import { type IslandComponent, type IslandOptions, island } from './islands.ts'
 
 /** Public hydration levels the framework recognises (per ADR 0030 +
  *  `@place/reactivity/effects` `ViewLevel`). */
@@ -189,7 +189,10 @@ function makeStaticView<P extends Record<string, unknown>>(
         return srcUrlOrFn
       }
     })()
-    name = decoded.replace(/^.*\//, '').replace(/\.[jt]sx?$/, '').replace(/\.island$/, '')
+    name = decoded
+      .replace(/^.*\//, '')
+      .replace(/\.[jt]sx?$/, '')
+      .replace(/\.island$/, '')
   }
 
   const callable = (props: P): View => {

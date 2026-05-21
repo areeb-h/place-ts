@@ -473,9 +473,7 @@ export function renderReport(manifest: ViewManifest): string {
     if (hasStatic || hasThaw) {
       lines.push('')
       if (hasStatic) {
-        lines.push(
-          `    Apply 'static' savings: set { level: 'static' } on the view() call.`,
-        )
+        lines.push(`    Apply 'static' savings: set { level: 'static' } on the view() call.`)
         lines.push(
           `      Build verifies the assertion against the classifier — wrong assertions fail the build.`,
         )

@@ -121,7 +121,14 @@ export type ShapeOf<S extends Record<string, ShapeField>> = {
 // builds one from untrusted input, which is itself a bug. The check is
 // here so that bug surfaces at boot, not at the next request.
 const SAFE_KEY = /^[A-Za-z_$][A-Za-z0-9_$]*$/
-const SAFE_TYPES = new Set<string>(['string', 'number', 'boolean', 'string?', 'number?', 'boolean?'])
+const SAFE_TYPES = new Set<string>([
+  'string',
+  'number',
+  'boolean',
+  'string?',
+  'number?',
+  'boolean?',
+])
 
 /**
  * `shape({...})` builds a specialised decoder at construction time
@@ -196,7 +203,9 @@ function compileShape(
     const keyLit = JSON.stringify(key)
     lines.push(`var ${localVar} = raw[${keyLit}];`)
     if (optional) {
-      lines.push(`if (${localVar} === undefined || ${localVar} === null) { ${localVar} = undefined; }`)
+      lines.push(
+        `if (${localVar} === undefined || ${localVar} === null) { ${localVar} = undefined; }`,
+      )
       lines.push(`else {`)
     } else {
       lines.push(

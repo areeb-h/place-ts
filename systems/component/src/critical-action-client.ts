@@ -346,9 +346,7 @@ async function idbGetKey(id: typeof KEY_RECORD_ID): Promise<IdbKeyRecord | null>
   })
 }
 
-async function idbGetMacaroon(
-  id: typeof MACAROON_RECORD_ID,
-): Promise<IdbMacaroonRecord | null> {
+async function idbGetMacaroon(id: typeof MACAROON_RECORD_ID): Promise<IdbMacaroonRecord | null> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readonly')
@@ -378,9 +376,7 @@ async function idbPutMacaroon(rec: IdbMacaroonRecord): Promise<void> {
   })
 }
 
-async function idbDelete(
-  id: typeof KEY_RECORD_ID | typeof MACAROON_RECORD_ID,
-): Promise<void> {
+async function idbDelete(id: typeof KEY_RECORD_ID | typeof MACAROON_RECORD_ID): Promise<void> {
   const db = await openDb()
   return new Promise((resolve, reject) => {
     const tx = db.transaction(IDB_STORE, 'readwrite')

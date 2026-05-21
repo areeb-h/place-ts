@@ -160,12 +160,12 @@ describe('verifyMacaroon — op restrictions', () => {
     expect(
       (await verifyMacaroon(m3, rootKey, { op: 'admin.users.create', origin: ORIGIN })).ok,
     ).toBe(true)
-    expect((await verifyMacaroon(m3, rootKey, { op: 'admin.users.delete', origin: ORIGIN })).ok).toBe(
-      false,
-    )
-    expect((await verifyMacaroon(m3, rootKey, { op: 'admin.tenants.read', origin: ORIGIN })).ok).toBe(
-      false,
-    )
+    expect(
+      (await verifyMacaroon(m3, rootKey, { op: 'admin.users.delete', origin: ORIGIN })).ok,
+    ).toBe(false)
+    expect(
+      (await verifyMacaroon(m3, rootKey, { op: 'admin.tenants.read', origin: ORIGIN })).ok,
+    ).toBe(false)
   })
 
   test('intersection order doesn’t matter', async () => {
@@ -212,7 +212,13 @@ describe('verifyMacaroon — expires', () => {
     // Forms `Date.parse` accepts but our grammar pins out — locale
     // ambiguous, missing timezone, slash separator. Lock the wire so
     // a macaroon's expiry is binary-identical across nodes.
-    const nonIso = ['5/21/2030', '2030/05/21', '2030-05-21', '2030-05-21T00:00:00', '2030-05-21 00:00:00Z']
+    const nonIso = [
+      '5/21/2030',
+      '2030/05/21',
+      '2030-05-21',
+      '2030-05-21T00:00:00',
+      '2030-05-21 00:00:00Z',
+    ]
     for (const value of nonIso) {
       const m = await attenuate(m0, `expires=${value}`)
       const r = await verifyMacaroon(m, rootKey, { op: 'x', origin: ORIGIN })

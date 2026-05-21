@@ -281,9 +281,8 @@ export default page('/components', {
       </p>
 
       <Callout kind="note" title="island() → view() migration">
-        <code>island()</code> is a JSDoc-deprecated alias for{' '}
-        <code>view()</code> with no <code>level</code> option set. Existing code keeps working
-        unchanged. Migration is a rename:{' '}
+        <code>island()</code> is a JSDoc-deprecated alias for <code>view()</code> with no{' '}
+        <code>level</code> option set. Existing code keeps working unchanged. Migration is a rename:{' '}
         <code>import {'{ island }'}</code> → <code>import {'{ view }'}</code>, and{' '}
         <code>island(fn)</code> → <code>view(fn)</code>. No behavior change.
       </Callout>
