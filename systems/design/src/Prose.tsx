@@ -1,24 +1,22 @@
 // <Prose> — opinionated long-form reading container.
 //
 // Sugar for `<article class="prose">...</article>`. Renders an
-// `<article>` with the design library's `.prose` typography styles
-// applied. All the heavy lifting is in `base.css` (and the mirror
-// `.prose` block in `styles.ts`); this component is just a typed
-// wrapper so consumers don't have to remember the class name.
+// `<article>` (default) with the design library's `.prose` typography
+// applied. The heavy lifting is in `base.css` (and the mirror block
+// in `styles.ts`); this component is just a typed wrapper.
 //
 // Usage:
 //
 //   import { Prose } from '@place-ts/design'
 //
-//   <Prose>
-//     <h1>Title</h1>
+//   <Prose id="post-body" aria-labelledby="post-title">
+//     <h1 id="post-title">Title</h1>
 //     <p>Body gets perfect typography automatically.</p>
-//     <pre><code>// code blocks too</code></pre>
 //   </Prose>
 //
-// Adds your own classes via `class`: <Prose class="my-extra">. Pass
-// `as="div"` (or `'section'` / `'main'`) if you need a different root
-// — the .prose styles only key off the class, not the tag.
+// Arbitrary HTML/ARIA/data attributes pass through to the rendered
+// element. `as="div" | "section" | "main"` swaps the root tag — the
+// `.prose` styles only key off the class, not the tag.
 
 import type { Child, View } from '@place-ts/component'
 
@@ -29,19 +27,41 @@ export interface ProseProps {
   as?: 'article' | 'div' | 'section' | 'main'
   /** Children. */
   children?: Child | Child[]
+  /** Any other HTML attribute (id, aria-*, data-*, role, lang, …) flows through. */
+  [attr: string]: unknown
 }
 
 export const Prose = (props: ProseProps): View => {
-  const tag = props.as ?? 'article'
-  const cls = props.class ? `prose ${props.class}` : 'prose'
+  // Pull out the wrapper-specific fields; the rest spread to the
+  // rendered element so consumers can attach `id`, `aria-*`, `data-*`,
+  // `role`, etc. without us needing to enumerate every HTML attr.
+  const { as, class: userClass, children, ...rest } = props
+  const tag = as ?? 'article'
+  const cls = userClass ? `prose ${userClass}` : 'prose'
   switch (tag) {
     case 'div':
-      return <div class={cls}>{props.children}</div>
+      return (
+        <div class={cls} {...rest}>
+          {children}
+        </div>
+      )
     case 'section':
-      return <section class={cls}>{props.children}</section>
+      return (
+        <section class={cls} {...rest}>
+          {children}
+        </section>
+      )
     case 'main':
-      return <main class={cls}>{props.children}</main>
+      return (
+        <main class={cls} {...rest}>
+          {children}
+        </main>
+      )
     default:
-      return <article class={cls}>{props.children}</article>
+      return (
+        <article class={cls} {...rest}>
+          {children}
+        </article>
+      )
   }
 }

@@ -1,12 +1,14 @@
-// About page. `page` and `Link` are auto-imported via the
-// @place-ts/component preload plugin (bunfig.toml). Demonstrates
-// multi-page routing — `discoverPages('./src/pages')` in `app.ts`
-// picks this file up automatically.
+// About page. `Link` is auto-imported via the @place-ts/component
+// preload plugin (bunfig.toml); `page` stays explicit (common
+// parameter name, prone to local shadowing). Demonstrates multi-page
+// routing — `discoverPages('./src/pages')` in `app.ts` picks this
+// file up automatically.
 //
 // Layouts persist across navigation: clicking the home Link in the
 // header swaps only `{children}` in `src/layouts/main.layout.tsx`,
 // not the header/footer chrome.
 
+import { page } from '@place-ts/component'
 import { Prose } from '@place-ts/design'
 
 export default page('/about', {

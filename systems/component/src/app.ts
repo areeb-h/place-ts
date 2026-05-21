@@ -294,24 +294,43 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
   // no per-request work).
   const normalizeStylesEntry = (s: string): string => {
     if (typeof s !== 'string' || s.length === 0) return ''
-    // Path heuristic: looks like a relative/absolute path AND ends in
-    // `.css`. Anything else is treated as inline CSS source.
-    const looksLikePath =
-      s.endsWith('.css') &&
-      (s.startsWith('./') || s.startsWith('../') || s.startsWith('/') || /^[A-Za-z]:[/\\]/.test(s))
-    if (!looksLikePath) return s
-    // Server-only: this code path never runs in a browser build (app()
-    // is the SSR entry). `node:fs` is fine here.
-    try {
-      const { readFileSync } = require('node:fs') as typeof import('node:fs')
-      return readFileSync(s, 'utf8')
-    } catch (err) {
-      throw new Error(
-        `app(): failed to read styles file '${s}'. Path is resolved relative ` +
-          `to process.cwd(); did you mean '${s.startsWith('./') ? s : `./${s}`}'? ` +
-          `Underlying error: ${(err as Error).message}`,
-      )
+    // Detect file paths vs inline CSS.
+    //
+    // A string is treated as a PATH iff it ends in `.css`. Strings
+    // ending in `.css` MUST be a path — there's no legitimate CSS
+    // source that ends with `.css` (CSS rule blocks end with `}`).
+    // Anything else (`::selection { … }`, `body { color: red }`, etc.)
+    // is treated as inline source.
+    //
+    // **Bare paths (no `./` prefix) are a common mistake** — e.g.
+    // `styles: 'styles.css'` from `src/app.ts`. We throw a clear
+    // error instead of silently treating the path as inline CSS
+    // (which would produce a confusing downstream Tailwind error).
+    if (s.endsWith('.css')) {
+      const hasPathPrefix =
+        s.startsWith('./') || s.startsWith('../') || s.startsWith('/') || /^[A-Za-z]:[/\\]/.test(s)
+      if (!hasPathPrefix) {
+        throw new Error(
+          `app(): styles entry '${s}' looks like a path but is missing a ` +
+            `leading './' (or '/'). Use './${s}' to read it as a file relative ` +
+            `to the current directory, or remove the .css suffix if it was meant ` +
+            `to be inline CSS source.`,
+        )
+      }
+      // Server-only: this code path never runs in a browser build
+      // (app() is the SSR entry). `node:fs` is fine here.
+      try {
+        const { readFileSync } = require('node:fs') as typeof import('node:fs')
+        return readFileSync(s, 'utf8')
+      } catch (err) {
+        throw new Error(
+          `app(): failed to read styles file '${s}'. Resolved relative to ` +
+            `process.cwd() ('${typeof process !== 'undefined' ? process.cwd() : '?'}'). ` +
+            `Underlying error: ${(err as Error).message}`,
+        )
+      }
     }
+    return s
   }
   const globalStyles = Array.isArray(stylesRawWithDefault)
     ? stylesRawWithDefault

@@ -28,10 +28,8 @@ import type {
   Fragment as _Fragment,
   island as _island,
   Link as _Link,
-  layout as _layout,
   onCleanup as _onCleanup,
   onMount as _onMount,
-  page as _page,
   Show as _Show,
   setTheme as _setTheme,
   state as _state,
@@ -74,9 +72,7 @@ declare global {
   // ----- Theme -----
   const setTheme: typeof _setTheme
   const themeTokens: typeof _themeTokens
-  // ----- Routing + top-level factories -----
-  const page: typeof _page
-  const layout: typeof _layout
+  // ----- JSX helpers (capitalized names; safe from local shadowing) -----
   const Link: typeof _Link
   const Form: typeof _Form
 }

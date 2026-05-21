@@ -1,14 +1,17 @@
 // Home page.
 //
-// `page` and `Link` are auto-imported via the @place-ts/component
-// preload plugin (bunfig.toml) — no explicit import needed. `<Prose>`
-// from @place-ts/design wraps content in opinionated reading typography.
+// `Link` (and `Form`) are auto-imported via the @place-ts/component
+// preload plugin (bunfig.toml). `page` and `layout` stay explicit —
+// they're common variable names that the auto-import scope analyser
+// can't reliably distinguish from. `<Prose>` from @place-ts/design
+// wraps content in opinionated reading typography.
 //
 // The `<Counter />` below is an island: it ships its own tiny JS
 // bundle for the click handler + reactive label swap. Static parts of
 // this page (the prose, the headings) ship ZERO JS — only the island
 // gets hydrated.
 
+import { page } from '@place-ts/component'
 import { Prose } from '@place-ts/design'
 
 import Counter from '../islands/counter.tsx'

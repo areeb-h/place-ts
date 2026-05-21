@@ -56,12 +56,13 @@ export const PLACE_AUTO_IMPORTS: AutoImportRegistry = {
   Activity: '@place-ts/component',
   Show: '@place-ts/component',
   Fragment: '@place-ts/component',
-  // ----- Routing + top-level factories -----
-  // Every app uses these in nearly every file. Auto-imported so pages
-  // and layouts can start with `export default page(...)` / `export
-  // const layout = layout(...)` with no boilerplate import line.
-  page: '@place-ts/component',
-  layout: '@place-ts/component',
+  // ----- JSX helpers -----
+  // Capitalized names — rare clashes with user-defined locals. The
+  // factories `page` and `layout` are intentionally NOT auto-imported:
+  // they're common parameter names (`users.map((page) => …)`,
+  // `for (const layout of layouts)`), and the plugin's regex scope
+  // analyser doesn't track function parameters, so auto-importing
+  // them would silently shadow user code.
   Link: '@place-ts/component',
   Form: '@place-ts/component',
   // ----- Theme -----

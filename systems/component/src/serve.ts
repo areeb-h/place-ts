@@ -2600,18 +2600,34 @@ async function runDevSupervisor(): Promise<never> {
     // respawn. This is the dev-loop's resilience contract: a typo,
     // a duplicate route, a validation throw should NEVER require
     // manual `bun dev` re-runs.
+    //
+    // **Grace + cooldown.** A crash is often the OS / editor flushing
+    // multiple `fs.watch` events for the same save (open+modify+close
+    // on Linux, atomic-replace on Windows). Without protection, the
+    // supervisor would see the original crashing edit's queued event,
+    // respawn instantly, and crash again — looking like an infinite
+    // loop. Two guards:
+    //   1. 250ms attach-grace after the crash — drop events fired in
+    //      this window; they're echoes of the save that CAUSED the
+    //      crash, not the user's fix.
+    //   2. 500ms cooldown after the next valid event resolves — so a
+    //      stray follow-up event doesn't queue an immediate second
+    //      respawn before the new child boots.
     // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
     console.error(
       `\n[place] dev server crashed (exit ${code ?? 'unknown'}). Watching for source changes — save any file to restart.\n`,
     )
+    const crashedAt = Date.now()
     await new Promise<void>((resolve) => {
       onCrashFileChange = (filename: string): void => {
+        if (Date.now() - crashedAt < 250) return
         onCrashFileChange = null
         // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
         console.log(`[place] ${filename} changed — restarting...`)
         resolve()
       }
     })
+    await new Promise((r) => setTimeout(r, 500))
   }
 }
 
