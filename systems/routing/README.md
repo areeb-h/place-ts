@@ -29,8 +29,8 @@ What we do:
 ## Quick start
 
 ```ts
-import { mount } from '@place/component'
-import { hashRouter } from '@place/routing'
+import { mount } from '@place-ts/component'
+import { hashRouter } from '@place-ts/routing'
 
 mount(<App />, '#app', { provide: [hashRouter()] })
 ```
@@ -40,7 +40,7 @@ mount(<App />, '#app', { provide: [hashRouter()] })
 In components, pull the cap:
 
 ```tsx
-import { RouterCap } from '@place/routing'
+import { RouterCap } from '@place-ts/routing'
 
 const Sidebar = component(() => {
   const router = RouterCap.use()
@@ -194,7 +194,7 @@ Switches the path but keeps `?tag=react` etc. — the user's "I'm browsing this 
 These are real features in other libraries; we deliberately don't include them:
 
 - **Scroll restoration**. Real UX gap, real implementation cost (history.state coordination, per-route scroll capture). Defer until concrete trigger.
-- **Route loaders** (`loader: async () => …`). `@place/reactivity`'s `resource()` already covers async data; framework integration would be glue.
+- **Route loaders** (`loader: async () => …`). `@place-ts/reactivity`'s `resource()` already covers async data; framework integration would be glue.
 - **File-based routing** (`pages/about.tsx` → `/about`). Build-tool concern; contradicts our minimal-surface charter.
 - **Nested route trees** (`<Route>`s with `<Outlet>`). JSX composition + a small `dispatch()` function does this without DSL.
 - **Route guards / middleware**. A component that calls `router.replace('/login')` in a `watch` does the job without a guard concept.

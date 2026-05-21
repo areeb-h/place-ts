@@ -16,8 +16,8 @@
 // own SSR-populated list before doing anything else, so the visual
 // state is correct from frame zero.
 
-import { state, view, watch } from '@place/component'
-import { RouterCap } from '@place/routing'
+import { state, view, watch } from '@place-ts/component'
+import { RouterCap } from '@place-ts/routing'
 
 interface Heading {
   readonly id: string

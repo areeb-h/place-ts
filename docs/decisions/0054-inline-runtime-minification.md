@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-20
-**Affects:** `@place/component` (inline runtime emitters: `placeSpaNav`, `placeTabs`, future siblings)
+**Affects:** `@place-ts/component` (inline runtime emitters: `placeSpaNav`, `placeTabs`, future siblings)
 
 ## Context
 

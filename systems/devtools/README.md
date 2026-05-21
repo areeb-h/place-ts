@@ -1,4 +1,4 @@
-# `@place/devtools`
+# `@place-ts/devtools`
 
 > See the running app from inside it — the reactive graph, the islands,
 > the route, the JS weight.
@@ -9,8 +9,8 @@ island bundler requires it). Wrap it in a one-line island file:
 
 ```tsx
 // src/islands/devtools.tsx
-import { island } from '@place/component'
-import { devtoolsView } from '@place/devtools'
+import { island } from '@place-ts/component'
+import { devtoolsView } from '@place-ts/devtools'
 
 export default island(import.meta.url, devtoolsView)
 ```
@@ -29,7 +29,7 @@ A floating launcher appears in the corner; click it for the panel.
 
 | Panel | Shows |
 |---|---|
-| **Graph** | Every `state` / `derived` / `watch` node — value, status, dependency edges. Live, via `@place/reactivity`'s `inspectGraph()`. |
+| **Graph** | Every `state` / `derived` / `watch` node — value, status, dependency edges. Live, via `@place-ts/reactivity`'s `inspectGraph()`. |
 | **Islands** | Every island on the page — load strategy, hydration state. |
 | **Routes** | The active route — path, params, query. |
 | **Console** | Captured `console` output — errors, warnings, info, log — plus uncaught errors and unhandled rejections. |

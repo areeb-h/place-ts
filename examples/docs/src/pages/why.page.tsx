@@ -2,15 +2,15 @@
 // pitch is shown as side-by-side code (same feature, three syntaxes)
 // followed by a feature matrix. No fluff — just the receipts.
 
-import { page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../components/callout.tsx'
 import { ComparisonTable } from '../components/comparison-table.tsx'
 
-// Tabs + Tab are auto-imported from @place/component via bunfig preload.
+// Tabs + Tab are auto-imported from @place-ts/component via bunfig preload.
 
 const PLACE_HELLO = `// src/pages/hello.page.tsx
-import { page } from '@place/component'
+import { page } from '@place-ts/component'
 
 export default page('/hello', {
   view: () => <h1>Hello</h1>,
@@ -48,7 +48,7 @@ export async function save(formData: FormData) {
 }
 // caller imports save(), passes FormData; types lost.`
 
-const PLACE_CAP = `import { defineCapability } from '@place/capability'
+const PLACE_CAP = `import { defineCapability } from '@place-ts/capability'
 
 export const NoteStoreCap = defineCapability<NoteStore>('NoteStore', {
   clientOnly: true,
@@ -209,7 +209,7 @@ export default page('/why', {
           },
           {
             feature: 'Component library included',
-            hint: '@place/design — 14 primitives',
+            hint: '@place-ts/design — 14 primitives',
             cells: [true, false, false, false],
           },
           {

@@ -5,8 +5,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { placeAutoImport } from '@place/component/auto-import-plugin'
-import { buildIslandBundles } from '@place/component/build'
+import { placeAutoImport } from '@place-ts/component/auto-import-plugin'
+import { buildIslandBundles } from '@place-ts/component/build'
 
 const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)
 
@@ -19,7 +19,7 @@ for (const name of ['alpha', 'beta', 'gamma']) {
   const src = resolve(TMP, `${name}.tsx`)
   await writeFile(
     src,
-    `import { island, state } from '@place/component'
+    `import { island, state } from '@place-ts/component'
 
 export default island(import.meta.url, ({ start = 0 }: { start?: number }) => {
   const count = state(start)

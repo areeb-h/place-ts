@@ -1,14 +1,14 @@
-// /api/search — @place/search overview.
+// /api/search — @place-ts/search overview.
 // v0.1 ships ONE primitive: searchable().
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const SEARCHABLE = `// searchable(items, options) — reactive search over a reactive
 // collection. Substring match, case-insensitive, AND-of-tokens.
-import { state } from '@place/reactivity'
-import { searchable } from '@place/search'
+import { state } from '@place-ts/reactivity'
+import { searchable } from '@place-ts/search'
 
 interface Note { title: string; content: string; tags: string[] }
 
@@ -36,10 +36,10 @@ query.set('rust async')
 // Case-sensitive match — opt in:
 searchable(items, { fields: (n) => [n.title], caseSensitive: true })`
 
-const COLLECTION = `// Composes with @place/data — pass the collection's all() as the
+const COLLECTION = `// Composes with @place-ts/data — pass the collection's all() as the
 // reactive items source.
-import { collection } from '@place/data'
-import { searchable } from '@place/search'
+import { collection } from '@place-ts/data'
+import { searchable } from '@place-ts/search'
 
 const c = collection<Note>(noteState)
 const results = searchable(
@@ -51,14 +51,14 @@ const results = searchable(
 <ul>{() => results().map((n) => <li>{n.title}</li>)}</ul>`
 
 export default page('/search', {
-  meta: '@place/search',
+  meta: '@place-ts/search',
   view: () => (
     <article class="prose max-w-3xl">
       <h1>
-        <code>@place/search</code>
+        <code>@place-ts/search</code>
       </h1>
       <p>
-        Reactive search over <code>@place/reactivity</code> collections. v0.1 ships exactly one
+        Reactive search over <code>@place-ts/reactivity</code> collections. v0.1 ships exactly one
         primitive — <code>searchable()</code>. It takes a reactive list plus a field extractor and
         returns a function that, given a reactive query, yields a reactive filtered list. Substring
         match, case-insensitive, AND of whitespace-separated tokens.
@@ -94,7 +94,7 @@ export default page('/search', {
       <p>
         <code>searchable()</code> composes with{' '}
         <Link to="/api/data">
-          <code>@place/data</code>
+          <code>@place-ts/data</code>
         </Link>{' '}
         — pass the collection's <code>all()</code> as the reactive items source.
       </p>
@@ -103,7 +103,7 @@ export default page('/search', {
       <h2 id="see-also">See also</h2>
       <ul>
         <li>
-          <Link to="/api/data">@place/data</Link> — <code>collection()</code>
+          <Link to="/api/data">@place-ts/data</Link> — <code>collection()</code>
         </li>
         <li>
           <Link to="/api/state">state · watch · derived</Link>

@@ -16,7 +16,7 @@ secure-by-default to luck. Place's stance: **the easy path is the safe
 path.** `security: 'standard'` (the default for any `app({})`) ships
 strict CSP, auto-CSRF on every `action()`, same-origin enforcement,
 body-size limits, and prototype-pollution guards on every page.
-`@place/security` provides the primitives those defaults stand on.
+`@place-ts/security` provides the primitives those defaults stand on.
 
 ## Public surface
 
@@ -26,7 +26,7 @@ import {
   SessionCap, requireSession, Can,
   setCookieHeader, clearCookieHeader, parseCookies,
   cspHeader, CSP_DEFAULTS, SecurityError,
-} from '@place/security'
+} from '@place-ts/security'
 ```
 
 - **`signedToken<T>(secret)`** — HMAC-SHA256-signed opaque payloads
@@ -47,4 +47,4 @@ import {
 
 Login flows, OAuth dances, JWT libraries, password hashing, the SQL
 layer. Those belong to the app or to a dedicated auth package — see
-the charter's non-goals. `@place/security` is the layer beneath them.
+the charter's non-goals. `@place-ts/security` is the layer beneath them.

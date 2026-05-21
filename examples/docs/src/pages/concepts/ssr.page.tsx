@@ -6,8 +6,8 @@
 // framework has no `'use client'` directive, and what the build-time
 // classifier picks for each view.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const FLOW = `// Server (Bun.serve)
@@ -79,8 +79,8 @@ const SUSPENSE = `// suspense() takes ONE options object: { fallback, children, 
 // ships in the initial HTML; once every resource in \`on\` resolves,
 // the framework streams a swap chunk that replaces the placeholder
 // anchors. Works pre-hydration; no client JS required for the swap.
-import { suspense } from '@place/component'
-import { resource } from '@place/reactivity'
+import { suspense } from '@place-ts/component'
+import { resource } from '@place-ts/reactivity'
 
 const article = resource(
   (signal) => fetch(\`/api/articles/\${id}\`, { signal }).then((r) => r.json()),

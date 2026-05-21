@@ -2,7 +2,7 @@
 #
 # Bun does NOT read tsconfig.json's `jsxImportSource` at runtime — only
 # `tsc` does, for typechecking. To make `bun src/server.tsx` actually
-# transform JSX into `@place/component/jsx-runtime` calls (instead of
+# transform JSX into `@place-ts/component/jsx-runtime` calls (instead of
 # the default `react/jsx-dev-runtime` which doesn't exist here), the
 # runtime needs its own config. That's this file.
 #
@@ -14,12 +14,12 @@
 # Keys are top-level per Bun's spec (NOT inside a [jsx] table).
 
 jsx = "react-jsx"
-jsxImportSource = "@place/component"
+jsxImportSource = "@place-ts/component"
 
 # Auto-import preload — registers the framework's auto-import Bun
 # plugin so `.tsx` files reach for `state`, `cookieState`, `Tabs`,
 # `Activity`, `Show`, `onMount`, etc. WITHOUT writing an `import`
 # line. The plugin scans each file at load time and prepends only
 # the imports that file actually uses. The TS counterpart lives in
-# @place/component/auto-imports — include it via tsconfig "types".
+# @place-ts/component/auto-imports — include it via tsconfig "types".
 preload = ["./systems/component/src/preload.ts"]

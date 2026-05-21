@@ -70,7 +70,7 @@
 // line-delimited, JSON-encoded values so embedded `\n` or `\0` in
 // field values can't break the structure.
 
-import { defineCapability } from '@place/capability'
+import { defineCapability } from '@place-ts/capability'
 import { type CryptoProvider, useCryptoProvider } from './index.ts'
 
 const enc = new TextEncoder()

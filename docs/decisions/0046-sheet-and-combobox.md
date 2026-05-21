@@ -7,7 +7,7 @@
 ## Context
 
 Tier 16-D in the plan calls for two design-library primitives that
-the audit identified as missing from `@place/design`:
+the audit identified as missing from `@place-ts/design`:
 
 - **`<Sheet>`** — a drawer pattern (filter sidebar, mobile nav,
   quick-edit panel, notification stream). Today apps roll their own
@@ -128,7 +128,7 @@ Behavior:
   etc.). Defaults to the right-edge slide; left edges fade in.
   Add per-side animation behind a `data-side` attribute when a
   consumer asks.
-- **Motion-prop coordination** with `@place/reactivity/motion` —
+- **Motion-prop coordination** with `@place-ts/reactivity/motion` —
   same future cut as Dialog's. Today both rely on CSS-only
   transitions.
 

@@ -1,15 +1,15 @@
 // /concepts/reactivity — the reactivity model with a live interactive
 // demo embedded in the page. The user manipulates source states and
 // watches the derived value + log update in real time, using the same
-// `@place/reactivity` primitives the framework itself uses.
+// `@place-ts/reactivity` primitives the framework itself uses.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 import ReactivityDemo from '../../islands/reactivity-demo.tsx'
 import ViewportDemo from '../../islands/viewport-demo.tsx'
 
-const STATE_EX = `import { state } from '@place/reactivity'
+const STATE_EX = `import { state } from '@place-ts/reactivity'
 
 const count = state(0)
 
@@ -17,7 +17,7 @@ count()        // 0
 count.set(1)
 count()        // 1`
 
-const WATCH_EX = `import { state, watch } from '@place/reactivity'
+const WATCH_EX = `import { state, watch } from '@place-ts/reactivity'
 
 const a = state(2)
 const b = state(3)
@@ -29,7 +29,7 @@ watch(() => {
 a.set(5)  // logs "c = 8"
 b.set(1)  // logs "c = 6"`
 
-const DERIVED_EX = `import { derived, state } from '@place/component'
+const DERIVED_EX = `import { derived, state } from '@place-ts/component'
 
 const a = state(2)
 const b = state(3)
@@ -119,7 +119,7 @@ export default page('/reactivity', {
         Multiple writes inside <code>batch()</code> trigger one downstream flush:
       </p>
       <CodeBlock
-        code={`import { batch } from '@place/reactivity'
+        code={`import { batch } from '@place-ts/reactivity'
 
 batch(() => {
   a.set(10)
@@ -135,7 +135,7 @@ batch(() => {
       </p>
       <ViewportDemo />
       <CodeBlock
-        code={`import { viewport } from '@place/component'
+        code={`import { viewport } from '@place-ts/component'
 
 viewport.width()                  // () => number
 viewport.height()                 // () => number

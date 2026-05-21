@@ -19,7 +19,7 @@ export interface CreateAppArgs {
   help: boolean
 }
 
-export const USAGE = `Usage: bunx @place/create-app <name> [options]
+export const USAGE = `Usage: bunx @place-ts/create-app <name> [options]
 
 Arguments:
   <name>             Project name. Becomes the directory and the
@@ -34,8 +34,8 @@ Options:
   --help             Show this message.
 
 Example:
-  bunx @place/create-app my-blog
-  bunx @place/create-app my-app --template minimal --no-install --yes
+  bunx @place-ts/create-app my-blog
+  bunx @place-ts/create-app my-app --template minimal --no-install --yes
 `
 
 export function parseArgs(argv: string[]): CreateAppArgs {

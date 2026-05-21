@@ -3,7 +3,7 @@
 // every stale reference. This page has no interactive island, so it
 // ships zero framework JavaScript to the browser.
 
-import { page } from '@place/component'
+import { page } from '@place-ts/component'
 
 export const homePage = page('/', {
   meta: {

@@ -89,11 +89,11 @@ are stable; the inferred kinds may extend before v0.1 publish.
 
 - The factory **implementations** — caps are slots; apps and the
   framework fill them.
-- The DOM / hydration runtime — that's `@place/component`.
+- The DOM / hydration runtime — that's `@place-ts/component`.
 - The reactive graph — caps return values; reactivity decides who
   re-runs when those values change.
 - The build-time effect analysis pipeline — that lives in
-  `@place/component/build`.
+  `@place-ts/component/build`.
 
 ## Architectural commitments
 
@@ -115,7 +115,7 @@ are stable; the inferred kinds may extend before v0.1 publish.
 
 ## Depends on
 
-- `@place/reactivity` — the cap's slot is a state cell internally;
+- `@place-ts/reactivity` — the cap's slot is a state cell internally;
   consumers reading via `use()` participate in the reactive graph
   if they're inside a `watch()`/`derived()`/`view()` scope.
 
@@ -139,9 +139,9 @@ type IO, Mutate, Throws, Async, Read<S>  → effect brands (@provisional)
 ## Cross-system contracts
 
 - `RouterCap` is the canonical client-only cap; the framework
-  consumes it from `@place/routing` and threads `app({ router })`
+  consumes it from `@place-ts/routing` and threads `app({ router })`
   into the install pipeline at boot time.
-- `SessionCap` (from `@place/security`) is request-scoped via
+- `SessionCap` (from `@place-ts/security`) is request-scoped via
   `provide()` inside the request handler — the typed `Session`
   shape flows to every page's `load()` ctx.
 - `__placeClientImport` metadata on factory functions (currently an
@@ -153,7 +153,7 @@ type IO, Mutate, Throws, Async, Read<S>  → effect brands (@provisional)
 
 - Whether `cap()` (anonymous shorthand) survives to v0.1 or
   consolidates into `defineCapability`.
-- Whether the effect-kind brands move to `@place/reactivity` (where
+- Whether the effect-kind brands move to `@place-ts/reactivity` (where
   the system-map currently claims they live).
 - Whether `runWithCapabilityScopeSync` is needed long-term or can
   consolidate with the async variant.

@@ -1,4 +1,4 @@
-// @place/component — the islands primitive.
+// @place-ts/component — the islands primitive.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 6) — the
 // island() author API + the per-app island registry + bundle-URL
@@ -11,7 +11,7 @@
 // functions, so the islands ⇄ index cycle stays benign — same shape
 // as element.ts / mount.ts / ssr.ts.
 
-import { ClientOnlyAbort } from '@place/capability'
+import { ClientOnlyAbort } from '@place-ts/capability'
 import type { SsrHeading } from './element.ts'
 // `isBrowserGlobalRef` still lives in index.ts; touched only inside
 // runtime functions, so the islands ⇄ index cycle stays benign.
@@ -328,7 +328,7 @@ export interface IslandProps {
 // supported, but the DX-friendly path is:
 //
 //   // counter.tsx
-//   import { island, state } from '@place/component'
+//   import { island, state } from '@place-ts/component'
 //
 //   const Counter = island(import.meta.url, ({ start = 0 }: { start?: number }) => {
 //     const count = state(start)
@@ -406,7 +406,7 @@ export interface IslandOptions<P extends Record<string, unknown>> {
    * `<main>`, with stable ids auto-injected onto each element):
    *
    * ```tsx
-   * import { island } from '@place/component'
+   * import { island } from '@place-ts/component'
    *
    * export default island((props: ToCProps) => { ... }, {
    *   ssrProps: ({ headings }) =>
@@ -440,7 +440,7 @@ export function island<P extends Record<string, unknown>>(
   // Normalize the two surfaces. The plugin's transform always produces
   // the two-arg form at load time, so the one-arg form ONLY reaches
   // this point when the plugin didn't run (e.g. a test importing
-  // `island` directly from `@place/component` without going through
+  // `island` directly from `@place-ts/component` without going through
   // the Bun plugin, or a third-party tooling path). Throw a helpful
   // error in that case rather than silently registering with an empty
   // src that the bundler can't resolve.
@@ -450,7 +450,7 @@ export function island<P extends Record<string, unknown>>(
   if (typeof srcUrlOrFn === 'function') {
     throw new Error(
       'island(fn): single-arg form requires the place auto-import plugin ' +
-        '(registered via `preload = ["@place/component/preload"]` in bunfig.toml). ' +
+        '(registered via `preload = ["@place-ts/component/preload"]` in bunfig.toml). ' +
         'The plugin rewrites `island(fn)` → `island(import.meta.url, fn)` so the ' +
         'bundler can locate the source. Either enable the plugin or call ' +
         '`island(import.meta.url, fn)` explicitly.',

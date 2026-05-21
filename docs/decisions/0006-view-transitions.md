@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-08
-**Affects:** `@place/component` (`serve()` adds `viewTransitions?: boolean`)
+**Affects:** `@place-ts/component` (`serve()` adds `viewTransitions?: boolean`)
 
 ## Context
 
@@ -83,7 +83,7 @@ Browsers without cross-document VT support ignore the at-rule and navigate norma
 
 ```ts
 // server.tsx
-import { serve } from '@place/component'
+import { serve } from '@place-ts/component'
 
 await serve({
   port: 5174,

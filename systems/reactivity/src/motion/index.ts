@@ -1,5 +1,5 @@
 // biome-ignore-all assist/source/organizeImports: documented re-export groupings (animate / tween / sequence / curve / spring / easing / clock / lifecycle / motionValue / colorMix / delay / flip) follow the narrative of the docstring above; auto-sort would scramble them
-// @place/reactivity/motion — animation primitives composed from
+// @place-ts/reactivity/motion — animation primitives composed from
 // reactivity + a single shared clock.
 //
 // One philosophical claim, four functions:

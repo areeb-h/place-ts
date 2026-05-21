@@ -47,9 +47,9 @@
 //   - `clearable` — show `×` button when a value is selected.
 //   - `filter` — replace the default substring match.
 
-import type { Children, View } from '@place/component'
-import { cls, onMount, recipe } from '@place/component'
-import { state, watch } from '@place/reactivity'
+import type { Children, View } from '@place-ts/component'
+import { cls, onMount, recipe } from '@place-ts/component'
+import { state, watch } from '@place-ts/reactivity'
 import { anchorStyle, closePopover, nextAnchorName, openPopover, popoverStyle } from './_popover.ts'
 
 let _comboboxIdCounter = 0

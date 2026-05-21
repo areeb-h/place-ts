@@ -27,7 +27,7 @@
 //
 // **Usage** (top-level await — Bun supports it natively):
 //
-//   import { app, discoverPages } from '@place/component'
+//   import { app, discoverPages } from '@place-ts/component'
 //
 //   export default app({
 //     pages: await discoverPages('./src/pages'),

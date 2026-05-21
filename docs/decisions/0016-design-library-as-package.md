@@ -1,4 +1,4 @@
-# ADR 0016: `@place/design` is a package, not a 10th system
+# ADR 0016: `@place-ts/design` is a package, not a 10th system
 
 **Status:** accepted
 **Date:** 2026-05-13
@@ -82,7 +82,7 @@ ON TOP of those — opinionated choices, not a new contract.
 
 ## Decision
 
-Option 3. Build `@place/design` as a package at `systems/design/`,
+Option 3. Build `@place-ts/design` as a package at `systems/design/`,
 documented in its charter as NOT a top-level system on the platform map.
 
 ### Charter clauses (excerpt — full doc at `systems/design/docs/00-charter.md`)
@@ -91,7 +91,7 @@ documented in its charter as NOT a top-level system on the platform map.
 "copy this file into your repo." Apps import:
 
 ```tsx
-import { Button, Dialog, Field } from '@place/design'
+import { Button, Dialog, Field } from '@place-ts/design'
 ```
 
 If an app wants to OWN the source of a primitive, they can fork the
@@ -149,8 +149,8 @@ className overrides.
 ### Public surface (initial)
 
 ```ts
-// Re-exports from @place/component (the library is the design system)
-export { recipe, cls, themeTokens } from '@place/component'
+// Re-exports from @place-ts/component (the library is the design system)
+export { recipe, cls, themeTokens } from '@place-ts/component'
 
 // Component primitives (added in subsequent sessions)
 export { Button } from './Button.tsx'      // session 2
@@ -166,7 +166,7 @@ export { Avatar, Badge, Card } from './primitives.tsx'  // session 5
 
 ### User-visible
 
-- Single `import { Button } from '@place/design'`. No CLI step.
+- Single `import { Button } from '@place-ts/design'`. No CLI step.
 - Refactors are TypeScript renames. No "re-run codegen."
 - Themes propagate through CSS variables. Switching theme is one class
   on `<html>`. Zero JS theme-provider re-render cost.
@@ -195,8 +195,8 @@ export { Avatar, Badge, Card } from './primitives.tsx'  // session 5
 
 ## Out of scope
 
-- "Headless package + skin packages" split (`@place/design-headless`
-  + `@place/design-classic`). One package, one default skin until a
+- "Headless package + skin packages" split (`@place-ts/design-headless`
+  + `@place-ts/design-classic`). One package, one default skin until a
   consumer demands the split.
 - Data grid, date picker, rich-text editor. Each is a primitive batch
   of its own; not in the initial scope.

@@ -1,13 +1,13 @@
 // /api/state — state, watch, derived, .peek(), untrack, batch, flush.
 // Documented as the canonical reactive surface; all primitives are
-// re-exported from `@place/component` so apps don't need a second
+// re-exported from `@place-ts/component` so apps don't need a second
 // import root.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
-const STATE = `import { state } from '@place/component'
+const STATE = `import { state } from '@place-ts/component'
 
 const count = state(0)
 count()              // 0 (tracks if inside a reactive context)
@@ -17,7 +17,7 @@ count.update((c) => c + 1)   // functional updater`
 const STATE_LAZY = `// Pass a function for lazy init — runs once, on first read.
 const heavy = state(() => computeExpensiveDefault())`
 
-const WATCH = `import { state, watch } from '@place/component'
+const WATCH = `import { state, watch } from '@place-ts/component'
 
 const a = state(2)
 const b = state(3)
@@ -28,7 +28,7 @@ const dispose = watch(() => {
 a.set(5)   // logs "sum = 8"
 dispose()    // stops watching`
 
-const DERIVED = `import { derived, state } from '@place/component'
+const DERIVED = `import { derived, state } from '@place-ts/component'
 
 const a = state(2)
 const b = state(3)
@@ -49,21 +49,21 @@ watch(() => {
   console.log('a =', tracked, 'b (snapshot) =', v)
 })`
 
-const UNTRACK = `import { untrack } from '@place/component'
+const UNTRACK = `import { untrack } from '@place-ts/component'
 
 watch(() => {
   const tracked = a()
   const ignored = untrack(() => b())   // doesn't add b as a dep
 })`
 
-const BATCH = `import { batch } from '@place/component'
+const BATCH = `import { batch } from '@place-ts/component'
 
 batch(() => {
   a.set(10)
   b.set(20)
 })   // watchers run once, after the batch`
 
-const FLUSH = `import { flush } from '@place/component'
+const FLUSH = `import { flush } from '@place-ts/component'
 
 // Pending reactive updates run microtask-deferred by default. flush()
 // drains the queue synchronously — useful in tests and in DOM-read
@@ -78,9 +78,9 @@ export default page('/state', {
     <article class="prose max-w-2xl">
       <h1>state · watch · derived</h1>
       <p>
-        The reactive primitives. All available from <code>@place/component</code> as the canonical
-        import root — they're re-exports from <code>@place/reactivity</code>, which apps can also
-        import directly if they prefer that scope.
+        The reactive primitives. All available from <code>@place-ts/component</code> as the
+        canonical import root — they're re-exports from <code>@place-ts/reactivity</code>, which
+        apps can also import directly if they prefer that scope.
       </p>
 
       <h2 id="state">state()</h2>

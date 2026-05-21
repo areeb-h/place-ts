@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-20
-**Affects:** `@place/component` (`serve()`, `app()`, `renderPage`, `discoverIslands`); `@place/devtools`
+**Affects:** `@place-ts/component` (`serve()`, `app()`, `renderPage`, `discoverIslands`); `@place-ts/devtools`
 
 ## Context
 
@@ -10,8 +10,8 @@ The docs site shipped with a one-line wrapper file at
 `examples/docs/src/islands/_devtools.tsx`:
 
 ```ts
-import { island } from '@place/component'
-import { devtoolsView } from '@place/devtools'
+import { island } from '@place-ts/component'
+import { devtoolsView } from '@place-ts/devtools'
 export default island(import.meta.url, devtoolsView)
 ```
 
@@ -31,7 +31,7 @@ framework feature. The wrapper file existed because:
   under the app's tree, so framework-shipped islands had no path in.
 - The validator `validateIslandSrc()` rejected any path that didn't
   `startsWith(cwd)` — defense-in-depth against `..` traversal —
-  which also blocked `node_modules/@place/devtools/...` paths.
+  which also blocked `node_modules/@place-ts/devtools/...` paths.
 - The `app()` config treated `islands` (explicit) and `islandsDir`
   (discovery) as mutually exclusive. No way to add a single
   framework-shipped island to a discovery-based registry.
@@ -44,7 +44,7 @@ framework feature. The wrapper file existed because:
      Framework feature requires framework boilerplate in app code —
      exact failure mode the charter warns against.
 
-2. **Ship the wrapper from `@place/devtools` and auto-discover it
+2. **Ship the wrapper from `@place-ts/devtools` and auto-discover it
    from `node_modules` via a magic path scan.**
    - Pro: zero app code.
    - Con: filesystem magic — exactly the "no compiler magic" carve-out
@@ -53,7 +53,7 @@ framework feature. The wrapper file existed because:
 
 3. **Add `app({ devtools: 'auto' | true | false })` and make `islands`
    + `islandsDir` additive — discover from dir, layer explicit
-   `islands` array on top, framework auto-registers `@place/devtools`'s
+   `islands` array on top, framework auto-registers `@place-ts/devtools`'s
    pre-wrapped island when `devtools` is enabled.**
    - Pro: zero app code in the common case. The mechanism is
      discoverable in source (`app({ devtools: 'auto' })` is right
@@ -67,7 +67,7 @@ framework feature. The wrapper file existed because:
 
 **Option 3.** Four coordinated changes:
 
-1. **`@place/devtools` exports a pre-wrapped island** at
+1. **`@place-ts/devtools` exports a pre-wrapped island** at
    `systems/devtools/src/place-devtools.tsx` (filename chosen to
    produce a stable, non-collision bundle name). Public surface
    keeps the raw `devtoolsView` export for the unusual case where
@@ -82,7 +82,7 @@ framework feature. The wrapper file existed because:
 
 3. **`app({ devtools: 'auto' | boolean })`** with default `'auto'`
    resolving to enabled when `NODE_ENV !== 'production'`. Framework
-   lazily `_serverDynImport('@place/devtools')` at app boot (when
+   lazily `_serverDynImport('@place-ts/devtools')` at app boot (when
    enabled) + adds `devtoolsIsland` to the registry. Bun's tree-shaker
    keeps the dep entirely off the prod-build module graph when
    disabled. `RenderPageOptions.emitDevtoolsMarker` flag drives auto-

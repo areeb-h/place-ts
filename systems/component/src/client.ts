@@ -1,4 +1,4 @@
-// @place/component/client — the browser-runtime entry.
+// @place-ts/component/client — the browser-runtime entry.
 //
 // `mount` renders a view into a DOM node; `hydrate` adopts SSR'd
 // markup. Both live in the `./_client-mount.ts` leaf — deliberately
@@ -8,8 +8,8 @@
 // that leaf.
 //
 // Tier 20 entrypoint split: client / island code imports
-// `@place/component/client`. It must never reach
-// `@place/component/server` or `@place/component/build` — the
+// `@place-ts/component/client`. It must never reach
+// `@place-ts/component/server` or `@place-ts/component/build` — the
 // boundary is an impossible import graph, not DCE.
 export { hydrate, mount } from './_client-mount.ts'
 

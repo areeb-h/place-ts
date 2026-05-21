@@ -1,10 +1,10 @@
 # Stability covenant
 
-This document is a public commitment. It binds future maintainers as much as current ones. Read it before relying on any `@place/*` API in a production codebase.
+This document is a public commitment. It binds future maintainers as much as current ones. Read it before relying on any `@place-ts/*` API in a production codebase.
 
 ## What this covenant covers
 
-Every `@place/*` package's public surface — defined as **every named export of `src/index.ts` plus every documented sub-export path**. Underscore-prefixed exports (`_isInsideCache`, `_setHydrated`, etc.) are explicitly internal and excluded from these guarantees.
+Every `@place-ts/*` package's public surface — defined as **every named export of `src/index.ts` plus every documented sub-export path**. Underscore-prefixed exports (`_isInsideCache`, `_setHydrated`, etc.) are explicitly internal and excluded from these guarantees.
 
 Adapter contracts (`Adapter` / `Builder` interfaces, the existing Node adapter, future Vercel + Cloudflare adapters) are part of the public surface.
 
@@ -32,7 +32,7 @@ If a security issue forces a faster timeline, the deprecation overlap may be sho
 
 These are commitments we will not walk back:
 
-- **The framework name `place`.** No rebrand post-1.0. Users who put `@place/component` in their `package.json` get to keep it forever. (Cautionary tale: Remix → React Router v7 alienated power users and broke SEO investment overnight.)
+- **The framework name `place`.** No rebrand post-1.0. Users who put `@place-ts/component` in their `package.json` get to keep it forever. (Cautionary tale: Remix → React Router v7 alienated power users and broke SEO investment overnight.)
 - **The page-as-data shape.** `page({ view, meta, load, … })` is the central abstraction. Fields may be added to the options bag (additive), but the shape — view as a function returning a View, meta as a typed object, load as a function returning Promise<L> — is permanent.
 - **Capability-based effect scoping.** `defineCapability`/`provide`/`use`/`tryUse` is the platform's effect-injection contract. No "implicit context" alternative.
 - **Strict-CSP-by-default.** `serve({ security: 'standard' })` will not regress to require `'unsafe-inline'` or `'unsafe-eval'`. Future features that need either get a separate explicit opt-in.

@@ -1,17 +1,17 @@
-// /api/design — @place/design overview. The curated component library.
+// /api/design — @place-ts/design overview. The curated component library.
 
-import { Link, page } from '@place/component'
-import { Button, Card, CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { Button, Card, CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 import SheetComboboxDemo from '../../islands/sheet-combobox-demo.tsx'
 
 const INSTALL = `// Already wired in workspace apps via workspace:* dep.
 // In external apps:
-//   bun add @place/design
+//   bun add @place-ts/design
 //
-// import { Button, Card, Field, Dialog, ... } from '@place/design'`
+// import { Button, Card, Field, Dialog, ... } from '@place-ts/design'`
 
-const BUTTON_EX = `import { Button } from '@place/design'
+const BUTTON_EX = `import { Button } from '@place-ts/design'
 
 <Button intent="primary" size="md">Save</Button>
 <Button intent="ghost" size="sm">Cancel</Button>
@@ -19,7 +19,7 @@ const BUTTON_EX = `import { Button } from '@place/design'
   Delete account
 </Button>`
 
-const FIELD_EX = `import { Field, Input } from '@place/design'
+const FIELD_EX = `import { Field, Input } from '@place-ts/design'
 
 <Field label="Email" hint="We'll never share it." error={emailError()}>
   <Input
@@ -34,8 +34,8 @@ const FIELD_EX = `import { Field, Input } from '@place/design'
 // :user-invalid styling kicks in only AFTER the user interacts —
 // no red borders on every empty field as the page loads.`
 
-const DIALOG_EX = `import { Dialog, Button } from '@place/design'
-import { state } from '@place/reactivity'
+const DIALOG_EX = `import { Dialog, Button } from '@place-ts/design'
+import { state } from '@place-ts/reactivity'
 
 const open = state(false)
 
@@ -54,7 +54,7 @@ const open = state(false)
 // inert background, and :modal styling for free.`
 
 const TOAST_EX = `// Mount <Toaster /> ONCE at the app root, anywhere in the tree:
-import { Toaster, toast } from '@place/design'
+import { Toaster, toast } from '@place-ts/design'
 
 <Toaster anchor="bottom-right" />
 
@@ -69,7 +69,7 @@ const dismiss = toast('Working…', { duration: 0 })
 // …later
 dismiss()`
 
-const TOOLTIP_EX = `import { Tooltip } from '@place/design'
+const TOOLTIP_EX = `import { Tooltip } from '@place-ts/design'
 
 <Tooltip content="Saves to draft" placement="bottom">
   <Button intent="ghost" size="sm">⌄</Button>
@@ -78,8 +78,8 @@ const TOOLTIP_EX = `import { Tooltip } from '@place/design'
 // popover="manual" puts the bubble in the browser's top layer —
 // escapes overflow:hidden / transform / z-index parents.`
 
-const SHEET_EX = `import { Sheet, Button } from '@place/design'
-import { state } from '@place/reactivity'
+const SHEET_EX = `import { Sheet, Button } from '@place-ts/design'
+import { state } from '@place-ts/reactivity'
 
 const open = state(false)
 
@@ -106,8 +106,8 @@ const open = state(false)
 // Size variants compound with side (max-w for vertical, max-h for
 // horizontal). Slide-in via @starting-style. ADR 0046.`
 
-const COMBOBOX_EX = `import { Combobox } from '@place/design'
-import { state } from '@place/reactivity'
+const COMBOBOX_EX = `import { Combobox } from '@place-ts/design'
+import { state } from '@place-ts/reactivity'
 
 const pick = state<string | null>(null)
 
@@ -174,7 +174,7 @@ const COMBOBOX_CUSTOM = `// Two channels: \`class\` (root) + \`classNames\` (sub
   filter={(q, opt) => fuzzyScore(q, opt.label + opt.email) > 0.4}
 />`
 
-const DISCLOSURE_EX = `import { Disclosure } from '@place/design'
+const DISCLOSURE_EX = `import { Disclosure } from '@place-ts/design'
 
 // Single section — browser owns open/close state via <details>.
 <Disclosure summary="What is place-ts?">
@@ -200,7 +200,7 @@ const open = state(false)
 // (Chrome 129+, Safari 18.2+, Firefox 131+). Older browsers get
 // instant open/close — graceful degradation, no polyfill.`
 
-const MENU_EX = `import { Menu, Button } from '@place/design'
+const MENU_EX = `import { Menu, Button } from '@place-ts/design'
 
 const MENU_ID = 'post-actions'
 
@@ -222,7 +222,7 @@ const MENU_ID = 'post-actions'
 // popover="auto" gives native light-dismiss; CSS anchor positioning
 // pins the menu to the trigger button (no JS positioner).`
 
-const PRESENTATIONAL = `import { Avatar, Badge, Card } from '@place/design'
+const PRESENTATIONAL = `import { Avatar, Badge, Card } from '@place-ts/design'
 
 <Avatar name="Ada Lovelace" src={user.avatarUrl} size="md" />
 <Badge intent="success">New</Badge>
@@ -230,7 +230,7 @@ const PRESENTATIONAL = `import { Avatar, Badge, Card } from '@place/design'
   Card body
 </Card>`
 
-const CODEBLOCK_EX = `import { CodeBlock } from '@place/design'
+const CODEBLOCK_EX = `import { CodeBlock } from '@place-ts/design'
 
 // Minimal — just a code string. ts is the default language.
 <CodeBlock code={src} />
@@ -265,7 +265,7 @@ const CODEBLOCK_CUSTOM = `// Override token colors per-instance via CSS variable
 />
 
 // Custom tokenizer per instance (one-off languages).
-import type { Tokenizer } from '@place/design'
+import type { Tokenizer } from '@place-ts/design'
 
 const tokenizeJson: Tokenizer = (src) => {
   // ... return Tok[] ...
@@ -274,7 +274,7 @@ const tokenizeJson: Tokenizer = (src) => {
 <CodeBlock code={src} tokenize={tokenizeJson} />
 
 // Global registration — every <CodeBlock lang="rust"> picks it up.
-import { registerLanguage } from '@place/design'
+import { registerLanguage } from '@place-ts/design'
 
 registerLanguage('rust', tokenizeRust)`
 
@@ -305,7 +305,7 @@ const STYLES_WIRING = `// Wire the design library's Tailwind input (Dialog @star
 // transitions, etc.) into your app's styles. \`styles\` takes a string
 // array — each entry is a layer, concatenated in order.
 
-import { styles as designStyles } from '@place/design'
+import { styles as designStyles } from '@place-ts/design'
 import { styles as appStyles } from './styles.ts'
 
 app({
@@ -314,13 +314,13 @@ app({
 }).run()`
 
 export default page('/design', {
-  // String shorthand — h1 says `@place/design` but title reads better as
+  // String shorthand — h1 says `@place-ts/design` but title reads better as
   // 'Design library'; layout wraps with ' · place docs'.
   meta: 'Design library',
   view: () => (
     <article class="prose max-w-3xl">
       <h1>
-        <code>@place/design</code>
+        <code>@place-ts/design</code>
       </h1>
       <p>
         A curated component library shipped <em>with</em> the platform — Button, Field / Input /
@@ -331,7 +331,7 @@ export default page('/design', {
       </p>
 
       <Callout kind="note" title="A package, not a 10th system">
-        <code>@place/design</code> is a curated package built on top of the existing systems —{' '}
+        <code>@place-ts/design</code> is a curated package built on top of the existing systems —{' '}
         <code>recipe()</code>, <code>themeTokens()</code>, the component runtime. The platform map
         keeps nine systems; the design library is one of the curated packages on top. See{' '}
         <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0016-design-library-as-package.md">
@@ -563,7 +563,7 @@ console.log(fib(10))  // 55`}
         <li>
           <strong>Button spinner</strong> — <code>animate()</code> from{' '}
           <Link to="/api/motion">
-            <code>@place/reactivity/motion</code>
+            <code>@place-ts/reactivity/motion</code>
           </Link>
         </li>
       </ul>

@@ -1,4 +1,4 @@
-// @place/component — element factory + SSR string emitter + directives.
+// @place-ts/component — element factory + SSR string emitter + directives.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 3) — the
 // rendering core. `el()` + `makeView()` build every View; the string
@@ -12,7 +12,7 @@
 // so existing call sites and the package's public API are unchanged.
 
 // Reactive primitives + the View / Child / props types.
-import { batch, type Disposer, type State, untrack, watch } from '@place/reactivity'
+import { batch, type Disposer, type State, untrack, watch } from '@place-ts/reactivity'
 // Cleanup-scope + hydration-audit + slot internals.
 import { disposeAll, withCleanups } from './_internal/cleanup.ts'
 // `ErrorBoundaryCap` — the error-boundary capability `makeView`'s

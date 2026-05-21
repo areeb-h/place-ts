@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { mount } from '@place/component'
+import { mount } from '@place-ts/component'
 import { describe, expect, test } from 'vitest'
 import { Tooltip } from '../../src/Tooltip.tsx'
 

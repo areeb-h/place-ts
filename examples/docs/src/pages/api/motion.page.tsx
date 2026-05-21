@@ -1,17 +1,17 @@
-// /api/motion — @place/reactivity/motion. Spring / tween / sequence /
+// /api/motion — @place-ts/reactivity/motion. Spring / tween / sequence /
 // curve as derived state over time. The framework's animation primitive
 // is a function that returns a Derived<number> — no <motion.div>, no
 // parallel runtime.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const IMPORT = `import {
   animate, tween, sequence, curve, delay, motionValue,
   colorMix, motion, flip,
-} from '@place/reactivity/motion'
-import { state } from '@place/reactivity'`
+} from '@place-ts/reactivity/motion'
+import { state } from '@place-ts/reactivity'`
 
 const ANIMATE = `// animate(target, opts) — spring-driven derived state.
 // Reads the target signal; returns a signal that tracks the target
@@ -198,8 +198,8 @@ export default page('/motion', {
         <code>motion</code>
       </h1>
       <p>
-        <code>@place/reactivity/motion</code> ships four primitives. Each takes a target signal (or
-        keyframes), and returns a <code>Derived&lt;number&gt;</code>. The framework treats the
+        <code>@place-ts/reactivity/motion</code> ships four primitives. Each takes a target signal
+        (or keyframes), and returns a <code>Derived&lt;number&gt;</code>. The framework treats the
         returned signal exactly like any other reactive value — there is no parallel "motion
         components" runtime, no <code>&lt;motion.div&gt;</code>, no two-API split between
         declarative and imperative.
@@ -296,7 +296,7 @@ export default page('/motion', {
       <h2>SSR behavior</h2>
       <CodeBlock code={SSR} />
 
-      <Callout kind="note" title="Why motion lives in @place/reactivity, not its own system">
+      <Callout kind="note" title="Why motion lives in @place-ts/reactivity, not its own system">
         Motion IS interpolated derived state over time — same primitive everything else reactive
         composes from. No new top-level system; no parallel component tree. See{' '}
         <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0015-motion-as-reactivity-submodule.md">
@@ -318,7 +318,7 @@ export default page('/motion', {
         </li>
         <li>
           <Link to="/api/design">
-            <code>@place/design</code> — design library (Button spinner uses motion internally)
+            <code>@place-ts/design</code> — design library (Button spinner uses motion internally)
           </Link>
         </li>
       </ul>

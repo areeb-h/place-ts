@@ -1,8 +1,8 @@
-// @place/devtools — the devtools island.
+// @place-ts/devtools — the devtools island.
 //
 // One island: a floating launcher that expands into a tabbed panel.
-// Dogfoods the framework — built with `@place/component` +
-// `@place/reactivity`, registered like any other island.
+// Dogfoods the framework — built with `@place-ts/component` +
+// `@place-ts/reactivity`, registered like any other island.
 //
 // Architecture:
 //   - All reactive state + every browser-API touch lives in the
@@ -14,7 +14,7 @@
 //     off `data-open` / `data-tab` on the root — no conditional
 //     mounting, so panel subscriptions stay alive across tab switches.
 
-import { onCleanup, onMount, type View } from '@place/component'
+import { onCleanup, onMount, type View } from '@place-ts/component'
 import {
   _beginDevtoolsNodes,
   _endDevtoolsNodes,
@@ -26,8 +26,8 @@ import {
   onGraphTick,
   type State,
   state,
-} from '@place/reactivity'
-import { type Router, RouterCap } from '@place/routing'
+} from '@place-ts/reactivity'
+import { type Router, RouterCap } from '@place-ts/routing'
 import { devtoolsCss } from './styles.ts'
 
 // True in a development build — the build injects `__PLACE_DEV__`.
@@ -526,8 +526,8 @@ function consolePane(logs: State<LogEntry[]>) {
  *
  * ```tsx
  * // src/islands/devtools.tsx
- * import { island } from '@place/component'
- * import { devtoolsView } from '@place/devtools'
+ * import { island } from '@place-ts/component'
+ * import { devtoolsView } from '@place-ts/devtools'
  * export default island(import.meta.url, devtoolsView)
  * ```
  *

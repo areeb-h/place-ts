@@ -20,7 +20,7 @@
 // with zero JS.
 //
 // `island`, `setTheme`, `state` are framework primitives auto-imported
-// via the `@place/component` plugin.
+// via the `@place-ts/component` plugin.
 import { tokens } from '../theme.ts'
 
 type Choice = 'light' | 'dark' | 'system'

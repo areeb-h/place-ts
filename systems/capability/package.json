@@ -1,5 +1,5 @@
 {
-  "name": "@place/capability",
+  "name": "@place-ts/capability",
   "version": "0.1.0",
   "type": "module",
   "description": "Scoped capability handlers — runtime foundation for Phase 4 typed effects. Replaces React-style implicit context globals with explicit, lexically-scoped providers.",

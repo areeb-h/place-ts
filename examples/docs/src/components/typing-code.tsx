@@ -43,13 +43,13 @@
 // doesn't need it), no language switcher — the typing block stays
 // purpose-built for the landing hero.
 
-import type { Child } from '@place/component'
+import type { Child } from '@place-ts/component'
 
 // Reuse the design library's tokenizer registry. `getTokenizer('ts')`
 // returns the built-in TS/JSX tokenizer; the typing demo doesn't need
 // the chrome / copy / line features that the design CodeBlock adds,
 // so we render the chars directly.
-import { getTokenizer, type Tok } from '@place/design'
+import { getTokenizer, type Tok } from '@place-ts/design'
 
 const tokenize = (src: string): readonly Tok[] => getTokenizer('ts')(src)
 

@@ -1,4 +1,4 @@
-// @place/component/build — build-time pipeline entry.
+// @place-ts/component/build — build-time pipeline entry.
 //
 // The bundler, the route splitter, the island bundler, the view
 // classifier, the static-export pre-renderer, the directory scanners.
@@ -6,8 +6,8 @@
 // filesystem, so it ONLY runs server-side at build time.
 //
 // Tier 20 entrypoint split — full isolation. None of these symbols
-// are reachable from the root `@place/component` barrel: a client /
-// island bundle that imports `@place/component` cannot transitively
+// are reachable from the root `@place-ts/component` barrel: a client /
+// island bundle that imports `@place-ts/component` cannot transitively
 // reach `Bun.build`, `node:fs/promises`, or any of the other
 // build-only dependencies even in its module graph. The boundary is
 // an impossible import graph, not a `__PLACE_BROWSER__` dead-branch.

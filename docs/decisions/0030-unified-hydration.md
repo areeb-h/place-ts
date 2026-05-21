@@ -193,7 +193,7 @@ The `— promoted from L1 because <reason>` line is what charter #7(b) — trace
 ```tsx
 // counter.view.tsx — ONE source
 
-import { view, state } from '@place/component'
+import { view, state } from '@place-ts/component'
 
 export default view(import.meta.url, () => {
   const count = state(0)

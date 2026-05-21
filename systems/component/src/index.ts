@@ -1,8 +1,8 @@
 /// <reference types="bun" />
 // biome-ignore-all assist/source/organizeImports: documented re-export groupings (Phase 2.1 cut narrative) must stay in source order; auto-sort would scramble the structure
-// @place/component — rendering layer (Phase v0.2 minimum)
+// @place-ts/component — rendering layer (Phase v0.2 minimum)
 //
-// Sits on top of @place/reactivity. Components are functions from props to
+// Sits on top of @place-ts/reactivity. Components are functions from props to
 // views. A `View` knows how to mount itself to a DOM parent and return a
 // disposer. Element factories produce views; `mount()` is the top-level entry.
 //
@@ -27,7 +27,7 @@
 //   - Animations / transitions
 //   - Error boundaries
 
-import { type Disposer, type EffectBranded, untrack, watch } from '@place/reactivity'
+import { type Disposer, type EffectBranded, untrack, watch } from '@place-ts/reactivity'
 
 import { onCleanup } from './_internal/cleanup.ts'
 import { _isHydratedSignal as _isHydratedState } from './_internal/hydration.ts'
@@ -249,7 +249,7 @@ export { onCleanup } from './_internal/cleanup.ts'
 // heading-collection helpers); see the `export {}` block below.
 
 export type { SsrHeading } from './element.ts'
-// Re-export the public element surface so `@place/component` and every
+// Re-export the public element surface so `@place-ts/component` and every
 // in-package importer keep seeing these names on the barrel.
 export { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text, el } from './element.ts'
 
@@ -262,7 +262,7 @@ export { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text, el } f
 // ===== Client mount machinery + Fragment + Tabs =====
 // Extracted to ./mount.ts (Tier 20 decomposition, cut 4). `index.ts`
 // re-exports the public surface so every consumer of
-// `@place/component` keeps seeing these names on the barrel.
+// `@place-ts/component` keeps seeing these names on the barrel.
 
 // Escape helper used by meta + island serialization (the SSR emitter's
 // own escaping moved to element.ts).
@@ -304,7 +304,7 @@ export { hydrate, mount, withCapabilities, withCapability }
 // Extracted to ./ssr.ts (Tier 20 decomposition, cut 5). `index.ts`
 // imports `renderToString` / `renderToStream` for its own use
 // (`renderPage`, the `renderToHtml` test helper) + re-exports the
-// public surface so `@place/component` consumers are unchanged.
+// public surface so `@place-ts/component` consumers are unchanged.
 
 export {
   type RenderToStreamOptions,
@@ -395,7 +395,7 @@ export {
 // ===== page / layout / handler authoring API =====
 // Extracted to ./page.ts (Tier 20 decomposition, cut 7). `index.ts`
 // imports the symbols `renderPage` (still in this barrel) composes
-// with + re-exports the public surface so `@place/component`
+// with + re-exports the public surface so `@place-ts/component`
 // consumers are unchanged.
 import type { AnyPage, RenderPageOptions } from './page.ts'
 
@@ -428,10 +428,10 @@ export {
 
 // ===== serve() orchestrator — NOT re-exported here =====
 // `serve` / `app` / `routes` / `buildStatic` / `discoverPages` + the
-// security-header presets live behind `@place/component/server` ONLY
+// security-header presets live behind `@place-ts/component/server` ONLY
 // (Tier 20 entrypoint split — full isolation). The root barrel does
 // not re-export them, so a client/island bundle that imports
-// `@place/component` never graphs `./serve.ts` and therefore never
+// `@place-ts/component` never graphs `./serve.ts` and therefore never
 // reaches `Bun.serve` / `Bun.build` / `node:*`. The boundary is an
 // impossible import graph, not a `__PLACE_BROWSER__` dead-branch.
 // `renderPage` / `renderToString` / `handler` / `action` ARE node-free
@@ -490,20 +490,20 @@ export async function renderToHtml(p: AnyPage, opts: RenderToHtmlOptions = {}): 
 
 // ===== component system — HOC / errorBoundary / keyed / For / ISR =====
 // Extracted to ./component.ts (Tier 20 decomposition, cut 8). `index.ts`
-// re-exports the public surface so `@place/component` consumers are
+// re-exports the public surface so `@place-ts/component` consumers are
 // unchanged. (`ErrorBoundaryCap` is already re-exported from the
 // `_internal/` leaf above — not re-exported here, to avoid a double
 // export.)
 
-// `Provision` and `provide()` live in @place/capability — they're the
+// `Provision` and `provide()` live in @place-ts/capability — they're the
 // fundamental "bind a cap to an impl" primitive. We re-export them from
 // here so component consumers see a single import surface.
-export { type Provision, provide } from '@place/capability'
+export { type Provision, provide } from '@place-ts/capability'
 // Re-export the reactivity primitives so apps don't need a second import
 // root for state/watch/derived. Anything you reach for inside a component
 // — `state`, `watch`, `derived`, `untrack`, `batch` — is now in the same
 // package as `page`, `layout`, `component`, etc. Apps can still import
-// directly from `@place/reactivity` if they prefer that scope.
+// directly from `@place-ts/reactivity` if they prefer that scope.
 export {
   type ArrayState,
   type BaseState,
@@ -524,10 +524,10 @@ export {
   untrack,
   type WatchOptions,
   watch,
-} from '@place/reactivity'
+} from '@place-ts/reactivity'
 // Copy-to-clipboard runtime — emitted by `renderPage` with the
 // per-request CSP nonce so strict-CSP pages get the script
-// executable. Components in `@place/design` (`<Copy>`, `<CodeBlock>`)
+// executable. Components in `@place-ts/design` (`<Copy>`, `<CodeBlock>`)
 // just render the button + call `markCopyUsedOnThisRequest()`;
 // emission is centralised here.
 export { markCopyUsedOnThisRequest } from './__copy-runtime.ts'
@@ -548,7 +548,7 @@ export {
 } from './action.ts'
 // `app` / `routes` / `discoverPages` / `buildStatic` are server-only
 // (they reach `Bun.serve` / `Bun.build` / `node:fs`) — re-exported
-// from `@place/component/server`, not from this root barrel.
+// from `@place-ts/component/server`, not from this root barrel.
 export {
   type CacheEntry,
   type CacheOptions,

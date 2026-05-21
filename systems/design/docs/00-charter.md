@@ -1,8 +1,8 @@
-# @place/design — charter
+# @place-ts/design — charter
 
 ## Thesis
 
-`@place/design` is a **curated component library**, NOT a platform
+`@place-ts/design` is a **curated component library**, NOT a platform
 system. It ships opinionated primitives (Button, Field, Dialog, Toast,
 Tooltip, Menu, Avatar, Badge, Card, …) built on top of the existing
 nine platform systems. The platform map keeps 9 systems; the
@@ -14,7 +14,7 @@ platform without re-inventing every primitive?" The answer is a
 package you import from:
 
 ```tsx
-import { Button, Field, Dialog } from '@place/design'
+import { Button, Field, Dialog } from '@place-ts/design'
 ```
 
 No CLI. No codegen. No copy-paste-then-fork-and-pray. No
@@ -54,13 +54,13 @@ Specifically:
 | `Tooltip` / `Menu` / `Popover` | `popover` attribute | Top-layer + light-dismiss + auto-focus management. Universal browser support since Chrome 114 / Safari 17 / FF 125 (mid-2024). |
 | `Field` / `Input` / validation message | native `<input>` + `:user-invalid` / `:user-valid` pseudos + `ValidityState` | Native HTML5 validation; framework wires the reactive error message + skin, not the validation engine. |
 | `Select` | native `<select>` | Until `<selectlist>` ships universally, native is the right baseline. |
-| `Form` | native `<form>` + `FormData` + `submitter` | Already done in `@place/component`'s `<Form>`; design library reuses it. |
+| `Form` | native `<form>` + `FormData` + `submitter` | Already done in `@place-ts/component`'s `<Form>`; design library reuses it. |
 | Enter/exit transitions | CSS `@starting-style` + `transition-behavior: allow-discrete` | Universal since FF 129 (Aug 2024). Replaces "mount/unmount with portal + JS animation" of older frameworks. |
 | Focus management | `inert` attribute + `:focus-visible` | Universal. Replaces hand-rolled focus traps. |
 
 **Where motion sits on top of native:** native CSS transitions handle
 discrete-property animations (display ↔ none, popover open/close).
-`@place/reactivity/motion` handles signal-driven continuous interpolation
+`@place-ts/reactivity/motion` handles signal-driven continuous interpolation
 (spring drag, animated counters, scroll-coupled effects) where CSS
 can't go.
 
@@ -147,14 +147,14 @@ needs to repeat one of these to function, the design is wrong.
 
 The library is composed entirely from existing platform pieces:
 
-- **Tokens** from `themeTokens()` in `@place/component` — typed,
+- **Tokens** from `themeTokens()` in `@place-ts/component` — typed,
   SSR-safe, emits `@theme` block + per-theme classes.
 - **Recipes** from `recipe()` — typed variant-driven class strings.
-- **Reactivity** via `@place/reactivity` — `state`, `derived`, `watch`.
-- **Motion** via `@place/reactivity/motion` — spring/tween/sequence/
+- **Reactivity** via `@place-ts/reactivity` — `state`, `derived`, `watch`.
+- **Motion** via `@place-ts/reactivity/motion` — spring/tween/sequence/
   curve, all returning `Derived<number>` that components read like
   any other reactive prop.
-- **Component primitives** from `@place/component` — `<Show>`,
+- **Component primitives** from `@place-ts/component` — `<Show>`,
   `<Activity>`, `<Fragment>`, `<Tabs>` (the headless one), `<Form>`,
   `<ClientOnly>`, `<Deferred>`.
 - **Styling** via the existing Tailwind v4 base — passed through
@@ -177,15 +177,15 @@ Initial scope:
 7. `Avatar`, `Badge`, `Card` — presentational primitives, no behavior.
 
 After that batch lands, the docs site migrates from its hand-rolled
-`design-system.ts` recipes to `@place/design` imports. That migration
+`design-system.ts` recipes to `@place-ts/design` imports. That migration
 is the integration test: the library has to be useful enough that a
 real consumer (the docs site) switches.
 
 ## Public surface
 
 ```ts
-// Re-exports from @place/component (the library is the design system)
-export { recipe, cls, themeTokens } from '@place/component'
+// Re-exports from @place-ts/component (the library is the design system)
+export { recipe, cls, themeTokens } from '@place-ts/component'
 
 // Library stylesheet — token-color CSS variables, line-grid layout,
 // copy-button state CSS. Wire via `app({ styles })`.
@@ -221,7 +221,7 @@ export { CodeBlock, type CodeBlockProps, type CodeBlockDensity,
 
 ## Tokenizer subsystem (Tier 13, ADRs 0033 + 0037)
 
-`@place/design` ships a hand-rolled tokenizer family because syntax
+`@place-ts/design` ships a hand-rolled tokenizer family because syntax
 highlighting on docs sites is a constant user-visible concern, and
 shipping Shiki (~600 KB grammar set) or Prism (10-15 KB runtime per
 language) for our use case is wasteful. The design library's
@@ -236,7 +236,7 @@ The tokenizer is **part of the design library's curated charter
 surface** (not a "we accidentally shipped it" surprise) because
 the docs site needs it and CodeBlock is the highest-impact shipped
 primitive. A future v0.2 may extract the tokenizer registry into a
-sub-export (`@place/design/code`) if it grows; for now it lives on
+sub-export (`@place-ts/design/code`) if it grows; for now it lives on
 the main barrel for convenience.
 
 ## Per-primitive docs
@@ -257,7 +257,7 @@ Each primitive has its own ADR-light note in
   Copy, CodeBlock. Plus the tokenizer subsystem (7 built-in
   languages + `registerLanguage`).
 - **Internal/runtime surface (Tier 13):** `markCopyUsedOnThisRequest`
-  in `@place/component` is the cross-package signal that triggers
+  in `@place-ts/component` is the cross-package signal that triggers
   CSP-noncedinline-runtime emission from `renderPage`. The design
   library's `<Copy>` and `<CodeBlock>` mark the flag; the framework
   emits the runtime. Documented in ADR 0036.
@@ -268,8 +268,8 @@ Each primitive has its own ADR-light note in
   consumers — surface may grow (multi-select Combobox, motion-prop
   Sheet, etc.).
 - **Future (triggered):** `<Table>` / `<DataGrid>` (Tier 16),
-  `<Image>` (Tier 16). `<Can>` for RBAC shipped in `@place/security`
+  `<Image>` (Tier 16). `<Can>` for RBAC shipped in `@place-ts/security`
   (T16-E, ADR 0044). `fromStandard()` schema interop shipped in
-  `@place/component` (T16-C, ADR 0045).
+  `@place-ts/component` (T16-C, ADR 0045).
 - **Future (longer-term):** date picker, rich-text editor, skin
   marketplace, headless-only split.

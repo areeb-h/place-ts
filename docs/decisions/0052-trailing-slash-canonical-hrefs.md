@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-20
-**Affects:** `@place/component` (`<Link>`, `serve()`, `app()`); deployment story for static hosts
+**Affects:** `@place-ts/component` (`<Link>`, `serve()`, `app()`); deployment story for static hosts
 
 ## Context
 

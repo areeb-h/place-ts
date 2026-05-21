@@ -1,4 +1,4 @@
-// @place/routing — minimal client-side routing on top of @place/reactivity.
+// @place-ts/routing — minimal client-side routing on top of @place-ts/reactivity.
 //
 // Ships:
 //   - Router          the contract (path / segments / query / navigate /
@@ -23,7 +23,7 @@
 //     scroll capture. Defer until concrete trigger.
 //   - Nested route trees / route guards / lazy bundles. Compile-time
 //     concerns; punt until the build system has shape.
-//   - Route loaders. `@place/reactivity`'s `resource()` already covers
+//   - Route loaders. `@place-ts/reactivity`'s `resource()` already covers
 //     async data — framework integration would just be glue.
 //   - File-based routing. Build-tool concern, contradicts our minimal-
 //     surface charter.
@@ -38,8 +38,8 @@
 //     still fires for external sources (browser back/forward, manual hash
 //     edits); state.write dedupes the second write.
 
-import { type Capability, defineCapability, type Provision } from '@place/capability'
-import { type Disposer, state, untrack } from '@place/reactivity'
+import { type Capability, defineCapability, type Provision } from '@place-ts/capability'
+import { type Disposer, state, untrack } from '@place-ts/reactivity'
 
 export interface Router {
   /** Reactive current path. For hash routing, the part after `#`. */
@@ -217,7 +217,7 @@ export type ExtractParamNames<S extends string> = S extends `${string}:${infer P
 
 // Map the union of names to a `Record<name, string>` (or `{}` for no params).
 //
-// Exported because `page(path, def)` in @place/component reuses it to
+// Exported because `page(path, def)` in @place-ts/component reuses it to
 // infer URL params from path strings — single source of truth.
 export type ParamsOf<S extends string> = [ExtractParamNames<S>] extends [never]
   ? Record<string, never>
@@ -659,7 +659,7 @@ export function hashRouter(): RouterHandle {
   return attachHandle(router, () => globalThis.removeEventListener?.('hashchange', onChange))
 }
 ;(hashRouter as unknown as { __placeClientImport?: ClientCapImport }).__placeClientImport = {
-  module: '@place/routing',
+  module: '@place-ts/routing',
   name: 'hashRouter',
   capName: 'RouterCap',
 }
@@ -779,7 +779,7 @@ export function pathRouter(): RouterHandle {
 // on the client without the user writing an `_init.ts` side-effect
 // module per app. See `ClientCapImport` above.
 ;(pathRouter as unknown as { __placeClientImport?: ClientCapImport }).__placeClientImport = {
-  module: '@place/routing',
+  module: '@place-ts/routing',
   name: 'pathRouter',
   capName: 'RouterCap',
 }
@@ -814,7 +814,7 @@ export function memoryRouter(initial = '/'): RouterHandle {
  * `updateQuery`, `back`, `forward`) throw — the server has no history
  * to mutate, and any code that tries to call them on SSR is a bug.
  *
- * Internal: not exported. Used by `@place/component`'s `renderPage`.
+ * Internal: not exported. Used by `@place-ts/component`'s `renderPage`.
  */
 export function serverRouter(req: Request): Router {
   const url = new URL(req.url)

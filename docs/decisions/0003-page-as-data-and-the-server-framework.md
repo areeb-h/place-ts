@@ -34,7 +34,7 @@ The catalog was assembled from observing Next, Nuxt, Remix/RR7, SvelteKit, Astro
 
 ## Decision
 
-**The component system grows a server framework as a structural extension, not a peer system.** Three new exports, all in `@place/component`:
+**The component system grows a server framework as a structural extension, not a peer system.** Three new exports, all in `@place-ts/component`:
 
 - `page({ url, load, view, meta, styles, headers })` — declarative page object both server and client import.
 - `serve({ port, routes, clientEntry?, tailwind?, security?, fetch?, websocket?, static?, notFound?, headers? })` — Bun.serve wrapper that bundles the client entry once at startup, dispatches Pages and raw `(req, params) => Response` handlers in the same routes map.
@@ -94,9 +94,9 @@ Rejects (9).
 
 ## Where this lives
 
-The server framework lives **inside `@place/component`**, not as a separate `@place/server` package. Reasons:
+The server framework lives **inside `@place-ts/component`**, not as a separate `@place-ts/server` package. Reasons:
 
-- It uses the same `View` type, the same JSX runtime, the same reactivity primitives. Splitting into a separate package would either pull `@place/component` as a dep (just moves the import surface) or duplicate the SSR machinery (worse).
+- It uses the same `View` type, the same JSX runtime, the same reactivity primitives. Splitting into a separate package would either pull `@place-ts/component` as a dep (just moves the import surface) or duplicate the SSR machinery (worse).
 - Tailwind integration via `serve({ tailwind })` is a **lazy** import (`await import('./tailwind.ts')` inside `serve()`), and `Bun.build` for the client entry is given `external: ['@tailwindcss/node', '@tailwindcss/oxide', 'tailwindcss', 'lightningcss']` so server-only deps don't end up in the browser bundle.
 - The component system charter ([systems/component/docs/00-charter.md](../../systems/component/docs/00-charter.md)) now explicitly lists the SSR layer as in-scope.
 
@@ -113,7 +113,7 @@ The platform charter's "client-first" stance is preserved in spirit: SSR is the 
 **Harder:**
 - Server-only adornments require an explicit physical split — the `home.page.tsx` is shared; the server.ts spreads styles + headers onto it when registering. New users have to learn this once. (We considered making the bundler ignore server-only imports in shared files via heuristics; rejected as too magical.)
 - No file-system routing means more keystrokes per route. The tradeoff is freedom to refactor and the absence of magic.
-- Per-request capability scopes are a known gap (the `@place/capability` stack is module-global). Documented in `handler()`'s doc comment with a safe pattern (derive from `req`, pass via props). Fix is `AsyncLocalStorage`-backed scopes; tracked for v0.4.
+- Per-request capability scopes are a known gap (the `@place-ts/capability` stack is module-global). Documented in `handler()`'s doc comment with a safe pattern (derive from `req`, pass via props). Fix is `AsyncLocalStorage`-backed scopes; tracked for v0.4.
 
 **Watch for:**
 - If a page needs *streaming* `load()` (yield UI before all data is ready), we'll need per-element streaming + `resource()`-style suspense. The string emitter is the foundation; the per-element flush is deferred.
@@ -129,4 +129,4 @@ The platform charter's "client-first" stance is preserved in spirit: SSR is the 
 ## Notes
 
 - This ADR does NOT commit to publishing the page-as-data pattern outside the component system. Other systems (data, persistence, etc.) keep their own primitives.
-- Future ADR may revisit the "server framework lives inside component" packaging if a workload demands a standalone `@place/server` package. The current packaging keeps the import surface flat (`import { page, serve, boot } from '@place/component'`) which is the user-facing win.
+- Future ADR may revisit the "server framework lives inside component" packaging if a workload demands a standalone `@place-ts/server` package. The current packaging keeps the import surface flat (`import { page, serve, boot } from '@place-ts/component'`) which is the user-facing win.

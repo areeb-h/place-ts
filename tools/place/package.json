@@ -1,5 +1,5 @@
 {
-  "name": "@place/cli",
+  "name": "@place-ts/cli",
   "version": "0.0.0",
   "private": true,
   "type": "module",

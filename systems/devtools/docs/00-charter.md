@@ -1,8 +1,8 @@
-# `@place/devtools` — charter
+# `@place-ts/devtools` — charter
 
 ## Thesis
 
-A developer cannot reason about a framework they cannot see. `@place/devtools`
+A developer cannot reason about a framework they cannot see. `@place-ts/devtools`
 makes the running app observable from inside the browser: the reactive
 graph, the islands on the page, the active route, and how much JavaScript
 the page paid for. It is the charter's clause 3 — *"the graph is
@@ -10,13 +10,13 @@ observable"* — made into a thing you can open and look at.
 
 It ships as **one dev-only island**, dropped into an app's root layout.
 It dogfoods the framework: the devtool is itself a place island, built
-with `@place/component` + `@place/reactivity`.
+with `@place-ts/component` + `@place-ts/reactivity`.
 
 ## Trigger
 
 The platform charter's non-negotiable #3 says the reactive graph must be
 observable. Until now nothing surfaced it. The Tier 20 audit recorded
-this as blocker **B3** ("no reactivity-graph devtool"). `@place/reactivity`
+this as blocker **B3** ("no reactivity-graph devtool"). `@place-ts/reactivity`
 now exposes `inspectGraph()` / `onGraphTick()`; this package is the UI
 that consumes them.
 

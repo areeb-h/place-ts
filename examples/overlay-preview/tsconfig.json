@@ -4,8 +4,8 @@
     "lib": ["ESNext", "DOM"],
     "types": ["bun"],
     "paths": {
-      "@place/component": ["../../systems/component/src/index.ts"],
-      "@place/component/jsx-runtime": ["../../systems/component/src/jsx-runtime.ts"]
+      "@place-ts/component": ["../../systems/component/src/index.ts"],
+      "@place-ts/component/jsx-runtime": ["../../systems/component/src/jsx-runtime.ts"]
     }
   },
   "include": ["src/**/*.ts"],

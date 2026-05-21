@@ -1,4 +1,4 @@
-// @place/component — client-side mount machinery + Fragment + Tabs.
+// @place-ts/component — client-side mount machinery + Fragment + Tabs.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 4). Holds the
 // reactive-children DOM mounter (`mountChildren` / `mountChild` /
@@ -12,7 +12,7 @@
 // element ⇄ index cycle the cut-3 extraction left behind into a
 // benign element ⇄ mount function-level cycle.
 
-import { type Disposer, type State, untrack, watch } from '@place/reactivity'
+import { type Disposer, type State, untrack, watch } from '@place-ts/reactivity'
 // Cleanup-scope helper shared with the element factory + SSR path.
 import { disposeAll } from './_internal/cleanup.ts'
 // `ErrorBoundaryCap` — the error-boundary capability the reactive-child

@@ -3,7 +3,7 @@
 // Two source states (a, b), a derived value c = a + b, and a watch
 // effect that logs. Each node flashes when it recomputes — the user
 // sees two-color propagation in action. The demo runs *the actual*
-// framework primitives (`@place/reactivity`'s `state`, `derived`,
+// framework primitives (`@place-ts/reactivity`'s `state`, `derived`,
 // `watch`), not a fake doc-only runtime.
 //
 // Was a plain component in `src/components/`; promoted to an island
@@ -15,7 +15,7 @@
 // `el.style.setProperty('--flash-age', …)` at runtime — CSP-safe
 // (ADR 0014), no per-request hash plumbing needed.
 
-import { derived, onMount, state, untrack, view, watch } from '@place/component'
+import { derived, onMount, state, untrack, view, watch } from '@place-ts/component'
 
 const FLASH_MS = 600
 

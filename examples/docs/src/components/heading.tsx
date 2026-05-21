@@ -2,7 +2,7 @@
 // scan picks it up immediately; the hover affordance is pure CSS, no
 // JS required. Use inside <article class="prose">.
 
-import type { Children } from '@place/component'
+import type { Children } from '@place-ts/component'
 
 const slug = (text: string): string =>
   text

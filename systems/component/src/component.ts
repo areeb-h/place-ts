@@ -1,4 +1,4 @@
-// @place/component — the component system: HOC + error boundary +
+// @place-ts/component — the component system: HOC + error boundary +
 // keyed lists + capability wrappers + ISR.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 8) — the
@@ -17,8 +17,8 @@
 // component ⇄ index cycle stays benign — same shape as element.ts /
 // mount.ts / ssr.ts / page.ts.
 
-import { ClientOnlyAbort } from '@place/capability'
-import { type Disposer, type State, state, untrack, watch } from '@place/reactivity'
+import { ClientOnlyAbort } from '@place-ts/capability'
+import { type Disposer, type State, state, untrack, watch } from '@place-ts/reactivity'
 import { disposeAll, withCleanups } from './_internal/cleanup.ts'
 import { nextHydrationId } from './_internal/hydrationSeq.ts'
 import { _invalidateCachesByTag, type CacheStore } from './cache.ts'

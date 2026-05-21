@@ -1,4 +1,4 @@
-// @place/component — dev terminal output.
+// @place-ts/component — dev terminal output.
 //
 // Extracted from index.ts (Tier 20 decomposition). The startup banner
 // (printed once after the port binds) and the per-request log line.

@@ -125,7 +125,7 @@ Together they cover every shipped feature. A future demo could combine them (com
 - **Real backend persistence by default.** The default backend is `crossTab` (localStorage + cross-tab broadcast). `?backend=server` swaps in the Bun sync server. Real apps deploying commonplace's shape would write their own `on: { save }` handler that persists to a DB. The flagship doesn't because the data lives client-side by design.
 - **Auth.** No login flow. The commonplace book is single-user-per-browser. Adding auth would conflict with the "your device, your data" framing.
 - **Real-time editing collaboration.** Demonstrated by sync-server; commonplace doesn't include it.
-- **A full-text search index.** The `searchable()` from `@place/search` does substring search; FTS isn't needed for ~hundreds of notes. If a user hits the scale where it matters, plug in `@place/persistence`'s server adapter + a real FTS backend.
+- **A full-text search index.** The `searchable()` from `@place-ts/search` does substring search; FTS isn't needed for ~hundreds of notes. If a user hits the scale where it matters, plug in `@place-ts/persistence`'s server adapter + a real FTS backend.
 
 ## Consequences
 

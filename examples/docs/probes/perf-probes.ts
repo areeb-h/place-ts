@@ -19,8 +19,8 @@
 //   - performance.now() resolution under Bun is ~1µs; sample sizes are
 //     chosen so total time per probe is in the 50-500 ms range.
 
-import type { Child, View } from '@place/component'
-import { div, hydrate, li, p, renderToString, span, ul } from '@place/component'
+import type { Child, View } from '@place-ts/component'
+import { div, hydrate, li, p, renderToString, span, ul } from '@place-ts/component'
 import { Window } from 'happy-dom'
 
 // ─── DOM bootstrap ─────────────────────────────────────────────────────

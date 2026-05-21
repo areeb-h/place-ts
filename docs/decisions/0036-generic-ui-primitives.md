@@ -25,9 +25,9 @@ Three additive extractions, each its own commit, each fully back-compatible.
 New `systems/design/src/Copy.tsx` (~70 LOC). Generic click-to-copy button:
 
 ```tsx
-import { Copy } from '@place/design'
+import { Copy } from '@place-ts/design'
 
-<Copy text="bun add @place/design" />
+<Copy text="bun add @place-ts/design" />
 
 <Copy text={code} idleLabel="copy snippet" copiedLabel="copied!" />
 

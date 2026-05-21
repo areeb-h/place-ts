@@ -1,11 +1,11 @@
-// Public + internal types for @place/component. Extracted from index.ts
+// Public + internal types for @place-ts/component. Extracted from index.ts
 // (audit Phase 2.1, Cut 1c). Pure types — no runtime code, no module-
 // level state. Importing this file has zero side effects.
 //
-// `Disposer` comes from @place/reactivity since cleanup semantics are
+// `Disposer` comes from @place-ts/reactivity since cleanup semantics are
 // defined there; we just consume the contract.
 
-import type { Disposer } from '@place/reactivity'
+import type { Disposer } from '@place-ts/reactivity'
 
 // ===== Public types =====
 

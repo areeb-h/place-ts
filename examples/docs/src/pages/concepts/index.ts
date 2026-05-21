@@ -4,7 +4,7 @@
 // reorganizing the URL hierarchy is a one-line change here, not 3+
 // page-file edits.
 
-import { routes } from '@place/component/server'
+import { routes } from '@place-ts/component/server'
 import capabilities from './capabilities.page.tsx'
 import reactivity from './reactivity.page.tsx'
 import routesAsValues from './routes-as-values.page.tsx'

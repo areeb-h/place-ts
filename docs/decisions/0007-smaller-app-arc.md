@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-12
-**Affects:** `@place/component` (`page()`, `app()`, `routes()`, page `on:` / `search:` / `onError:` / `onNotFound:`)
+**Affects:** `@place-ts/component` (`page()`, `app()`, `routes()`, page `on:` / `search:` / `onError:` / `onNotFound:`)
 
 ## Context
 
@@ -37,7 +37,7 @@ Legacy `page(def)` keeps working — used by `serve({routes: {'/path': page}})` 
 
 ```ts
 // app.tsx — replaces both server.tsx and client.tsx
-import { app } from '@place/component'
+import { app } from '@place-ts/component'
 import home from './home.page'
 import post from './post.page'
 

@@ -1,4 +1,4 @@
-# ADR 0015: Motion lives in `@place/reactivity/motion`, not a separate system
+# ADR 0015: Motion lives in `@place-ts/reactivity/motion`, not a separate system
 
 **Status:** accepted
 **Date:** 2026-05-13
@@ -48,20 +48,20 @@ already paid in `systems/reactivity/`.
 
 ## Options considered
 
-1. **Top-level `@place/motion` package.** Most isolated; biggest
+1. **Top-level `@place-ts/motion` package.** Most isolated; biggest
    surface for future expansion (gesture, drag, scroll-linked). Cost:
    a 10th system on the platform map, ADR justifying separation, extra
    coordination boundary. Risk: drift between motion's clock and
    reactivity's tick semantics — the exact failure mode the charter's
    "one graph" commitment forbids.
 
-2. **`@place/component/motion` sub-module.** The map's parenthetical
+2. **`@place-ts/component/motion` sub-module.** The map's parenthetical
    ("may get a DSL later in component-system"). Couples motion to the
    render lifecycle. Wrong layer: motion isn't about rendering, it's
    about interpolating values over time. Components consume the
    result; they don't own it.
 
-3. **`@place/reactivity/motion` sub-module** *(chosen).* Motion IS
+3. **`@place-ts/reactivity/motion` sub-module** *(chosen).* Motion IS
    derived state over a time signal. Reactivity already owns time
    (the scheduler's tick), derivation (the dependency graph), and
    subscription (`watch` / `derived`). A motion primitive is one
@@ -73,13 +73,13 @@ already paid in `systems/reactivity/`.
 ## Decision
 
 Option 3. Motion lives at `systems/reactivity/src/motion/`, sub-exported
-as `@place/reactivity/motion`. It does not become a 10th system on the
+as `@place-ts/reactivity/motion`. It does not become a 10th system on the
 platform map.
 
 ### Public surface
 
 ```ts
-import { animate, tween, sequence, curve, clock } from '@place/reactivity/motion'
+import { animate, tween, sequence, curve, clock } from '@place-ts/reactivity/motion'
 
 // Spring-driven derived state. `target` is a signal; the result tracks
 // it through a spring solver.
@@ -142,7 +142,7 @@ Easing presets: standard CSS easings + `cubic-bezier(...)` literals.
   ```
 - Tree-shake floor: a few hundred bytes for the spring solver +
   whatever primitives are imported. No `LazyMotion` workaround.
-- Works in any context that runs `@place/reactivity` — Bun runtime,
+- Works in any context that runs `@place-ts/reactivity` — Bun runtime,
   browser, web worker (theoretically). No React lock-in because there's
   no React at all.
 - Server-side renders produce the rest (target) value with zero
@@ -156,7 +156,7 @@ Easing presets: standard CSS easings + `cubic-bezier(...)` literals.
   reactive props; it doesn't know whether the function is an animation
   or a plain state.
 - The design library (ADR 0016) consumes motion the same way an app
-  does — `import { animate } from '@place/reactivity/motion'`.
+  does — `import { animate } from '@place-ts/reactivity/motion'`.
 
 ### Trade-offs
 

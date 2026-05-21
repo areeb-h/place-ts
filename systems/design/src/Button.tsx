@@ -1,11 +1,11 @@
-// `<Button>` — the first primitive of @place/design.
+// `<Button>` — the first primitive of @place-ts/design.
 //
 // Proves the structural pattern every other primitive will follow:
 //
 //   1. `recipe()` for visual variants (intent, size).
 //   2. `aria-*` attributes via Tailwind attribute selectors for state
 //      (`aria-disabled:`, `aria-busy:`).
-//   3. Motion-aware loading state via `@place/reactivity/motion` —
+//   3. Motion-aware loading state via `@place-ts/reactivity/motion` —
 //      a debounced spinner that fades in only if `loading` stays
 //      truthy past a threshold (avoids jank for sub-100ms work).
 //   4. Composition via children + typed slot props (icon position),
@@ -23,10 +23,10 @@
 // utility on the call site); the recipe runs through `cls()` which is
 // Tailwind-aware merging.
 
-import type { Children, View } from '@place/component'
-import { cls, recipe } from '@place/component'
-import { state } from '@place/reactivity'
-import { animate } from '@place/reactivity/motion'
+import type { Children, View } from '@place-ts/component'
+import { cls, recipe } from '@place-ts/component'
+import { state } from '@place-ts/reactivity'
+import { animate } from '@place-ts/reactivity/motion'
 
 // ===== Recipe — variant taxonomy =====
 

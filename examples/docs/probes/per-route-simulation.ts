@@ -68,7 +68,7 @@ async function simulatePage(pagePath: string): Promise<RouteResult> {
 // Imports: the page itself, the docs layout, and the framework entry
 // for client-side mount. This is what a per-route split would ship.
 
-import { mount } from '@place/component'
+import { mount } from '@place-ts/component'
 import page from '${pagePath}'
 import { docsLayout } from '${resolve(import.meta.dir, '../src/layouts/docs.layout.tsx')}'
 

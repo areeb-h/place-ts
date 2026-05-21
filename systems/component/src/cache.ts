@@ -1,6 +1,6 @@
-import { runWithCapabilityScopeSync } from '@place/capability'
+import { runWithCapabilityScopeSync } from '@place-ts/capability'
 
-// @place/component cache primitive — used by ISR (revalidate-after-N-seconds)
+// @place-ts/component cache primitive — used by ISR (revalidate-after-N-seconds)
 // and the image optimizer (lazy variant generation). This is NOT a general-
 // purpose cache library; it is a typed contract between framework code that
 // produces cacheable Responses and pluggable storage backends.
@@ -12,7 +12,7 @@ import { runWithCapabilityScopeSync } from '@place/capability'
 //     URL+search strings, scoped to the route's intended audience.
 //   - SvelteKit and Astro punt entirely to Vercel's Build Output API for ISR
 //     storage, which only works on Vercel. Ours runs anywhere Bun runs, and
-//     the same interface accepts a `@place/persistence`-backed store later
+//     the same interface accepts a `@place-ts/persistence`-backed store later
 //     for multi-replica deployments.
 //
 // Inflight-dedupe (a single render serving many simultaneous waiters) is a

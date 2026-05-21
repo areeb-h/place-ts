@@ -28,9 +28,9 @@
 // `<dialog>` + `showModal()` is the reliable substrate today; switch
 // can happen later behind the same `<Sheet>` API if it pays off.
 
-import type { Children, View } from '@place/component'
-import { cls, recipe } from '@place/component'
-import { state, watch } from '@place/reactivity'
+import type { Children, View } from '@place-ts/component'
+import { cls, recipe } from '@place-ts/component'
+import { state, watch } from '@place-ts/reactivity'
 
 // ===== Recipe =====
 //
@@ -249,7 +249,7 @@ const Footer = (props: SlotProps): View => (
  * @provisional — shipped in Tier 16 (ADR 0046). Surface stable for
  * the side+size variants and the named-children slot shape. May grow
  * a `motion` prop later to coordinate enter/exit transitions with
- * `@place/reactivity/motion` once the use case triggers it.
+ * `@place-ts/reactivity/motion` once the use case triggers it.
  */
 export const Sheet = Object.assign(SheetImpl, {
   Header,

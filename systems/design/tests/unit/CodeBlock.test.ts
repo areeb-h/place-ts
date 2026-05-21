@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { renderToString } from '@place/component'
+import { renderToString } from '@place-ts/component'
 import { describe, expect, test } from 'vitest'
 import {
   CodeBlock,

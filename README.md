@@ -16,8 +16,8 @@ primitive, one inspectable graph.
 > including **51 fast-check property tests** across five systems
 > (security, reactivity, routing, capability, persistence). 56 ADRs.
 > Islands are the only hydration model — content pages ship zero
-> framework JS. A curated component library (`@place/design`, 14
-> primitives) and a motion sub-module (`@place/reactivity/motion`)
+> framework JS. A curated component library (`@place-ts/design`, 14
+> primitives) and a motion sub-module (`@place-ts/reactivity/motion`)
 > ship on top. The high-assurance server-action substrate
 > ([`criticalAction()`, ADR 0055](docs/decisions/0055-critical-action-high-assurance-server-actions.md))
 > ships envelope-signed requests, IPsec-style replay defense,
@@ -38,12 +38,12 @@ primitive, one inspectable graph.
 | [search](systems/search/) | v0.1 | `searchable(items)` — in-process substring + structured-query indexer |
 | [data](systems/data/) | v0.1 | `collection<T>()` — keyed CRUD over a `State<T[]>` with reactive lookups |
 | [security](systems/security/) | v0.1 | `signedToken` (HMAC-SHA256), `csrfToken`, `rateLimit`, `SessionCap` + `<Can>` RBAC gate, secure-by-default cookies, `cspHeader`, the HMAC envelope + IPsec-style nonce store + macaroon primitive + tamper-evident audit log that power `criticalAction()` |
-| build | inside `@place/component` | `Bun.build` integration + per-route splitting, island discovery + bundler, the view classifier, SRI hashing, the dev supervisor. Lives in `systems/component/src/build/`; not a top-level system. |
-| [cache](systems/cache/) | charter | Deferred. The internal `CacheStore` (powers ISR + image optimization) lives inside `@place/component`; the charter remains as design intent. |
+| build | inside `@place-ts/component` | `Bun.build` integration + per-route splitting, island discovery + bundler, the view classifier, SRI hashing, the dev supervisor. Lives in `systems/component/src/build/`; not a top-level system. |
+| [cache](systems/cache/) | charter | Deferred. The internal `CacheStore` (powers ISR + image optimization) lives inside `@place-ts/component`; the charter remains as design intent. |
 
 On top of the platform:
 
-- **[`@place/design`](systems/design/)** — a curated component library
+- **[`@place-ts/design`](systems/design/)** — a curated component library
   (Button, Field, Dialog, Sheet, Combobox, Toast, Tooltip, Menu,
   Disclosure, Avatar, Badge, Card, Copy, CodeBlock). Native-first:
   every primitive sits on a real browser primitive (`<dialog>`, the

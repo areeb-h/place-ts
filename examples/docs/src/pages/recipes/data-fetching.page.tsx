@@ -1,8 +1,8 @@
 // /recipes/data-fetching — load() for SSR data, ISR for caching,
 // useSearch for typed URL params, resource() for client-side fetches.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const LOAD = `// Server-only loader. Result is serialized into the SSR'd HTML
@@ -23,7 +23,7 @@ page('/blog/:slug', {
 })`
 
 const SEARCH = `// Typed search params with shape() validation.
-import { page, shape, useSearch } from '@place/component'
+import { page, shape, useSearch } from '@place-ts/component'
 
 page('/posts', {
   search: shape({ page: 'number', tag: 'string?' }),
@@ -36,7 +36,7 @@ page('/posts', {
 const RESOURCE = `// Client-side fetch with reactive status. Auto-disposes on unmount.
 // The loader receives an AbortSignal — forward it so stale fetches
 // are cancelled at the network layer.
-import { resource } from '@place/reactivity'
+import { resource } from '@place-ts/reactivity'
 
 const data = resource((signal) =>
   fetch('/api/health', { signal }).then((r) => r.json()),

@@ -417,9 +417,9 @@ describe('page({onError, onNotFound}) — per-page error views', () => {
   test('notFound() is distinguishable from a plain Error', () => {
     const nf = notFound()
     const regular = new Error('regular')
-    // The framework uses Symbol.for('@place/component:notFound') as the
+    // The framework uses Symbol.for('@place-ts/component:notFound') as the
     // marker — internal but checkable in tests.
-    const marker = Symbol.for('@place/component:notFound')
+    const marker = Symbol.for('@place-ts/component:notFound')
     expect((nf as Error & { [k: symbol]: unknown })[marker]).toBe(true)
     expect((regular as Error & { [k: symbol]: unknown })[marker]).toBeUndefined()
   })

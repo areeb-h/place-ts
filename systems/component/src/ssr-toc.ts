@@ -37,7 +37,7 @@ import { _getIslandRegistry, renderToString, type SsrHeading } from './index.ts'
 
 // `SsrHeading` is now declared canonically in `index.ts` (since the
 // framework's render-time heading collector is the primary surface).
-// We re-export here so existing consumers of `@place/component` that
+// We re-export here so existing consumers of `@place-ts/component` that
 // imported the type from this path keep working unchanged.
 export type { SsrHeading }
 
@@ -289,7 +289,7 @@ export function patchIslandMarker(
  * **Usage** from a `transformBody` hook:
  *
  * ```ts
- * import { extractMainHeadings, rerenderIsland } from '@place/component'
+ * import { extractMainHeadings, rerenderIsland } from '@place-ts/component'
  *
  * app({
  *   transformBody: (body) => {

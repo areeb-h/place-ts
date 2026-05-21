@@ -1,8 +1,8 @@
 {
-  "name": "@place/data",
+  "name": "@place-ts/data",
   "version": "0.1.0",
   "type": "module",
-  "description": "Data primitives over @place/reactivity. v0.1 ships a single primitive: collection<T>(state, options?) — keyed CRUD over a State<T[]> with reactive lookups + optional sorting. Replaces the hand-rolled CRUD shape that repeats per-entity in real apps.",
+  "description": "Data primitives over @place-ts/reactivity. v0.1 ships a single primitive: collection<T>(state, options?) — keyed CRUD over a State<T[]> with reactive lookups + optional sorting. Replaces the hand-rolled CRUD shape that repeats per-entity in real apps.",
   "keywords": [
     "place",
     "place-ts",
@@ -43,6 +43,6 @@
     "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
-    "@place/reactivity": "workspace:*"
+    "@place-ts/reactivity": "workspace:*"
   }
 }

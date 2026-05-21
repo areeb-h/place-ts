@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-05
-**Affects:** `@place/component/cache.ts`, `@place/capability` (`runWithCapabilityScopeSync`)
+**Affects:** `@place-ts/component/cache.ts`, `@place-ts/capability` (`runWithCapabilityScopeSync`)
 
 ## Context
 

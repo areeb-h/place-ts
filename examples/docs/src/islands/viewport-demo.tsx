@@ -8,7 +8,7 @@
 // ResizeObserver wiring of its own. The `viewport` namespace + the
 // inline runtime emitted by `serve()` do all the work.
 
-import { type View, viewport } from '@place/component'
+import { type View, viewport } from '@place-ts/component'
 
 const ViewportDemoImpl = (): View => {
   return (

@@ -1,6 +1,6 @@
 // CLI argument parsing for `place`.
 //
-// Hand-rolled — no parser dependency, mirroring `@place/create-app`.
+// Hand-rolled — no parser dependency, mirroring `@place-ts/create-app`.
 // The grammar is tiny: `place <command> [route] [options]`.
 
 /** The two diagnostic subcommands. */

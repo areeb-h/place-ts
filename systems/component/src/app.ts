@@ -28,8 +28,8 @@
 // stay values, refactors stay TypeScript renames, no codegen, no
 // stale `.d.ts`.
 
-import type { Capability } from '@place/capability'
-import { RouterCap } from '@place/routing'
+import type { Capability } from '@place-ts/capability'
+import { RouterCap } from '@place-ts/routing'
 import type { AnyLayout, AnyPage } from './page.ts'
 import { type ClientCapInstall, type ServeOptions, serve } from './serve.ts'
 
@@ -118,7 +118,7 @@ export interface AppConfig extends Omit<ServeOptions, 'routes' | 'port'> {
    * concatenated with newline separators — the canonical pattern
    * for layered styles:
    *
-   *   import { styles as designStyles } from '@place/design'
+   *   import { styles as designStyles } from '@place-ts/design'
    *   import { styles as appStyles } from './styles.ts'
    *
    *   app({ pages, theme, styles: [designStyles, appStyles] }).run()
@@ -205,7 +205,7 @@ export interface App {
  * Pages can be combined freely:
  *
  *   // app.tsx
- *   import { app } from '@place/component'
+ *   import { app } from '@place-ts/component'
  *   import home from './home.page'
  *   import postRoutes from './posts'   // exports Page[] for /posts/*
  *   import adminRoutes from './admin'  // exports Page[] for /admin/*

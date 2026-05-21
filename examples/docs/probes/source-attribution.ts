@@ -257,7 +257,7 @@ mdLines.push(
   '- A docs page bucket being LARGE — that page is doing too much; consider splitting interactive bits into islands.',
 )
 mdLines.push(
-  '- The single-largest source — often `index.ts` of `@place/component`, which is the framework barrel.',
+  '- The single-largest source — often `index.ts` of `@place-ts/component`, which is the framework barrel.',
 )
 mdLines.push('')
 

@@ -4,7 +4,7 @@
 // HTML renders on the server; the copy button only does anything after
 // hydration.
 
-import { state } from '@place/component'
+import { state } from '@place-ts/component'
 
 export type TokKind =
   | 'comment'

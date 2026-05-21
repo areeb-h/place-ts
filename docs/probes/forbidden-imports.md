@@ -6,24 +6,39 @@
 > This is the Tier 20 entrypoint-split enforcement: client safety is
 > an impossible import graph, not define-based dead-code elimination.
 
-## CLEAN — 15 client bundles, zero forbidden tokens
+## CLEAN — 30 client bundles, zero forbidden tokens
 
 | Bundle | Raw | Gzipped |
 |---|--:|--:|
 | `islands/chunk-17r93v7c.js` | 457 B | 340 B |
 | `islands/chunk-3j7qzb6m.js` | 44710 B | 16251 B |
 | `islands/chunk-5jj8gvrb.js` | 4202 B | 1663 B |
+| `islands/chunk-62pseks6.js` | 2389 B | 1091 B |
+| `islands/chunk-7hd5hyae.js` | 4217 B | 1668 B |
+| `islands/chunk-q9fcdvs6.js` | 44719 B | 16254 B |
+| `islands/chunk-rypg0waw.js` | 457 B | 338 B |
 | `islands/chunk-t9w8jnxh.js` | 2389 B | 1093 B |
+| `islands/code-block-48vPf-lsnLR_.js` | 5679 B | 2579 B |
 | `islands/code-block-A_69JjGa9sd_.js` | 5679 B | 2581 B |
+| `islands/mobile-nav-button-cVMPJC2FV0iy.js` | 2638 B | 1252 B |
 | `islands/mobile-nav-button-vyzx4EDZMTgf.js` | 2638 B | 1255 B |
+| `islands/mobile-nav-drawer-bfXsRngxX-zX.js` | 4276 B | 2004 B |
 | `islands/mobile-nav-drawer-fO6lCLo-QTty.js` | 4276 B | 2007 B |
 | `islands/page-nav-DvUQKgpWWgsr.js` | 4249 B | 1865 B |
+| `islands/page-nav-SadCMUJhvsDk.js` | 4249 B | 1863 B |
 | `islands/reactivity-demo-50lRyJXLiRew.js` | 5424 B | 2333 B |
+| `islands/reactivity-demo-HWKLXbghyD4F.js` | 5424 B | 2332 B |
 | `islands/search-palette-19vssGXpQHhy.js` | 2663 B | 1264 B |
+| `islands/search-palette-ml9WihVTVOof.js` | 2663 B | 1260 B |
+| `islands/search-trigger-L-JnWyVWmf9C.js` | 3398 B | 1622 B |
 | `islands/search-trigger-ckyMk-xm8ED6.js` | 3398 B | 1627 B |
+| `islands/sheet-combobox-demo-hB7mYqtt1F-z.js` | 30401 B | 9955 B |
 | `islands/sheet-combobox-demo-hfNMkEz_2RQ1.js` | 30401 B | 9956 B |
+| `islands/theme-toggle--7ISToNFiUqX.js` | 4058 B | 1867 B |
 | `islands/theme-toggle-eT4hQIpvEVy4.js` | 4058 B | 1868 B |
+| `islands/toc-94t-RdHoh0-l.js` | 4229 B | 2100 B |
 | `islands/toc-FbIgzXj6ioLT.js` | 4229 B | 2101 B |
 | `islands/viewport-demo-SWPsd2-8dnJj.js` | 3905 B | 1566 B |
-| **total (15)** | **122678 B** | **47770 B** |
+| `islands/viewport-demo-wsg7DO9uF1J6.js` | 3905 B | 1564 B |
+| **total (30)** | **245380 B** | **95519 B** |
 

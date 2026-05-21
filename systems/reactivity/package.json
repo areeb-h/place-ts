@@ -1,5 +1,5 @@
 {
-  "name": "@place/reactivity",
+  "name": "@place-ts/reactivity",
   "version": "0.1.0",
   "type": "module",
   "description": "Time-indexed reactive primitives — derivation as primary, graph as artefact",

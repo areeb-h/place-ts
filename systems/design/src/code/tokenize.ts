@@ -1057,7 +1057,7 @@ const registry = new Map<string, Tokenizer>([
  * existing entry for the same name. The name is stored lowercased.
  *
  * ```ts
- * import { registerLanguage } from '@place/design'
+ * import { registerLanguage } from '@place-ts/design'
  *
  * registerLanguage('rust', (src) => {
  *   // ... your tokenizer ...

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { mount } from '@place/component'
-import { flush } from '@place/reactivity'
+import { mount } from '@place-ts/component'
+import { flush } from '@place-ts/reactivity'
 import { afterEach, describe, expect, test } from 'vitest'
 import { _clearToastsForTest, Toaster, toast } from '../../src/Toast.tsx'
 

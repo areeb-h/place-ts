@@ -3,7 +3,7 @@
 //
 // Goal: a docs page or component file can reference `Tabs`, `Activity`,
 // `state`, `cookieState`, `onMount`, etc. without ever writing an
-// `import { … } from '@place/component'` line. The plugin scans each
+// `import { … } from '@place-ts/component'` line. The plugin scans each
 // file at load time and prepends only the imports that file actually
 // needs (and doesn't already have).
 //
@@ -30,42 +30,42 @@ import type { BunPlugin } from 'bun'
 export type AutoImportRegistry = Readonly<Record<string, string>>
 
 /**
- * Default registry — framework primitives from `@place/component`. Each
+ * Default registry — framework primitives from `@place-ts/component`. Each
  * entry says "if this name is referenced in a file but not in scope,
  * add the import." Append project-level entries via the `extras`
  * parameter to `placeAutoImport()`.
  */
 export const PLACE_AUTO_IMPORTS: AutoImportRegistry = {
   // ----- Reactivity -----
-  state: '@place/component',
-  watch: '@place/component',
-  derived: '@place/component',
-  untrack: '@place/component',
+  state: '@place-ts/component',
+  watch: '@place-ts/component',
+  derived: '@place-ts/component',
+  untrack: '@place-ts/component',
   // ----- Lifecycle -----
-  onMount: '@place/component',
-  onCleanup: '@place/component',
+  onMount: '@place-ts/component',
+  onCleanup: '@place-ts/component',
   // ----- Cookies + persistence -----
-  cookie: '@place/component',
-  cookieState: '@place/component',
+  cookie: '@place-ts/component',
+  cookieState: '@place-ts/component',
   // ----- Components -----
-  island: '@place/component',
-  view: '@place/component',
-  Tab: '@place/component',
-  Tabs: '@place/component',
-  tabsState: '@place/component',
-  Activity: '@place/component',
-  Show: '@place/component',
-  Fragment: '@place/component',
+  island: '@place-ts/component',
+  view: '@place-ts/component',
+  Tab: '@place-ts/component',
+  Tabs: '@place-ts/component',
+  tabsState: '@place-ts/component',
+  Activity: '@place-ts/component',
+  Show: '@place-ts/component',
+  Fragment: '@place-ts/component',
   // ----- Theme -----
-  setTheme: '@place/component',
-  themeTokens: '@place/component',
+  setTheme: '@place-ts/component',
+  themeTokens: '@place-ts/component',
 }
 
 /**
  * Bun.build / Bun.plugin compatible plugin factory. Wire it in via:
  *
  *   // bunfig.toml
- *   preload = ["@place/component/preload"]
+ *   preload = ["@place-ts/component/preload"]
  *
  * (the preload module calls `Bun.plugin(placeAutoImport())` so the
  * transform runs for every file loaded thereafter, including pages
@@ -143,7 +143,7 @@ export function autoImportTransform(
     const isFrameworkRef =
       alreadyImported.has(ident) ||
       inScope.has(ident) ||
-      (grouped.get('@place/component')?.has(ident) ?? false) ||
+      (grouped.get('@place-ts/component')?.has(ident) ?? false) ||
       new RegExp(`\\b${ident}\\b`).test(scannable)
     if (!isFrameworkRef) continue
     transformed = injectFactorySrcUrlArg(transformed, ident)
@@ -156,9 +156,9 @@ export function autoImportTransform(
       !inScope.has(ident) &&
       new RegExp(`\\b${ident}\\b`).test(scannable)
     ) {
-      const set = grouped.get('@place/component') ?? new Set<string>()
+      const set = grouped.get('@place-ts/component') ?? new Set<string>()
       set.add(ident)
-      grouped.set('@place/component', set)
+      grouped.set('@place-ts/component', set)
     }
   }
   if (grouped.size === 0) return transformed

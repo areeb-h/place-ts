@@ -68,8 +68,8 @@ Optional. Things future readers might find useful — links, references, follow-
 | [0012](0012-fragment-reactive-children.md) | Fragment.hydrate handles reactive function children | accepted | 2026-05-13 |
 | [0013](0013-auto-import-plugin.md) | Auto-import plugin for framework primitives | accepted | 2026-05-13 |
 | [0014](0014-csp-safe-style-writes.md) | CSP-safe inline style writes via `CSSStyleDeclaration.setProperty` | accepted | 2026-05-13 |
-| [0015](0015-motion-as-reactivity-submodule.md) | Motion lives in `@place/reactivity/motion`, not a separate system | accepted | 2026-05-13 |
-| [0016](0016-design-library-as-package.md) | `@place/design` is a package, not a 10th system | accepted | 2026-05-13 |
+| [0015](0015-motion-as-reactivity-submodule.md) | Motion lives in `@place-ts/reactivity/motion`, not a separate system | accepted | 2026-05-13 |
+| [0016](0016-design-library-as-package.md) | `@place-ts/design` is a package, not a 10th system | accepted | 2026-05-13 |
 | [0017](0017-canvas-deferred-pending-devtool.md) | Canvas / scene-graph system deferred until devtool trigger | accepted | 2026-05-13 |
 | [0018](0018-per-route-bundle-splitting.md) | Per-route bundle splitting (T5-B-1) | accepted | 2026-05-14 |
 | [0019](0019-typed-islands-not-string-directives.md) | Typed islands, not string directives | accepted | 2026-05-14 |

@@ -8,7 +8,7 @@ If something below changes, update it in the same PR. The covenant in [stability
 
 | Surface | Unit tests | Browser-verified | Load-tested at scale | Known production users |
 |---|---|---|---|---|
-| Reactivity (`@place/reactivity`) | ✅ 145+ tests + property tests | ✅ via sandbox | ❌ | None |
+| Reactivity (`@place-ts/reactivity`) | ✅ 145+ tests + property tests | ✅ via sandbox | ❌ | None |
 | Component (`el`/`mount`/`hydrate`) | ✅ ~200+ tests | ✅ via all 3 examples | ❌ | None |
 | SSR + streaming (`renderToString`/`renderToStream`/`suspense`) | ✅ | ✅ via sync-server `/ssr/*` | ❌ | None |
 | `serve()` HTTP entry | ✅ (incl. bun-only suite) | ✅ all 3 examples boot | ❌ | None |

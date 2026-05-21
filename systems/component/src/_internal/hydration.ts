@@ -16,7 +16,7 @@
 //      the wrong DOM and produce subtle visual bugs. NODE_ENV-gated so
 //      the prod build dead-code-eliminates the entire path.
 
-import { state } from '@place/reactivity'
+import { state } from '@place-ts/reactivity'
 
 // ===== Hydration-complete flag =====
 

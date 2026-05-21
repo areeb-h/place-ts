@@ -3,15 +3,15 @@
 // page is denser than the typical framework landing because place is
 // a *platform of nine systems* — we name each one.
 
-import { Link, page } from '@place/component'
-import { Badge, Card, CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { Badge, Card, CodeBlock } from '@place-ts/design'
 // TypingCode is now pure SSR + CSS — no JS reactivity needed for the
 // reveal animation. Imported directly from `components/`, not islands.
 import { TypingCode } from '../components/typing-code.tsx'
 import { button, inlineCode, sectionLabel } from '../design-system.ts'
 
-const APP_SHAPE = `import { app } from '@place/component/server'
-import { pathRouter } from '@place/routing'
+const APP_SHAPE = `import { app } from '@place-ts/component/server'
+import { pathRouter } from '@place-ts/routing'
 import home from './pages/home.page'
 import about from './pages/about.page'
 import { rootLayout } from './layouts/root.layout'
@@ -53,12 +53,12 @@ const FEATURES: readonly Feature[] = [
   },
   {
     title: 'Motion as state',
-    body: '@place/reactivity/motion — animate() returns a Derived<number>. Springs, tweens, sequences. SSR resolves to rest. No <motion.div> factory, no two-runtime split, no 34KB floor.',
+    body: '@place-ts/reactivity/motion — animate() returns a Derived<number>. Springs, tweens, sequences. SSR resolves to rest. No <motion.div> factory, no two-runtime split, no 34KB floor.',
     tag: 'new',
   },
   {
     title: 'Design system, native-first',
-    body: '@place/design — Button, Field, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card. Built on <dialog>, the Popover API, :user-invalid. Curated package, not a 10th system.',
+    body: '@place-ts/design — Button, Field, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card. Built on <dialog>, the Popover API, :user-invalid. Curated package, not a 10th system.',
     tag: 'new',
   },
   {
@@ -216,7 +216,7 @@ export default page('/', {
         <p class="text-sm text-muted leading-relaxed mb-4 max-w-2xl">
           This docs site is a place app. The interactive reactivity demo on{' '}
           <Link to="/concepts/reactivity">the reactivity page</Link> uses the same{' '}
-          <code class={inlineCode}>@place/reactivity</code> primitives the framework ships. The
+          <code class={inlineCode}>@place-ts/reactivity</code> primitives the framework ships. The
           Cmd+K search palette uses the same <code class={inlineCode}>globalKey</code> +{' '}
           <code class={inlineCode}>state</code> you'd use in your app. There's no privileged
           internal surface you can't reach.

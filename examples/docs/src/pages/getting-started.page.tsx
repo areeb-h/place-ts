@@ -2,18 +2,18 @@
 // Each step includes the actual code; no marketing fluff. Code blocks
 // route through <CodeBlock> for syntax highlighting + copy.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 
 const INSTALL_BUN = `curl -fsSL https://bun.sh/install | bash`
 
-const SCAFFOLD = `bunx @place/create-app my-app
+const SCAFFOLD = `bunx @place-ts/create-app my-app
 cd my-app
 bun install
 bun run dev`
 
 const ADD_PAGE = `// src/pages/about.page.tsx
-import { page } from '@place/component'
+import { page } from '@place-ts/component'
 
 export default page('/about', {
   meta: 'About',  // string shorthand; layout's titleTemplate adds the suffix
@@ -25,7 +25,7 @@ export default page('/about', {
   ),
 })`
 
-const ADD_DATA = `import { page, shape, useSearch } from '@place/component'
+const ADD_DATA = `import { page, shape, useSearch } from '@place-ts/component'
 
 export default page('/posts', {
   search: shape({ page: 'number', tag: 'string?' }),
@@ -68,7 +68,7 @@ export default page('/demo', {
   ),
 })`
 
-const ADD_CAP = `import { defineCapability } from '@place/capability'
+const ADD_CAP = `import { defineCapability } from '@place-ts/capability'
 
 interface NoteStore {
   all(): readonly Note[]

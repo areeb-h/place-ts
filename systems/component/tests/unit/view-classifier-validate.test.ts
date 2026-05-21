@@ -20,7 +20,7 @@ import {
 describe('extractAssertedLevel — parsing `view()` options', () => {
   test("recognises view(fn, { level: 'static' })", () => {
     const src = `
-      import { view } from '@place/component'
+      import { view } from '@place-ts/component'
       const fn = () => null
       export default view(fn, { level: 'static' })
     `
@@ -29,7 +29,7 @@ describe('extractAssertedLevel — parsing `view()` options', () => {
 
   test("recognises view(src, fn, { level: 'static' }) — three-arg form", () => {
     const src = `
-      import { view } from '@place/component'
+      import { view } from '@place-ts/component'
       export default view(import.meta.url, () => null, { level: 'static' })
     `
     expect(extractAssertedLevel(src)).toBe('static')
@@ -102,7 +102,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
   test('passes when assertion + classifier both say static', () => {
     const src = `
       // Pure component — no effects.
-      import { view } from '@place/component'
+      import { view } from '@place-ts/component'
       const fn = (props) => null
       export default view(fn, { level: 'static' })
     `
@@ -113,7 +113,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
 
   test("throws when 'static' asserted but body uses state()", () => {
     const src = `
-      import { state, view } from '@place/component'
+      import { state, view } from '@place-ts/component'
       const fn = () => {
         const n = state(0)
         return null
@@ -129,7 +129,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
 
   test("throws when 'static' asserted but body uses onMount()", () => {
     const src = `
-      import { onMount, view } from '@place/component'
+      import { onMount, view } from '@place-ts/component'
       const fn = () => {
         onMount(() => {})
         return null
@@ -145,7 +145,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
 
   test('error message names the offending primitive', () => {
     const src = `
-      import { state, view } from '@place/component'
+      import { state, view } from '@place-ts/component'
       const fn = () => {
         const n = state(0)
         return null
@@ -170,7 +170,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
     // classify as L1 is fine — the dev opted for the safer emit
     // explicitly. Validation only catches OVER-aggressive asserts.
     const src = `
-      import { state, view } from '@place/component'
+      import { state, view } from '@place-ts/component'
       const fn = () => {
         const n = state(0)
         return null
@@ -183,7 +183,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
 
   test('does NOT throw when no assertion is present', () => {
     const src = `
-      import { state, view } from '@place/component'
+      import { state, view } from '@place-ts/component'
       const fn = () => {
         const n = state(0)
         return null
@@ -196,7 +196,7 @@ describe("validateAssertedLevel — 'static' assertion + classifier mismatch", (
 
   test('does NOT throw on dynamic level expression (un-statically-analysable)', () => {
     const src = `
-      import { state, view } from '@place/component'
+      import { state, view } from '@place-ts/component'
       const dynamicLevel = 'static'
       const fn = () => {
         const n = state(0)

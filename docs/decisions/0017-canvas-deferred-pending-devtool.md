@@ -72,7 +72,7 @@ and event routing are unified across both.
 **Public surface (sketched):**
 
 ```tsx
-import { Canvas, Rect, Circle, Path, Text, Group } from '@place/canvas'
+import { Canvas, Rect, Circle, Path, Text, Group } from '@place-ts/canvas'
 
 <Canvas width={400} height={300}>
   <Rect
@@ -120,7 +120,7 @@ import { Canvas, Rect, Circle, Path, Text, Group } from '@place/canvas'
 
 ### When the trigger fires
 
-- New top-level system `@place/canvas` joins the platform map (the
+- New top-level system `@place-ts/canvas` joins the platform map (the
   10th system).
 - The platform map gets an ADR-driven update (referencing this ADR's
   trigger condition).

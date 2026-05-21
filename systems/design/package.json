@@ -1,8 +1,8 @@
 {
-  "name": "@place/design",
+  "name": "@place-ts/design",
   "version": "0.1.0",
   "type": "module",
-  "description": "Component library — opinionated primitives built on @place/component + @place/reactivity. NOT a 10th platform system; see ADR 0016.",
+  "description": "Component library — opinionated primitives built on @place-ts/component + @place-ts/reactivity. NOT a 10th platform system; see ADR 0016.",
   "keywords": [
     "place",
     "place-ts",
@@ -42,7 +42,7 @@
     "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
-    "@place/component": "workspace:*",
-    "@place/reactivity": "workspace:*"
+    "@place-ts/component": "workspace:*",
+    "@place-ts/reactivity": "workspace:*"
   }
 }

@@ -18,7 +18,7 @@
     "test:property": "vitest run --dir systems --testNamePattern '^property:'",
     "test:conformance": "vitest run tests/conformance",
     "test:ui": "vitest --ui",
-    "docs": "bun --filter '@place/docs' dev",
+    "docs": "bun --filter '@place-ts/docs' dev",
     "bench": "vitest bench --run",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

@@ -15,7 +15,7 @@ flow without inventing a new auth model.
 
 ## Decision
 
-Ship `<Can>` as a thin behavior primitive in `@place/security` that
+Ship `<Can>` as a thin behavior primitive in `@place-ts/security` that
 gates its children on `session.can(action) === true`. Extend
 `Session` with an optional `can?: (action: string) => boolean` field
 that apps populate at session-install time from whatever policy
@@ -54,7 +54,7 @@ Usage:
 
 ### Where it lives
 
-`@place/security`, not `@place/design`. The primitive's input is
+`@place-ts/security`, not `@place-ts/design`. The primitive's input is
 `SessionCap` and the security model — the right system to own it is
 the one that owns Session. Visual design libraries can still compose
 with `<Can>` (e.g., `<Can do="x"><Button …/></Can>`).

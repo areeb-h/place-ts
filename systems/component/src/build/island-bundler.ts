@@ -40,7 +40,7 @@ import { classifyIslandWithTypes, createTypedClassifierContext } from './view-cl
  *
  * The factory function's source module is identified by the function's
  * `__placeClientImport` metadata (see `ClientCapImport` in
- * `@place/routing`). The framework ships this metadata for
+ * `@place-ts/routing`). The framework ships this metadata for
  * `pathRouter` / `hashRouter` / `memoryRouter`; third-party caps
  * either annotate their factory or the user installs them manually.
  */
@@ -203,7 +203,7 @@ import { _setHydrated, hydrate, mount } from ${JSON.stringify(frameworkSrc)}
 // graph by the island a developer wrote. Both functions are cheap
 // no-op-shaped (a stack push/pop); the labels are read only by the
 // dev-only \`inspectGraph()\`.
-import { _popDevScope, _pushDevScope } from '@place/reactivity'
+import { _popDevScope, _pushDevScope } from '@place-ts/reactivity'
 
 const NAME = ${JSON.stringify(name)}
 const POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype'])

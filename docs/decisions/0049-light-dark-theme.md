@@ -27,7 +27,7 @@ Three downsides became clear in 2026:
    plus a 4th time inside the prefers-color-scheme media block. CSS
    size scales linearly with theme count.
 2. **`.dark`-class proliferation.** Every component with theme-
-   aware styling (most of `@place/design`) implicitly depends on
+   aware styling (most of `@place-ts/design`) implicitly depends on
    the class being on `<html>`. Apps that wanted "this section in
    dark theme regardless of root" had no scoped escape.
 3. **OS-preference fallback requires a `:not()` cascade.** The

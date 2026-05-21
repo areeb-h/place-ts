@@ -59,7 +59,7 @@ Same for `<Show>`: the function-form-as-child binding (already in `02-design.md`
 
 ## Recommendation
 
-**Adopt JSX-shape via the TypeScript automatic runtime (`jsxImportSource: "@place/component"`), with our element factories as the JSX runtime target.** No Babel plugin. No template-cloning optimization at v0.2. No `<For>` / `<Show>` magic — `keyed()` and the function-as-child form already cover those.
+**Adopt JSX-shape via the TypeScript automatic runtime (`jsxImportSource: "@place-ts/component"`), with our element factories as the JSX runtime target.** No Babel plugin. No template-cloning optimization at v0.2. No `<For>` / `<Show>` magic — `keyed()` and the function-as-child form already cover those.
 
 Concretely:
 1. Build factories as `02-design.md` v0.2 already plans. `View` + `mount` + factories + `keyed` ship first.

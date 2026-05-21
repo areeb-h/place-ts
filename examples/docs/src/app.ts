@@ -18,16 +18,16 @@
 //     `viewTransitions: false` (default), so they don't need to be
 //     listed.
 
-import { app, discoverPages } from '@place/component/server'
-import { styles as designStyles } from '@place/design'
-import { pathRouter } from '@place/routing'
+import { app, discoverPages } from '@place-ts/component/server'
+import { styles as designStyles } from '@place-ts/design'
+import { pathRouter } from '@place-ts/routing'
 
 import { docsLayout } from './layouts/docs.layout.tsx'
 import { styles as appStyles } from './styles.ts'
 import { tokens } from './theme.ts'
 
 // Devtools wiring is framework-owned now: `app({ devtools: 'auto' })`
-// (the default) auto-imports `@place/devtools/island`, registers it,
+// (the default) auto-imports `@place-ts/devtools/island`, registers it,
 // and emits the marker. `bun run build` (`NODE_ENV=production`)
 // resolves `'auto'` to false → the devtools dep is never imported,
 // never bundled, never shipped.
@@ -38,7 +38,7 @@ import { tokens } from './theme.ts'
 // class before first paint, on a live server AND a static export.
 // No `earlyHead` boilerplate here.
 const docsApp = app({
-  name: '@place/docs',
+  name: '@place-ts/docs',
   pages: await discoverPages('./src/pages'),
   layout: docsLayout,
   theme: tokens,

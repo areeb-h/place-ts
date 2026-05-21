@@ -3,7 +3,7 @@
 # the workspace-root bunfig.toml doesn't propagate here.
 
 jsx = "react-jsx"
-jsxImportSource = "@place/component"
+jsxImportSource = "@place-ts/component"
 
 # Auto-import preload. Registers `Bun.plugin(placeAutoImport())` so
 # framework primitives (`state`, `Activity`, `cookieState`, `onMount`,

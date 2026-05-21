@@ -14,7 +14,7 @@
 // is wrong). SPA nav moves focus to `<main>`, so the ring never
 // lingers on the clicked link.
 
-import { Link } from '@place/component'
+import { Link } from '@place-ts/component'
 
 export interface SidebarSection {
   readonly title: string

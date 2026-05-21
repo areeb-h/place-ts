@@ -1,8 +1,8 @@
 // /recipes/streaming — streaming SSR with <Suspense>. Comment-marker
 // swap, no React baggage.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const STREAM = `// Mark the page streaming and wrap the slow part in <Suspense>.

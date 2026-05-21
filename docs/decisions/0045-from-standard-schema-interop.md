@@ -31,7 +31,7 @@ format without knowing or caring which library produced it.
 
 ## Decision
 
-Ship two surfaces in `@place/component`:
+Ship two surfaces in `@place-ts/component`:
 
 ### `fromStandard(schema)` — schema adapter
 
@@ -72,7 +72,7 @@ typed output.
 ```ts
 // shared.action.ts
 import { z } from 'zod'
-import { action, fromStandard } from '@place/component'
+import { action, fromStandard } from '@place-ts/component'
 
 export const signup = action({
   path: 'POST /api/signup',
@@ -89,9 +89,9 @@ export const signup = action({
 
 ```tsx
 // signup-form.tsx
-import { state } from '@place/reactivity'
-import { Form, ActionError, isValidationFailure } from '@place/component'
-import { Field, Input, Button } from '@place/design'
+import { state } from '@place-ts/reactivity'
+import { Form, ActionError, isValidationFailure } from '@place-ts/component'
+import { Field, Input, Button } from '@place-ts/design'
 import { signup } from './shared.action'
 
 const emailErr = state('')

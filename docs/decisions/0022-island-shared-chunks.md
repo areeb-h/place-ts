@@ -166,7 +166,7 @@ preserves input order). Shared chunks get served at
    wrapper.
 3. **Wrap with `island()`** at the bottom of the module:
    ```tsx
-   import { island } from '@place/component'
+   import { island } from '@place-ts/component'
    const MyWidget = island(import.meta.url, MyWidgetImpl)
    export default MyWidget
    export { MyWidget }   // for ergonomic named imports

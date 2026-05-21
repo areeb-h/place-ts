@@ -6,7 +6,7 @@ description: Living roadmap. What's shipped, what's in flight, what's queued, wh
 
 The living plan for `place`. Each section: what we're committing to, why, and how we'll know it's done.
 
-> **Last touched:** 2026-05-14 (Tier 3 — motion + design library shipped. `@place/reactivity/motion` adds spring/tween/sequence/curve as derived state over time ([ADR 0015](decisions/0015-motion-as-reactivity-submodule.md)). `@place/design` is the first curated package built on the platform, ships nine primitives — Button, Field/Input/Textarea, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card — every one native-first ([ADR 0016](decisions/0016-design-library-as-package.md)). Canvas design locked in but deferred until the reactive-graph devtool trigger fires ([ADR 0017](decisions/0017-canvas-deferred-pending-devtool.md)). Docs site migrated to `@place/design` as the first real consumer.)
+> **Last touched:** 2026-05-14 (Tier 3 — motion + design library shipped. `@place-ts/reactivity/motion` adds spring/tween/sequence/curve as derived state over time ([ADR 0015](decisions/0015-motion-as-reactivity-submodule.md)). `@place-ts/design` is the first curated package built on the platform, ships nine primitives — Button, Field/Input/Textarea, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card — every one native-first ([ADR 0016](decisions/0016-design-library-as-package.md)). Canvas design locked in but deferred until the reactive-graph devtool trigger fires ([ADR 0017](decisions/0017-canvas-deferred-pending-devtool.md)). Docs site migrated to `@place-ts/design` as the first real consumer.)
 > **In flight:** Tier 1-A Cut 3 (`element/factory.ts` + `element/ssr.ts` extraction from component/src/index.ts) + `.read()`/`.write()` → callable-form codemod for framework internals (~20 sites)
 > **Test totals:** 1078 passing + 14 skipped under vitest = 1092 total across 67 files
 
@@ -38,7 +38,7 @@ The living plan for `place`. Each section: what we're committing to, why, and ho
 - **51 ADRs** recorded in [docs/decisions/](decisions/) — 0001 through 0051.
 - **Live in production:** the docs site is deployed on Cloudflare Pages as an islands-aware static export (`app().build()`, ADR 0051) — 100/100/100/100 Lighthouse, strict static CSP, hover-prefetch SPA navigation.
 - All example apps run on the framework's own pipeline (`serve()` + auto-Tailwind v4 + strict CSP + cookie-driven theming); no Vite anywhere.
-- **Nine systems** shipped — reactivity, component, capability, routing, data, persistence, search, security, design ([00-system-map.md](platform/00-system-map.md)). Motion ships as `@place/reactivity/motion`; `@place/design` is a curated package on top.
+- **Nine systems** shipped — reactivity, component, capability, routing, data, persistence, search, security, design ([00-system-map.md](platform/00-system-map.md)). Motion ships as `@place-ts/reactivity/motion`; `@place-ts/design` is a curated package on top.
 - First public git repository, with a layered commit history.
 - Detailed session-by-session history lives in the [design journal](journal/) and the dated [audits](audits/); the phase sections below are the historical record up to Tier 3. Tiers 4–19 (the SSR/islands/HMR/design-system/static-export arc) are tracked in the journal + audits.
 
@@ -66,7 +66,7 @@ The current arc. Closes 5 of 8 honest gaps identified in the framework compariso
 
 **Tests:** 10 new (round-trip, overwrite, key/tag deletion, mixed filters, Uint8Array bodies).
 
-**Why we ship our own:** Next's `unstable_cache` is global+untyped, has caused real auth-context-bleed incidents. SvelteKit/Astro punt to Vercel's Build Output API for ISR storage — only works on Vercel. Ours runs anywhere Bun runs, with a pluggable interface for `@place/persistence`-backed stores later.
+**Why we ship our own:** Next's `unstable_cache` is global+untyped, has caused real auth-context-bleed incidents. SvelteKit/Astro punt to Vercel's Build Output API for ISR storage — only works on Vercel. Ours runs anywhere Bun runs, with a pluggable interface for `@place-ts/persistence`-backed stores later.
 
 ### 4.3 — ISR (lazy stale-while-revalidate) ✓ shipped
 
@@ -167,7 +167,7 @@ After Phase 4 lands, the platform is feature-complete enough to compete with Nex
 
 #### nodeAdapter() — shipped
 
-`@place/component/adapters/node` exports `nodeAdapter({ port, hostname, onListen })`. Translates Node's `http.IncomingMessage`/`ServerResponse` to Web `Request`/`Response`. Pre-build constraint: Node has no `Bun.build`, so callers pass `clientJs: '<pre-built bundle string>'` (typically built by esbuild/Vite/Rollup ahead of time). Static assets work via an `fs`-based fallback in the framework's `readStaticFile()` primitive. Per-request CSP nonce + ALS scopes work end-to-end under Node — verified via integration tests that spin up a real http server under vitest.
+`@place-ts/component/adapters/node` exports `nodeAdapter({ port, hostname, onListen })`. Translates Node's `http.IncomingMessage`/`ServerResponse` to Web `Request`/`Response`. Pre-build constraint: Node has no `Bun.build`, so callers pass `clientJs: '<pre-built bundle string>'` (typically built by esbuild/Vite/Rollup ahead of time). Static assets work via an `fs`-based fallback in the framework's `readStaticFile()` primitive. Per-request CSP nonce + ALS scopes work end-to-end under Node — verified via integration tests that spin up a real http server under vitest.
 
 **Vercel:** emit Build Output API v3 — `.vercel/output/config.json` + per-route function manifests. Static prerendered routes go to `static/`; dynamic routes get a function entry. ISR is native (Vercel's edge cache).
 
@@ -183,7 +183,7 @@ After Phase 4 lands, the platform is feature-complete enough to compete with Nex
 
 ### 5.2 — Font helper ✓ shipped
 
-**What shipped:** `font(opts)` and `fonts(...defs)` helpers (`@place/component`'s [src/font.ts](../systems/component/src/font.ts)) that emit `@font-face` CSS + `<link rel="preload" as="font" crossorigin>` markup ready to drop into `page({ styles, meta: { extra } })`. Format auto-detected from URL extension (.woff2 / .woff / .ttf / .otf / .eot). CSP-clean: `font-src 'self'` is sufficient — no Google Fonts allowlist needed when self-hosting. CSS-injection-safe: family/URL escapes the `"` and `\` characters.
+**What shipped:** `font(opts)` and `fonts(...defs)` helpers (`@place-ts/component`'s [src/font.ts](../systems/component/src/font.ts)) that emit `@font-face` CSS + `<link rel="preload" as="font" crossorigin>` markup ready to drop into `page({ styles, meta: { extra } })`. Format auto-detected from URL extension (.woff2 / .woff / .ttf / .otf / .eot). CSP-clean: `font-src 'self'` is sufficient — no Google Fonts allowlist needed when self-hosting. CSS-injection-safe: family/URL escapes the `"` and `\` characters.
 
 **17 tests** covering format detection, multi-src, variable-weight ranges, unicode-range, preload semantics, escape safety, and `fonts()` composition.
 
@@ -241,53 +241,53 @@ Things we know need to happen eventually but require either substantial architec
 
 The component system is the active focus, but other systems have their own roadmaps. Brief status:
 
-### `@place/reactivity`
+### `@place-ts/reactivity`
 
 **v0.1 shipped:** state, watch, computed, effect, batch, untrack, scheduler, derivable-state property tests, history, resource.
 
 **Phase 5 candidates:** time-indexing primitives (Phase 5 of the original 8-phase reactivity plan); reactive integration with capability scopes (subscription + reactive scope coordination).
 
-### `@place/capability`
+### `@place-ts/capability`
 
 **v0.3 shipped:** `defineCapability`, `provide`, `install`, `use`, `tryUse`, `withCapability`, `withCapabilities`, `requires` (manual annotation Phase 4 v0.1), `runWithCapabilityScope` (just shipped in 4.1).
 
 **Phase 4 v0.2 candidates:** compile-time effect-scope enforcement via build step. Currently typed `Requires<C>` is documentation only; a build pass would verify cap-availability statically.
 
-### `@place/data`
+### `@place-ts/data`
 
 **v0.x:** Collection primitive (15 tests). Scope is still under-defined; needs a charter rewrite. Real use case: the commonplace book's note collection, but currently that's done via direct reactivity.
 
 **Direction:** typed query layer that compiles to optimal storage backend (in-memory, IndexedDB, server). Phase 5 candidate.
 
-### `@place/cache`
+### `@place-ts/cache`
 
 **Status:** charter only. May be subsumed by the `CacheStore` shipped in component/4.2 — TBD whether this is an empty system or its own thing. Resolve before Phase 5 ships.
 
-### `@place/persistence`
+### `@place-ts/persistence`
 
 **v0.3 shipped:** memory adapter, server adapter via fetch, persistedState. 38 tests.
 
 **Phase 4 candidates:** IndexedDB adapter (the deferred async-as-pending production case); a `CacheStore` impl that wraps a persistence adapter (closes the loop with component/4.2).
 
-### `@place/routing`
+### `@place-ts/routing`
 
 **v0.x stable:** path matcher (`route()`), URL parser, hash router, history router, Router cap. 97 tests. `urlState` lives in component but uses RouterCap.
 
 **No active development.** API is settled.
 
-### `@place/search`
+### `@place-ts/search`
 
 **v0.x:** basic substring + ranking. 11 tests.
 
 **Phase 4 candidates:** indexing strategies (n-gram, posting list); semantic search via embedding.
 
-### `@place/security`
+### `@place-ts/security`
 
 **v0.x:** signed tokens, CSRF, cookies, rate limit. 26 tests.
 
 **Stable.** No active changes; CSP rendering moved to component as part of 4.x.
 
-### `@place/build`
+### `@place-ts/build`
 
 **v0.x:** scaffold only. Phase 6+ — custom syntax / compiler passes.
 
@@ -379,7 +379,7 @@ Commonplace rebuilt as the structural-wins demo: every Round 1–6 shipping feat
 
 These aren't blocking anything but deserve thinking-time before they bite:
 
-1. ✅ **RESOLVED: `@place/cache` vs component's `CacheStore`.** They're different scopes. CacheStore is the operational primitive (typed get/set/delete; powers ISR + image opt) and lives in component because that's where the consumers are. The `@place/cache` charter remains as the design intent for the broader "cache entries as State + invalidation graph" — a v0.6+ idea, not a v0.5 blocker. See [systems/cache/README.md](../systems/cache/README.md).
+1. ✅ **RESOLVED: `@place-ts/cache` vs component's `CacheStore`.** They're different scopes. CacheStore is the operational primitive (typed get/set/delete; powers ISR + image opt) and lives in component because that's where the consumers are. The `@place-ts/cache` charter remains as the design intent for the broader "cache entries as State + invalidation graph" — a v0.6+ idea, not a v0.5 blocker. See [systems/cache/README.md](../systems/cache/README.md).
 2. **AsyncLocalStorage for browsers.** Is there a real use case worth the complexity? See 6.4.
 3. **The Tier-3 resumability question.** Worth doing? Listener-density of our actual users will tell us. Track real apps.
 4. ✅ **RESOLVED: Schema validator stance for `action()`.** Shipped `shape({...})` — a tiny built-in for the common "object with primitive fields" case. Zod / Valibot still slot in via the `ActionSchema<T>` interface for richer shapes.

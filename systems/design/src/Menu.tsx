@@ -33,9 +33,9 @@
 // `id` field on the rendered element, but for cleanest call sites,
 // pass an explicit id).
 
-import type { View } from '@place/component'
-import { cls, onMount } from '@place/component'
-import { state } from '@place/reactivity'
+import type { View } from '@place-ts/component'
+import { cls, onMount } from '@place-ts/component'
+import { state } from '@place-ts/reactivity'
 import { closePopover, nextAnchorName, popoverStyle } from './_popover.ts'
 
 let _menuIdCounter = 0

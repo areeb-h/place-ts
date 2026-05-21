@@ -1,4 +1,4 @@
-// @place/component buildStatic — pre-render Pages to HTML at build time.
+// @place-ts/component buildStatic — pre-render Pages to HTML at build time.
 //
 // Walks a `routes` map (same shape `serve()` accepts), invokes
 // `renderPage()` for each page, writes the resulting HTML to
@@ -6,7 +6,7 @@
 // via the page's `getStaticPaths()` factory which yields the concrete
 // param maps to pre-render.
 //
-//   import { buildStatic } from '@place/component'
+//   import { buildStatic } from '@place-ts/component'
 //   import { home, about, post } from './pages'
 //
 //   await buildStatic({
@@ -44,7 +44,7 @@
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { type Route as RouteMatcher, route as routeFactory } from '@place/routing'
+import { type Route as RouteMatcher, route as routeFactory } from '@place-ts/routing'
 import { isPage, renderPage } from './index.ts'
 import type { AnyPage } from './page.ts'
 import type { ServeRoutes } from './serve.ts'

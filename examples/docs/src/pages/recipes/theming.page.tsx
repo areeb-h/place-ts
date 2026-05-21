@@ -6,8 +6,8 @@
 // the low-level primitive — documented at the end for custom --*
 // CSS variables that aren't colors.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const DEFINE_THEME = `// theme.ts — declare your color modes once. theme() is the
@@ -16,7 +16,7 @@ const DEFINE_THEME = `// theme.ts — declare your color modes once. theme() is 
 // case — automatic light-dark() emission so theme switching is a
 // single CSS property, zero JS plumbing.
 
-import { theme } from '@place/component'
+import { theme } from '@place-ts/component'
 
 export const tokens = theme({
   modes: {
@@ -67,7 +67,7 @@ const WIRE = `// app.ts — pass the tokens to app({ theme }). The framework wir
 //   - <html class="theme-…"> on SSR'd output (reads the theme cookie)
 //   - the no-flash early script (see below) into every page <head>
 
-import { app } from '@place/component/server'
+import { app } from '@place-ts/component/server'
 import { tokens } from './theme.ts'
 
 app({
@@ -84,7 +84,7 @@ const EARLY_SCRIPT = `// You write nothing for no-flash theme persistence — wh
 // static export from app().build().
 
 // Calling it by hand is only needed if you're not using app({theme}):
-import { themeEarlyScript } from '@place/component'
+import { themeEarlyScript } from '@place-ts/component'
 import { tokens } from './theme.ts'
 
 const earlyJs = themeEarlyScript(tokens)  // raw JS statement string`
@@ -102,7 +102,7 @@ const SWITCH = `// theme-toggle.tsx — flip the theme. setTheme(tokens, name)
 // <html data-place-theme> (the early script + setTheme keep it
 // current) or track your own state cell.
 
-import { setTheme } from '@place/component'
+import { setTheme } from '@place-ts/component'
 import { tokens } from './theme.ts'
 
 export const ThemeToggle = component(() => {
@@ -156,7 +156,7 @@ const PRIMITIVE = `// themeTokens() — the low-level primitive theme() wraps. R
 // You write the full --color-* token keys; every theme must declare
 // the SAME key set (a missing key is a type error at the call site).
 
-import { themeTokens } from '@place/component'
+import { themeTokens } from '@place-ts/component'
 
 export const tokens = themeTokens({
   themes: {
@@ -312,7 +312,7 @@ export default page('/theming', {
       <ul>
         <li>
           <Link to="/api/design">
-            <code>@place/design</code> — components use the theme tokens automatically
+            <code>@place-ts/design</code> — components use the theme tokens automatically
           </Link>
         </li>
         <li>

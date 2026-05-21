@@ -1,7 +1,7 @@
 // Ambient declarations for the framework's auto-imported identifiers.
 //
 // The Bun plugin (`placeAutoImport()`, registered via the project's
-// `preload = ["@place/component/preload"]` entry in `bunfig.toml`)
+// `preload = ["@place-ts/component/preload"]` entry in `bunfig.toml`)
 // prepends actual `import { … }` lines at build/load time. TypeScript
 // reads THIS file to keep type-checking happy in editor and `tsc`.
 //
@@ -9,7 +9,7 @@
 //
 //   {
 //     "compilerOptions": {
-//       "types": ["@place/component/auto-imports"]
+//       "types": ["@place-ts/component/auto-imports"]
 //     }
 //   }
 //

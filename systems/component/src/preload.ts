@@ -4,7 +4,7 @@
 //
 // Usage in the app's bunfig.toml:
 //
-//   preload = ["@place/component/preload"]
+//   preload = ["@place-ts/component/preload"]
 //
 // At that point a docs/page/component file like:
 //
@@ -16,7 +16,7 @@
 //
 // works with NO `import` statements at the top. The plugin scans the
 // file at load time and prepends `import { state, Activity } from
-// '@place/component'` only for the identifiers actually referenced.
+// '@place-ts/component'` only for the identifiers actually referenced.
 //
 // Side-effect module — importing it triggers `Bun.plugin(...)`. We
 // guard against running outside of a Bun runtime so non-Bun environments

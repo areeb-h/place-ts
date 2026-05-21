@@ -14,7 +14,7 @@ A single structural change cut the framework runtime by **~57%** (gzipped):
 | `page`-bucket marginal cost | +60 KB raw / +21 KB gzip | +5.6 KB raw / **+2.1 KB gzip** | **−19 KB gzip** (−90%) |
 | Docs site full prod bundle | 240 KB raw / 67 KB gzip | 180 KB raw / **49 KB gzip** | **−18 KB gzip** (−27%) |
 
-**What changed:** the `serve` export in `@place/component` is now a build-time ternary gated on the `__PLACE_BROWSER__` define. The framework's `Bun.build` invocation in `serve()` passes `define: { __PLACE_BROWSER__: 'true' }` for the client bundle. On the client, the ternary constant-folds to a throwing stub; the real ~800-line body (`_serveImpl`) becomes unreferenced and tree-shakes out, taking its entire transitive closure with it — security-headers, devalue.stringify, Bun.serve, Bun.build, fs/promises, tailwindcss helpers, the ISR cache plumbing.
+**What changed:** the `serve` export in `@place-ts/component` is now a build-time ternary gated on the `__PLACE_BROWSER__` define. The framework's `Bun.build` invocation in `serve()` passes `define: { __PLACE_BROWSER__: 'true' }` for the client bundle. On the client, the ternary constant-folds to a throwing stub; the real ~800-line body (`_serveImpl`) becomes unreferenced and tree-shakes out, taking its entire transitive closure with it — security-headers, devalue.stringify, Bun.serve, Bun.build, fs/promises, tailwindcss helpers, the ISR cache plumbing.
 
 The trim required: a build-time define (1 line in `Bun.build`), `sideEffects: ["./src/preload.ts"]` in the package manifest, the ternary export pattern (15 lines), and two local `declare const __PLACE_BROWSER__` decls so TypeScript stays happy. No file extraction, no API change, no runtime overhead. Just a structural redirect that lets the bundler do its job.
 
@@ -50,7 +50,7 @@ The probe imports every identifier and *uses* it (assigning to a global sink) so
 | jsxRuntime | 864 B   | `el`, `Fragment`, `mount`, `renderToString`. Element factory + the reactive children path (`mountReactiveChild`) + Fragment + happy-path string emitter. The hydration walker is *not* here — it's pulled in by the next probe. |
 | hydration  | 119 B   | `hydrate`, `_setHydrated`, `_drainHydrationDeltas`. Tiny diff because most of the walker code (the slot abstraction, `data-h` cursor, `Fragment.hydrate` reactive-function-child machinery) was already pulled in by the JSX runtime probe — `Fragment` and `el` reference the same internal helpers. |
 | components | 276 B   | `component()` HOC, `Show`, `Activity`, `ClientOnly`, `Deferred`, `Tabs`. The visibility/composition primitives — small because they're thin wrappers over `el()` + reactive children. |
-| routing    | 3 B     | `Link`. `RouterCap` lives in `@place/routing` and isn't included in this probe. |
+| routing    | 3 B     | `Link`. `RouterCap` lives in `@place-ts/routing` and isn't included in this probe. |
 | capability | 47 B    | `cap()`, `provide()`. The `defineCapability` + `runWithCapabilityScope` machinery lives inside the reactivity probe already (capabilities are layered on top of the reactive owner). |
 | theme      | 1.1 KB  | `themeTokens`, `setTheme`, `readThemeFromRequest`, `themeCookieHeader`. CSS-variables-based theme system + cookie helpers for SSR-correct theme selection. |
 | cookies    | 164 B   | `cookie`, `cookieState`, `parseCookieHeader`. Small because `cookieState` reuses the reactivity probe's `state` + `watch`. The header parser is the only new code. |

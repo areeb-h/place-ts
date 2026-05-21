@@ -1,4 +1,4 @@
-// @place/capability — scoped capability handlers
+// @place-ts/capability — scoped capability handlers
 //
 // A `Capability<T>` is a typed slot. `provide(impl, body)` installs an
 // implementation for the duration of body; `install(impl)` installs until
@@ -12,7 +12,7 @@
 //   - **provide(impl, body)** — synchronous, lexically scoped. The impl is
 //     installed for body's execution and popped on return.
 //   - **install(impl)** — long-lived. The impl stays until the returned
-//     disposer fires. This is what `@place/component`'s `withCapability`
+//     disposer fires. This is what `@place-ts/component`'s `withCapability`
 //     uses, because component bodies and watch callbacks fire AFTER their
 //     surrounding mount call has returned.
 //
@@ -21,7 +21,7 @@
 //
 // What's deferred:
 //   - Type-level effect tracking (Phase 4)
-//   - Reactive integration with @place/reactivity scopes (Phase 5)
+//   - Reactive integration with @place-ts/reactivity scopes (Phase 5)
 //
 // Phase 4.1 (v0.3) — async-safe per-request capability scopes:
 //

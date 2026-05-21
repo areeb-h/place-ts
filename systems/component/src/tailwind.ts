@@ -1,10 +1,10 @@
-// Tailwind v4 integration. Sub-exported as `@place/component/tailwind`
+// Tailwind v4 integration. Sub-exported as `@place-ts/component/tailwind`
 // so apps that don't use Tailwind don't pay the dependency weight in
 // their server bundle (the import is lazy, the deps are peer/optional).
 //
 // Usage:
 //
-//   import { tailwind } from '@place/component/tailwind'
+//   import { tailwind } from '@place-ts/component/tailwind'
 //
 //   const css = await tailwind({ content: ['src/**/*.tsx'] })
 //   page({ styles: css, view: ... })

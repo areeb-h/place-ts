@@ -68,7 +68,7 @@ The same pattern can gate any other server-only API; today only
 `auto-imports.d.ts` declares it globally; `app.ts`'s `.run()` uses it
 to pick `boot()` vs `serve()` at build time.
 
-`sideEffects: ["./src/preload.ts"]` was added to the `@place/component`
+`sideEffects: ["./src/preload.ts"]` was added to the `@place-ts/component`
 manifest as a prerequisite — the bundler now knows every other module
 is pure and can tree-shake aggressively across the barrel.
 

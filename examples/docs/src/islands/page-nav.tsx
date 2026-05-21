@@ -9,8 +9,8 @@
 // HTML reloads (current default), this could be static-server-
 // rendered — but the cap-based reactive shape is the cleanest read.
 
-import { Link, view } from '@place/component'
-import { RouterCap } from '@place/routing'
+import { Link, view } from '@place-ts/component'
+import { RouterCap } from '@place-ts/routing'
 import { FLAT_NAV } from '../nav-index.ts'
 
 const PageNavImpl = () => {

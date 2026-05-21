@@ -37,8 +37,8 @@
 // producing primitive carries an `EffectBranded<E>` in its type AND
 // an entry in `KNOWN_EFFECTS` below. CI verifies both stay aligned.
 
-import type { Effect, ViewLevel } from '@place/reactivity/effects'
-import { levelOf } from '@place/reactivity/effects'
+import type { Effect, ViewLevel } from '@place-ts/reactivity/effects'
+import { levelOf } from '@place-ts/reactivity/effects'
 
 /**
  * Curated map: identifier name → effect kind. Each entry mirrors the

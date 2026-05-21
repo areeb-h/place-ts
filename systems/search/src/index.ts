@@ -1,4 +1,4 @@
-// @place/search — reactive search over @place/reactivity collections.
+// @place-ts/search — reactive search over @place-ts/reactivity collections.
 //
 // v0.1 ships ONE primitive: `searchable`. It takes a reactive collection
 // plus a field extractor, and returns a function that accepts a reactive

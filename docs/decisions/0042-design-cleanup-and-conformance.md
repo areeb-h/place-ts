@@ -168,9 +168,9 @@ The initial draft assumed `RouterHandle` was a tuple
 - `Router` has `path()` / `query()` / `param(key)` / `segment(i)` /
   `navigate()` / `replace()` / `back()` / `forward()` — no
   `search()` or `hash()` methods (they're inside `query()`).
-- `routes(prefix, [pages])` lives in `@place/component`
+- `routes(prefix, [pages])` lives in `@place-ts/component`
   (`systems/component/src/app.ts:523`) for circularity reasons, not
-  in `@place/routing`.
+  in `@place-ts/routing`.
 
 The rewrite is a record of those facts. The conformance test now
 matches the actual API and acts as a future regression gate against

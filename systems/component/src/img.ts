@@ -1,4 +1,4 @@
-// @place/component <Img> helper. Phase 4.7.
+// @place-ts/component <Img> helper. Phase 4.7.
 //
 // A typed image component that emits semantic `<img srcset>` markup.
 // Variant generation (resize / format negotiation) is delegated to a

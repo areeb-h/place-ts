@@ -53,7 +53,7 @@ export function validateIslandName(name: string): void {
  *
  *   2. **Framework / installed-dependency** — the path lives under a
  *      `node_modules/` segment, or resolves through a workspace symlink
- *      to a sibling package (e.g. `@place/devtools/src/island.tsx`).
+ *      to a sibling package (e.g. `@place-ts/devtools/src/island.tsx`).
  *      We allow any absolute path that contains no `..` segments — Bun
  *      will fail to load the source if it doesn't actually exist, so
  *      the realistic attack surface is just `..` traversal, which the

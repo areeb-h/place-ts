@@ -1,4 +1,4 @@
-// @place/design library stylesheet — kept TINY by design.
+// @place-ts/design library stylesheet — kept TINY by design.
 //
 // Most styling lives in Tailwind utility classes inside each
 // component. This file holds ONLY what Tailwind utilities can't
@@ -14,7 +14,7 @@
 // Apps wire this into their Tailwind base via the framework's
 // `styles` option:
 //
-//   import { styles as designStyles } from '@place/design/styles'
+//   import { styles as designStyles } from '@place-ts/design/styles'
 //   app({ ..., styles: designStyles })
 //
 // Apps that also have their own globals concatenate:
@@ -374,7 +374,7 @@ form:has(:user-invalid) [type="submit"]:not([data-allow-invalid]) {
  * headings even line distribution (no orphan words); text-wrap:
  * pretty gives paragraphs intelligent last-line wrapping (no
  * one-word last lines). Universal browser support since 2024.
- * Applies to ALL content rendered in apps using @place/design —
+ * Applies to ALL content rendered in apps using @place-ts/design —
  * consumers don't need to remember per-element. */
 h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;

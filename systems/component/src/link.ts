@@ -24,7 +24,7 @@
 //   <Link to="/notes/abc" replace>Open</Link>
 //   <Link to="/?tag=react" preserveQuery>Filter</Link>
 
-import { RouterCap } from '@place/routing'
+import { RouterCap } from '@place-ts/routing'
 import { type Child, cls, component, el } from './index.ts'
 
 /**
@@ -32,7 +32,7 @@ import { type Child, cls, component, el } from './index.ts'
  * by augmenting this interface from their entry file:
  *
  * ```ts
- * declare module '@place/component' {
+ * declare module '@place-ts/component' {
  *   interface PlaceRoutes {
  *     '/': true
  *     '/blog/:id': true

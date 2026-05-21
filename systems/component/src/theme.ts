@@ -1,4 +1,4 @@
-// @place/component theme tokens.
+// @place-ts/component theme tokens.
 //
 // A typed, server-side-renderable theming primitive. Inspired by
 // shadcn/ui's CSS-variables-as-theme pattern, but improved on three
@@ -737,7 +737,7 @@ export function themeCookieHeader(
  * The full client-side toggle in one call. Pass the result of
  * `themeTokens()` so it knows the class-name shape.
  *
- *   import { setTheme } from '@place/component'
+ *   import { setTheme } from '@place-ts/component'
  *   <button onClick={() => setTheme(myTokens, 'dark')}>Dark</button>
  *
  * The special value `'system'` clears every theme class so the
@@ -929,7 +929,7 @@ export interface ThemeOptions<M extends ColorModeMap> {
  *
  * @example
  * ```ts
- * import { theme } from '@place/component'
+ * import { theme } from '@place-ts/component'
  *
  * export const tokens = theme({
  *   modes: {

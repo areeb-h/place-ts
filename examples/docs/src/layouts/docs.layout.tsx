@@ -2,7 +2,7 @@
 // Three-column body: sidebar / main / right-side ToC. Mobile drawer
 // below md. Cmd+K search palette mounts globally.
 
-import { Link, layout } from '@place/component'
+import { Link, layout } from '@place-ts/component'
 import { Sidebar } from '../components/sidebar.tsx'
 // Chrome ISLANDS — each default-exports an `island(...)`-wrapped
 // component; the framework auto-discovers them via `app({ islandsDir })`

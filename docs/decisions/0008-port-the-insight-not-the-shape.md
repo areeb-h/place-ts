@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-05-12
-**Affects:** `@place/component`'s primitives (`virtualList`, future `useDialog`, `table`, `form`, `three`)
+**Affects:** `@place-ts/component`'s primitives (`virtualList`, future `useDialog`, `table`, `form`, `three`)
 
 ## Context
 

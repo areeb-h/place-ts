@@ -6,12 +6,12 @@
 // + Fragment mounters) read it via `.tryUse()` to route a caught throw
 // to the nearest boundary.
 //
-// It lives in `_internal/` — importing only `@place/capability` — so
+// It lives in `_internal/` — importing only `@place-ts/capability` — so
 // every render module can share the one capability token without a
 // cycle through the index barrel. `defineCapability` runs at module
 // load; a leaf module keeps that evaluation order unambiguous.
 
-import { defineCapability } from '@place/capability'
+import { defineCapability } from '@place-ts/capability'
 
 /** The capability `errorBoundary()` installs and the render paths read. */
 export const ErrorBoundaryCap = defineCapability<(error: unknown) => void>('ErrorBoundary')

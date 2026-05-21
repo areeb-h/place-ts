@@ -18,12 +18,12 @@ Apps wanting a "render the mobile drawer below md, sidebar above" pattern had tw
 
 ## Decision
 
-Ship one framework-level primitive: a reactive `viewport` namespace exported from `@place/component`. Components subscribe; the framework owns the listener.
+Ship one framework-level primitive: a reactive `viewport` namespace exported from `@place-ts/component`. Components subscribe; the framework owns the listener.
 
 ### Public API
 
 ```ts
-import { viewport, configureViewport } from '@place/component'
+import { viewport, configureViewport } from '@place-ts/component'
 
 viewport.width()                  // Derived<number>
 viewport.height()                 // Derived<number>

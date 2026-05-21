@@ -1,4 +1,4 @@
-// @place/persistence — storage adapters for @place/reactivity state
+// @place-ts/persistence — storage adapters for @place-ts/reactivity state
 //
 // A `PersistenceAdapter<T>` is a plain object — `load` / `save`, an
 // optional `observe(cb)` external-change hook, an optional `refresh`.
@@ -30,7 +30,7 @@
 //     localStorage are cheap; if a real workload needs debouncing, the
 //     consumer wraps the adapter.
 
-import { type Disposer, type State, state, watch } from '@place/reactivity'
+import { type Disposer, type State, state, watch } from '@place-ts/reactivity'
 
 export interface PersistenceAdapter<T> {
   /** Load the persisted value. Returns the default when not present. */

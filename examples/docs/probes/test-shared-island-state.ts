@@ -9,8 +9,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { placeAutoImport } from '@place/component/auto-import-plugin'
-import { buildIslandBundles } from '@place/component/build'
+import { placeAutoImport } from '@place-ts/component/auto-import-plugin'
+import { buildIslandBundles } from '@place-ts/component/build'
 
 const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)
 
@@ -20,7 +20,7 @@ await mkdir(TMP, { recursive: true })
 // Shared module: holds the signal both islands read/write.
 await writeFile(
   resolve(TMP, 'shared.ts'),
-  `import { state } from '@place/component'
+  `import { state } from '@place-ts/component'
 export const open = state(false)
 `,
 )
@@ -29,7 +29,7 @@ export const open = state(false)
 const islandASrc = resolve(TMP, 'opener.tsx')
 await writeFile(
   islandASrc,
-  `import { island } from '@place/component'
+  `import { island } from '@place-ts/component'
 import { open } from './shared.ts'
 
 export default island(import.meta.url, () => (
@@ -44,7 +44,7 @@ export default island(import.meta.url, () => (
 const islandBSrc = resolve(TMP, 'drawer.tsx')
 await writeFile(
   islandBSrc,
-  `import { island } from '@place/component'
+  `import { island } from '@place-ts/component'
 import { open } from './shared.ts'
 
 export default island(import.meta.url, () => (

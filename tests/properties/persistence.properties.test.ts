@@ -1,4 +1,4 @@
-// Property-based tests for @place/persistence.
+// Property-based tests for @place-ts/persistence.
 //
 // The PersistenceAdapter contract: save(x); load() === x. Across the
 // shipped adapters (memory, localStorage, indexedDB, server, crossTab)

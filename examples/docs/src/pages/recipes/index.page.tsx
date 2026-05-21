@@ -1,7 +1,7 @@
 // /recipes — index of how-to guides. Each card links to a focused
 // recipe page; the index itself does no heavy lifting.
 
-import { Link, page } from '@place/component'
+import { Link, page } from '@place-ts/component'
 
 interface Recipe {
   readonly to: string

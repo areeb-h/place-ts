@@ -4,8 +4,8 @@
 
 import { resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { placeAutoImport } from '@place/component/auto-import-plugin'
-import { buildRouteSplitBundles } from '@place/component/build'
+import { placeAutoImport } from '@place-ts/component/auto-import-plugin'
+import { buildRouteSplitBundles } from '@place-ts/component/build'
 
 const DOCS_ROOT = resolve(import.meta.dir, '..')
 

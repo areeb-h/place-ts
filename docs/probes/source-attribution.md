@@ -103,4 +103,4 @@ Buckets with `systems/<name>` prefix tell us each system's contribution to the b
 
 - A system being LARGE but used by FEW pages — that's a leak per-route splitting fixes.
 - A docs page bucket being LARGE — that page is doing too much; consider splitting interactive bits into islands.
-- The single-largest source — often `index.ts` of `@place/component`, which is the framework barrel.
+- The single-largest source — often `index.ts` of `@place-ts/component`, which is the framework barrel.

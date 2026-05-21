@@ -23,36 +23,37 @@
       },
     },
     "examples/docs": {
-      "name": "@place/docs",
+      "name": "@place-ts/docs",
       "version": "0.0.0",
       "dependencies": {
-        "@place/component": "workspace:*",
-        "@place/design": "workspace:*",
-        "@place/devtools": "workspace:*",
-        "@place/reactivity": "workspace:*",
-        "@place/routing": "workspace:*",
+        "@place-ts/component": "workspace:*",
+        "@place-ts/design": "workspace:*",
+        "@place-ts/devtools": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
+        "@place-ts/routing": "workspace:*",
         "@tailwindcss/node": "^4.2.4",
         "tailwindcss": "^4.2.4",
       },
     },
     "examples/overlay-preview": {
-      "name": "@place/overlay-preview",
+      "name": "@place-ts/overlay-preview",
       "version": "0.0.0",
       "dependencies": {
-        "@place/component": "workspace:*",
+        "@place-ts/component": "workspace:*",
       },
     },
     "systems/capability": {
-      "name": "@place/capability",
+      "name": "@place-ts/capability",
       "version": "0.1.0",
     },
     "systems/component": {
-      "name": "@place/component",
+      "name": "@place-ts/component",
       "version": "0.1.0",
       "dependencies": {
-        "@place/capability": "workspace:*",
-        "@place/reactivity": "workspace:*",
-        "@place/routing": "workspace:*",
+        "@place-ts/capability": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
+        "@place-ts/routing": "workspace:*",
+        "@place-ts/security": "workspace:*",
         "devalue": "^5.8.0",
         "typescript": "^6.0.0",
       },
@@ -66,69 +67,69 @@
       ],
     },
     "systems/data": {
-      "name": "@place/data",
+      "name": "@place-ts/data",
       "version": "0.1.0",
       "dependencies": {
-        "@place/reactivity": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
       },
     },
     "systems/design": {
-      "name": "@place/design",
+      "name": "@place-ts/design",
       "version": "0.1.0",
       "dependencies": {
-        "@place/component": "workspace:*",
-        "@place/reactivity": "workspace:*",
+        "@place-ts/component": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
       },
     },
     "systems/devtools": {
-      "name": "@place/devtools",
+      "name": "@place-ts/devtools",
       "version": "0.1.0",
       "dependencies": {
-        "@place/component": "workspace:*",
-        "@place/reactivity": "workspace:*",
-        "@place/routing": "workspace:*",
+        "@place-ts/component": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
+        "@place-ts/routing": "workspace:*",
       },
     },
     "systems/persistence": {
-      "name": "@place/persistence",
+      "name": "@place-ts/persistence",
       "version": "0.1.0",
       "dependencies": {
-        "@place/reactivity": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
       },
     },
     "systems/reactivity": {
-      "name": "@place/reactivity",
+      "name": "@place-ts/reactivity",
       "version": "0.1.0",
     },
     "systems/routing": {
-      "name": "@place/routing",
+      "name": "@place-ts/routing",
       "version": "0.1.0",
       "dependencies": {
-        "@place/capability": "workspace:*",
-        "@place/reactivity": "workspace:*",
+        "@place-ts/capability": "workspace:*",
+        "@place-ts/reactivity": "workspace:*",
       },
     },
     "systems/search": {
-      "name": "@place/search",
+      "name": "@place-ts/search",
       "version": "0.1.0",
     },
     "systems/security": {
-      "name": "@place/security",
+      "name": "@place-ts/security",
       "version": "0.1.0",
       "dependencies": {
-        "@place/capability": "workspace:*",
-        "@place/component": "workspace:*",
+        "@place-ts/capability": "workspace:*",
+        "@place-ts/component": "workspace:*",
       },
     },
     "tools/create-app": {
-      "name": "@place/create-app",
+      "name": "@place-ts/create-app",
       "version": "0.0.0",
       "bin": {
         "create-place-app": "./src/cli.ts",
       },
     },
     "tools/place": {
-      "name": "@place/cli",
+      "name": "@place-ts/cli",
       "version": "0.0.0",
       "bin": {
         "place": "./src/cli.ts",
@@ -174,33 +175,33 @@
 
     "@oxc-project/types": ["@oxc-project/types@0.127.0", "", {}, "sha512-aIYXQBo4lCbO4z0R3FHeucQHpF46l2LbMdxRvqvuRuW2OxdnSkcng5B8+K12spgLDj93rtN3+J2Vac/TIO+ciQ=="],
 
-    "@place/capability": ["@place/capability@workspace:systems/capability"],
+    "@place-ts/capability": ["@place-ts/capability@workspace:systems/capability"],
 
-    "@place/cli": ["@place/cli@workspace:tools/place"],
+    "@place-ts/cli": ["@place-ts/cli@workspace:tools/place"],
 
-    "@place/component": ["@place/component@workspace:systems/component"],
+    "@place-ts/component": ["@place-ts/component@workspace:systems/component"],
 
-    "@place/create-app": ["@place/create-app@workspace:tools/create-app"],
+    "@place-ts/create-app": ["@place-ts/create-app@workspace:tools/create-app"],
 
-    "@place/data": ["@place/data@workspace:systems/data"],
+    "@place-ts/data": ["@place-ts/data@workspace:systems/data"],
 
-    "@place/design": ["@place/design@workspace:systems/design"],
+    "@place-ts/design": ["@place-ts/design@workspace:systems/design"],
 
-    "@place/devtools": ["@place/devtools@workspace:systems/devtools"],
+    "@place-ts/devtools": ["@place-ts/devtools@workspace:systems/devtools"],
 
-    "@place/docs": ["@place/docs@workspace:examples/docs"],
+    "@place-ts/docs": ["@place-ts/docs@workspace:examples/docs"],
 
-    "@place/overlay-preview": ["@place/overlay-preview@workspace:examples/overlay-preview"],
+    "@place-ts/overlay-preview": ["@place-ts/overlay-preview@workspace:examples/overlay-preview"],
 
-    "@place/persistence": ["@place/persistence@workspace:systems/persistence"],
+    "@place-ts/persistence": ["@place-ts/persistence@workspace:systems/persistence"],
 
-    "@place/reactivity": ["@place/reactivity@workspace:systems/reactivity"],
+    "@place-ts/reactivity": ["@place-ts/reactivity@workspace:systems/reactivity"],
 
-    "@place/routing": ["@place/routing@workspace:systems/routing"],
+    "@place-ts/routing": ["@place-ts/routing@workspace:systems/routing"],
 
-    "@place/search": ["@place/search@workspace:systems/search"],
+    "@place-ts/search": ["@place-ts/search@workspace:systems/search"],
 
-    "@place/security": ["@place/security@workspace:systems/security"],
+    "@place-ts/security": ["@place-ts/security@workspace:systems/security"],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 

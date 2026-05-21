@@ -135,7 +135,7 @@ Place-ts has typed effects (charter #4) and graph-as-wire (charter #3) — the t
 `suspense()` and `renderToStream()` already exist. Two additions:
 
 ```tsx
-import { resource, suspense, page } from '@place/component'
+import { resource, suspense, page } from '@place-ts/component'
 
 const userR = resource(() => fetchUser(id))
 const ordersR = resource(() => fetchOrders(id))

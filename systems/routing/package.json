@@ -1,8 +1,8 @@
 {
-  "name": "@place/routing",
+  "name": "@place-ts/routing",
   "version": "0.1.0",
   "type": "module",
-  "description": "Client-side routing for @place/reactivity. v0.1 ships a hash-based router and a memoryRouter for tests, exposed as the Router capability so consumers can swap implementations without touching call sites.",
+  "description": "Client-side routing for @place-ts/reactivity. v0.1 ships a hash-based router and a memoryRouter for tests, exposed as the Router capability so consumers can swap implementations without touching call sites.",
   "keywords": [
     "place",
     "place-ts",
@@ -41,7 +41,7 @@
     "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
-    "@place/capability": "workspace:*",
-    "@place/reactivity": "workspace:*"
+    "@place-ts/capability": "workspace:*",
+    "@place-ts/reactivity": "workspace:*"
   }
 }

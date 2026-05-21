@@ -76,7 +76,7 @@ delivered out-of-band via a generated Cloudflare `_headers` file:
 
 Deploy uses **Cloudflare Pages' native Git integration**: the
 `place-ts` repo is connected in the Cloudflare dashboard; on every
-push to `main`, Cloudflare runs the build (`bun --filter '@place/docs'
+push to `main`, Cloudflare runs the build (`bun --filter '@place-ts/docs'
 build`, output `examples/docs/dist`) and deploys. No GitHub Actions
 workflow, no API tokens, no repo secrets — Cloudflare's GitHub App
 handles auth. (An earlier draft used a `wrangler`-based GitHub

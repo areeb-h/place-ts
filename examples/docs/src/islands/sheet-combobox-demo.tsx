@@ -6,8 +6,8 @@
 //   - One inline, with custom renderOption (an emoji-prefixed row)
 //     showing the customization story.
 
-import { state, type View, view } from '@place/component'
-import { Button, Combobox, type ComboboxItemState, Sheet } from '@place/design'
+import { state, type View, view } from '@place-ts/component'
+import { Button, Combobox, type ComboboxItemState, Sheet } from '@place-ts/design'
 
 interface Framework {
   readonly value: string

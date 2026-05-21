@@ -5,7 +5,7 @@
 // supersedes the Tier 8-D name-match prototype's three known
 // problem classes:
 //
-//   1. **Aliased imports** — `import { state as s } from '@place/component'`.
+//   1. **Aliased imports** — `import { state as s } from '@place-ts/component'`.
 //      The name-match scanner looks for the literal `state` identifier,
 //      so the aliased reference slips through. Type-based inspection
 //      reads the *resolved symbol's type*, so the alias doesn't matter.
@@ -53,8 +53,8 @@
 // once, and walks the impl-function body. On the docs site (11
 // islands, ~10K LOC), the typed pass adds <1 s to a cold build.
 
-import type { Effect, ViewLevel } from '@place/reactivity/effects'
-import { levelOf, lubEffect } from '@place/reactivity/effects'
+import type { Effect, ViewLevel } from '@place-ts/reactivity/effects'
+import { levelOf, lubEffect } from '@place-ts/reactivity/effects'
 import type * as TS from 'typescript'
 import * as ts from 'typescript'
 import type { ClassifierFinding, ClassifierResult } from './view-classifier.ts'

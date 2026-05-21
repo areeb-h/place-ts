@@ -1,4 +1,4 @@
-// @place/component — the per-request SSR assembly: renderPage.
+// @place-ts/component — the per-request SSR assembly: renderPage.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 10) — the final
 // cut. `renderPage` is the orchestration function that threads every
@@ -13,7 +13,7 @@
 // functions, so the render-page ⇄ index cycle stays benign — same
 // shape as element.ts / mount.ts / ssr.ts / serve.ts.
 
-import { serverRouter as createServerRouter, RouterCap } from '@place/routing'
+import { serverRouter as createServerRouter, RouterCap } from '@place-ts/routing'
 import { _consumeCopyUsedFlag, placeCopyRuntime } from './__copy-runtime.ts'
 import { placeDeferredIslands } from './__deferred-islands.ts'
 import { placeEarly } from './__early.ts'

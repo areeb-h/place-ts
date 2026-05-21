@@ -71,7 +71,7 @@ for indexing (`searchable(notes.all)`).
   identity / staleness model.
 - **Optimistic UI patterns.** Fine-grained reactivity + immediate
   state mutation IS optimistic UI. No `useOptimistic()` hook needed.
-- **Schema validation.** Use `shape()` from `@place/component` or
+- **Schema validation.** Use `shape()` from `@place-ts/component` or
   any Zod-style library. `collection<T>()` only types the records;
   validation happens at the I/O boundary.
 - **Typed queries / loaders / source-of-truth abstraction.** Deferred.
@@ -90,7 +90,7 @@ for indexing (`searchable(notes.all)`).
 3. **Local-first.** Per platform NN #6, the default mental model is
    "the data is on this device; sync is an addition." A
    `collection<T>()` is in-memory; durability is opt-in via
-   `@place/persistence`.
+   `@place-ts/persistence`.
 4. **Effect-typed mutations.** Add / update / remove are tagged
    `'state'` effect kind (per the capability system's brands), so the
    view classifier knows a component mutating a collection cannot
@@ -98,8 +98,8 @@ for indexing (`searchable(notes.all)`).
 
 ## Depends on
 
-- `@place/reactivity` — `state<T[]>` is the backing cell
-- (Composes with `@place/persistence`, `@place/cache`, `@place/search`
+- `@place-ts/reactivity` — `state<T[]>` is the backing cell
+- (Composes with `@place-ts/persistence`, `@place-ts/cache`, `@place-ts/search`
   but does not depend on them — apps wire the composition)
 
 ## Public surface (v0.1)

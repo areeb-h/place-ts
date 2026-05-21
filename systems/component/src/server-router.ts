@@ -3,7 +3,7 @@
 // Collapses the if/else chain that every Bun.serve fetch handler grows
 // into when an app has more than 2 routes. Map of `'METHOD /pattern'`
 // strings to `(req, params) => Response` handlers. Patterns leverage
-// the same typed `route()` from @place/routing — `:name` segments are
+// the same typed `route()` from @place-ts/routing — `:name` segments are
 // captured into `params`. Use `*` for the method when matching any
 // (rarely needed; method-specific is safer).
 //
@@ -23,7 +23,7 @@
 //
 // All of those would force conventions; this just dispatches.
 
-import { route } from '@place/routing'
+import { route } from '@place-ts/routing'
 
 export type RouteHandler = (
   req: Request,

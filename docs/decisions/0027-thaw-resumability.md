@@ -95,7 +95,7 @@ them.
 ### Authoring shape (proposed)
 
 ```tsx
-import { thaw, state } from '@place/component'
+import { thaw, state } from '@place-ts/component'
 
 // `thaw()` is the sibling of `island()`. Same place in the JSX call
 // site (`<Counter />` becomes a marker at SSR + delegated event
@@ -229,7 +229,7 @@ Be honest in the docs about the boundary:
   `thaw-bind:invalid="!isValidEmail"`)
 - Pagination + sort controls (the indexes are small enums)
 - Modal dialogs whose open/close is driven by a single state slot
-- Tooltips, dropdowns, menus — the entire `@place/design` surface
+- Tooltips, dropdowns, menus — the entire `@place-ts/design` surface
   except those that need timers (Toast, animated transitions)
 
 In ~80 % of UI code, the state graph IS expressible as

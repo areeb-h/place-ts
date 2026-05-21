@@ -186,7 +186,7 @@ loader-coupling + transitions to deferred sections at the bottom.
   Reaches into `globalThis.__place.r` — magic that's traceable in
   concept but undocumented in the reactivity charter. The
   `hydrationKey` surface is a cross-system contract with
-  `@place/component`'s SSR layer that the charter never sanctions.
+  `@place-ts/component`'s SSR layer that the charter never sanctions.
 - **nit — drift.** Motion sub-module's `clock` exported as
   `Derived<number>` (`motion/index.ts:27`) but the reactivity
   charter's "Time" section (Phase 5) reserves time-indexing semantics
@@ -197,7 +197,7 @@ loader-coupling + transitions to deferred sections at the bottom.
   all internally consistent and well-commented.
 
 **Next move:** delete `peek`; document `resource`'s SSR coupling in
-the reactivity charter, OR move `resource` out of `@place/reactivity`
+the reactivity charter, OR move `resource` out of `@place-ts/reactivity`
 into the system that owns SSR transfer.
 
 ---
@@ -363,7 +363,7 @@ future state — nit at most.
   `package.json`). Audit prompt names it; file is absent.
   `security` is not on the nine systems list in
   `docs/platform/00-system-map.md:11-21` either. Shipped
-  `@place/security` package is in charter limbo: it exists, it's
+  `@place-ts/security` package is in charter limbo: it exists, it's
   used, but it's unmapped and ungoverned. Platform non-negotiable #5
   ("each system independently understandable") cannot hold for a
   system with no charter doc.
@@ -374,8 +374,8 @@ future state — nit at most.
   "primitives unrelated to auth."
 - **blocking — gap.** CSP/SRI/nonce/body-limit/same-origin/auto-CSRF
   plumbing lives in `systems/component/src/security-headers.ts`
-  (per ADR 0025), not in `@place/security`. No doc attributes which
-  guarantees come from which system. `@place/security` exports
+  (per ADR 0025), not in `@place-ts/security`. No doc attributes which
+  guarantees come from which system. `@place-ts/security` exports
   `CSP_DEFAULTS` + `cspHeader` (`src/index.ts:307-331`) which look
   like *the* CSP entry point but are actually a vestigial starter —
   the real CSP pipeline (`renderSecurityHeaders`,
@@ -425,7 +425,7 @@ future state — nit at most.
    no regressions and several specific compliments for the byte-stable
    SRI design and the per-response CSP hash injection. ADR-0026's
    three criteria all hold for the new magic.
-5. **`@place/design` 5-file Tailwind-escape-hatch erosion** is the
+5. **`@place-ts/design` 5-file Tailwind-escape-hatch erosion** is the
    highest-priority quick win: each one is a 1-3 line edit to lift
    the arbitrary value into a token, and the charter explicitly names
    this failure mode.

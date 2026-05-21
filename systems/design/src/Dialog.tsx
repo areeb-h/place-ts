@@ -30,9 +30,9 @@
 //   - Esc-to-close — native `<dialog>` handles `Esc` as `close()`.
 //   - Backdrop element — native `::backdrop` pseudo-element.
 
-import type { Children, View } from '@place/component'
-import { cls, recipe } from '@place/component'
-import { state, watch } from '@place/reactivity'
+import type { Children, View } from '@place-ts/component'
+import { cls, recipe } from '@place-ts/component'
+import { state, watch } from '@place-ts/reactivity'
 
 // ===== Recipe =====
 //

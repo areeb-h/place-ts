@@ -1,12 +1,12 @@
 // biome-ignore-all assist/source/organizeImports: documented re-export groupings (lib stylesheet, primitives, library exports) must stay in source order
-// @place/design — opinionated component library.
+// @place-ts/design — opinionated component library.
 //
 // Re-exports the framework's design primitives (recipe, cls,
 // themeTokens) so apps that already use the design library don't need
 // to import from two places. The library is the design system; the
 // framework primitives are its building blocks.
 
-export { cls, recipe, themeTokens } from '@place/component'
+export { cls, recipe, themeTokens } from '@place-ts/component'
 
 // ===== Library stylesheet =====
 //

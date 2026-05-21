@@ -1,4 +1,4 @@
-// Property-based tests for @place/capability.
+// Property-based tests for @place-ts/capability.
 //
 // The cap stack has subtle invariants — nested provides + installs +
 // random dispose ordering all need to leave the stack consistent.

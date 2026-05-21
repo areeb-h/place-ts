@@ -1,4 +1,4 @@
-// @place/component — server-side rendering pipeline.
+// @place-ts/component — server-side rendering pipeline.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 5) — the SSR
 // surface: the synchronous renderer `renderToString`, the streaming
@@ -9,7 +9,7 @@
 // `index.ts`-resident symbols only inside runtime functions, so the
 // ssr ⇄ index cycle stays benign — same shape as element.ts / mount.ts.
 
-import { type EffectBranded, type Resource, untrack, watch } from '@place/reactivity'
+import { type EffectBranded, type Resource, untrack, watch } from '@place-ts/reactivity'
 import { stringify as devalueStringify } from 'devalue'
 import { PLACE_RUNTIME } from './__place_runtime.ts'
 import { resetHydrationSeq } from './_internal/hydrationSeq.ts'
@@ -100,8 +100,8 @@ export function renderToString(view: View): string {
 // children are rendered and pushed to the stream as a `<template>` swap
 // chunk that an inline runtime (`__place.swap(N)`) splices into place.
 //
-//   import { suspense } from '@place/component'
-//   import { resource } from '@place/reactivity'
+//   import { suspense } from '@place-ts/component'
+//   import { resource } from '@place-ts/reactivity'
 //
 //   const note = resource(
 //     (signal) => fetch(`/api/notes/${id}`, { signal }).then(r => r.json()),

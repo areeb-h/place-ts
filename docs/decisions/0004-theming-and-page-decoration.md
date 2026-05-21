@@ -137,7 +137,7 @@ serve({
 })
 
 // any client component
-import { setTheme } from '@place/component'
+import { setTheme } from '@place-ts/component'
 import { tokens } from './theme.ts'
 
 <button onClick={() => setTheme(tokens, 'light')}>Light</button>

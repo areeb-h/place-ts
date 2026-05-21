@@ -49,7 +49,7 @@ The gap to Solid is **structural, not waste**. Solid's 7.6 KB does not include h
 ### A2. Tree-shaking / `sideEffects: false`
 
 Real verdict: `sideEffects: false` *matters* but is fragile. Svelte issue #16120 — accessing a property of an imported object inside a reactive statement retains the whole object. Rollup tree-shakes only when the bundler can prove no side-effect. place's surface today has at least three known sub-shake-resistant patterns to audit:
-- ergonomic re-exports (the `@place/component` barrel)
+- ergonomic re-exports (the `@place-ts/component` barrel)
 - `wire()` polymorphism over value types (each branch may pull in helpers regardless of usage)
 - `serve({ tailwind: true })` — already correctly tree-shaken because Tailwind helpers are a peer dep, but worth confirming
 
@@ -195,7 +195,7 @@ Theoretically interesting. No production framework combines them. HTMX's own ess
 | Rank | Action | Est. saving | Est. effort | What we'd give up |
 |---|---|---|---|---|
 | 1 | **Template-hoisting compile-out (A7)** — extend the Bun plugin so JSX with static markup compiles to `template()` clone + targeted `insert()` calls; collapse no-binding `el()` calls to native DOM ops; elide `effect()` around statically-known props. | 5–10 KB gzipped | 1–2 weeks (one focused stretch); reuses `bun-plugin-solid` shape; no new build language | Some debugger fidelity at template-clone sites (mitigatable with source maps). Charter-safe: output is inspectable, no new variables introduced. |
-| 2 | **Barrel-export + polymorphism audit (A2)** — split `@place/component` exports so unused ergonomics (`wire`/`urlState`/`globalKey`) tree-shake cleanly. Confirm `sideEffects: false` is honest. | 3–8 KB gzipped | 2–3 days | Slightly less convenient single-import surface. Mitigate with a re-export barrel that is itself marked side-effect-free. |
+| 2 | **Barrel-export + polymorphism audit (A2)** — split `@place-ts/component` exports so unused ergonomics (`wire`/`urlState`/`globalKey`) tree-shake cleanly. Confirm `sideEffects: false` is honest. | 3–8 KB gzipped | 2–3 days | Slightly less convenient single-import surface. Mitigate with a re-export barrel that is itself marked side-effect-free. |
 | 3 | **Route-based code-splitting for user code only (A4)** — leave framework as singleton entry chunk; split per-page user code. | 0 today, 10–30 KB per non-active page once docs grow | 1 day after multi-page docs land | Nothing today (one-page docs). Defer until justified. |
 | 4 | **Document the "what's in 50 KB" breakdown** — Make the structural-vs-waste split explicit in component-system docs so future contributors don't chase Solid's 7.6 KB number. | 0 KB; saves rework | half a day | Nothing |
 | 5 | **Watch list, do nothing yet:** Vue Vapor 3.6 stable, Marko 6 stable release, Qwik-style resumability for v0.5 SSR work, Brisa's Wasm-signals approach if cold-start tooling improves. | n/a | n/a | n/a |

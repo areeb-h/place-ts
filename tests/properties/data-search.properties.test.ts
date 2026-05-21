@@ -1,4 +1,4 @@
-// Property-based tests for @place/data + @place/search.
+// Property-based tests for @place-ts/data + @place-ts/search.
 //
 // Both systems are small and value-typed, so the property surface is
 // modest — but the invariants that matter (collection CRUD round-trip,
@@ -39,7 +39,7 @@ const uniqueItemsArb = fc
   })
   .filter((items) => items.length > 0)
 
-// ─── @place/data ──────────────────────────────────────────────────────
+// ─── @place-ts/data ──────────────────────────────────────────────────────
 
 describe('data — property: collection invariants', () => {
   test('add(item) then get(id) returns item; size grows by 1', () => {
@@ -108,7 +108,7 @@ describe('data — property: collection invariants', () => {
   })
 })
 
-// ─── @place/search ────────────────────────────────────────────────────
+// ─── @place-ts/search ────────────────────────────────────────────────────
 
 describe('search — property: searchable invariants', () => {
   test('empty query returns the full list unchanged', () => {

@@ -2,7 +2,7 @@
 
 Effect handler installation, scoped tracking contexts, permission enforcement at boundaries. The system that gives Direction E ("capability-passed scopes") a home.
 
-**Status:** **v0.1 + Phase 4 v0.1 shipping.** Runtime: `defineCapability` / `provide` / `install` / `use` / `tryUse` plus the `withCapability` bridge in `@place/component`. Phase 4 v0.1 adds `requires(...caps)(fn)` for typed-effect annotation + runtime early-error, plus placeholder type aliases (`Effect`, `IO`, `Mutate`, `Async`, `Throws<E>`, `Read<S>`). Reactive-scope integration (Phase 5) and compile-time scope enforcement (Phase 6+ build step) deferred. **20 tests.**
+**Status:** **v0.1 + Phase 4 v0.1 shipping.** Runtime: `defineCapability` / `provide` / `install` / `use` / `tryUse` plus the `withCapability` bridge in `@place-ts/component`. Phase 4 v0.1 adds `requires(...caps)(fn)` for typed-effect annotation + runtime early-error, plus placeholder type aliases (`Effect`, `IO`, `Mutate`, `Async`, `Throws<E>`, `Read<S>`). Reactive-scope integration (Phase 5) and compile-time scope enforcement (Phase 6+ build step) deferred. **20 tests.**
 
 - [docs/00-charter.md](docs/00-charter.md) — scope and dependencies
 - [docs/01-phase4-typed-effects.md](docs/01-phase4-typed-effects.md) — design doc for Phase 4 v0.1, including what's deferred and why
@@ -11,8 +11,8 @@ Effect handler installation, scoped tracking contexts, permission enforcement at
 ## Shipping API
 
 ```ts
-import { defineCapability } from '@place/capability'
-import { withCapability } from '@place/component'
+import { defineCapability } from '@place-ts/capability'
+import { withCapability } from '@place-ts/component'
 
 interface Logger { log(msg: string): void }
 const Log = defineCapability<Logger>('Log')
@@ -37,7 +37,7 @@ mount(
 Wrap a function with `requires(...caps)` to (1) brand it at the type level with `Requires<C>` and (2) check at call time that every cap is installed, throwing a clear early-error before the body runs.
 
 ```ts
-import { defineCapability, requires } from '@place/capability'
+import { defineCapability, requires } from '@place-ts/capability'
 
 const Logger = defineCapability<{ log(msg: string): void }>('Logger')
 const Network = defineCapability<{ fetch(url: string): Promise<string> }>('Network')
@@ -63,4 +63,4 @@ See [docs/01-phase4-typed-effects.md](docs/01-phase4-typed-effects.md) for the d
 - **Effect inference** (deriving requirements from function bodies without manual annotation). Probably a custom TS transform.
 - **Async-safe propagation** across `await` boundaries. Capabilities work synchronously now; an async boundary loses the stack. This is Phase 5 (reactive scopes).
 - **Effect polymorphism** (`<E extends Effect>(fn) => Effect<E | IO>`). Hard without higher-kinded types.
-- **Reactive integration** with `@place/reactivity` scopes (Phase 5).
+- **Reactive integration** with `@place-ts/reactivity` scopes (Phase 5).

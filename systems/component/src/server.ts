@@ -1,4 +1,4 @@
-// @place/component/server — server-only entry.
+// @place-ts/component/server — server-only entry.
 //
 // Everything here runs on the server or at build time: the renderers,
 // the Bun.serve orchestrator, `action()` handlers, the page/app
@@ -8,8 +8,8 @@
 // Tier 20 entrypoint split — full isolation. The node/Bun-carrying
 // surface (`serve`, `app`, `routes`, `buildStatic`, `discoverPages`,
 // the security-header presets) is re-exported HERE and nowhere else:
-// the root `@place/component` barrel no longer exposes it, so a
-// client/island bundle that imports `@place/component` cannot reach
+// the root `@place-ts/component` barrel no longer exposes it, so a
+// client/island bundle that imports `@place-ts/component` cannot reach
 // `Bun.serve` / `Bun.build` / `node:*` even in its module graph —
 // the boundary is an impossible import graph, not a `__PLACE_BROWSER__`
 // dead-branch. The forbidden-import probe
@@ -44,7 +44,7 @@ export {
   provisionActionKey,
   provisionMacaroon,
 } from './critical-action.ts'
-// ----- node-free, also on the root `@place/component` barrel -----
+// ----- node-free, also on the root `@place-ts/component` barrel -----
 export {
   type Action,
   type ActionDef,

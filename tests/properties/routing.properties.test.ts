@@ -1,4 +1,4 @@
-// Property-based tests for @place/routing.
+// Property-based tests for @place-ts/routing.
 //
 // The `route()` primitive has subtle URL-encoding behavior + an
 // inverse-pair (build / match) contract. Property tests verify the

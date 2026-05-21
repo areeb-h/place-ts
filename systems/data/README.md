@@ -1,6 +1,6 @@
 # Data System
 
-Data primitives over `@place/reactivity`. v0.1 ships ONE primitive — `collection<T>` — that handles the boring half of "I need an entity store" so consumers stop hand-rolling it per entity.
+Data primitives over `@place-ts/reactivity`. v0.1 ships ONE primitive — `collection<T>` — that handles the boring half of "I need an entity store" so consumers stop hand-rolling it per entity.
 
 **Status:** v0.1 shipping. 11 tests green.
 
@@ -10,8 +10,8 @@ Data primitives over `@place/reactivity`. v0.1 ships ONE primitive — `collecti
 ## Shipping API
 
 ```ts
-import { collection } from '@place/data'
-import { state } from '@place/reactivity'
+import { collection } from '@place-ts/data'
+import { state } from '@place-ts/reactivity'
 
 interface Note { id: string; title: string; tags: readonly string[] }
 

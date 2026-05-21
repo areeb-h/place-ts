@@ -1,6 +1,6 @@
 # Persistence System
 
-Storage adapters for `@place/reactivity` state. The contract is plain (`load`, `save`, optional `observe`, optional `refresh`) so any backend — memory, browser storage, IndexedDB, remote sync — slots into the same shape and consumer code never changes.
+Storage adapters for `@place-ts/reactivity` state. The contract is plain (`load`, `save`, optional `observe`, optional `refresh`) so any backend — memory, browser storage, IndexedDB, remote sync — slots into the same shape and consumer code never changes.
 
 **Status:** v0.3 shipping. localStorage + memory + cross-tab via BroadcastChannel + IndexedDB (async, sync surface). 31 tests green.
 
@@ -21,7 +21,7 @@ import {
   memoryAdapter,
   crossTabAdapter,
   type PersistenceAdapter,
-} from '@place/persistence'
+} from '@place-ts/persistence'
 
 // Sync localStorage round-trip:
 const adapter = localStorageAdapter<Note[]>('notes:v1', [])

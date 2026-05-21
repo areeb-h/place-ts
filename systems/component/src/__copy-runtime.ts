@@ -1,9 +1,9 @@
 // Inline page runtime for click-to-copy buttons.
 //
-// Lives in `@place/component` (not `@place/design`) so the framework
+// Lives in `@place-ts/component` (not `@place-ts/design`) so the framework
 // can emit it ONCE per page with the per-request CSP nonce —
 // mirroring how `placeViewport`, `placeHmr`, `placeTabs` work.
-// Components in `@place/design` (`<Copy>`, `<CodeBlock>`) mark the
+// Components in `@place-ts/design` (`<Copy>`, `<CodeBlock>`) mark the
 // flag via `markCopyUsedOnThisRequest()`; `renderPage` consumes the
 // flag and emits the runtime alongside the other inline scripts so
 // it gets the same nonce treatment.
@@ -30,7 +30,7 @@
 //     copy button (or no-op).
 //   - On match: decode the text, attempt clipboard write, toggle
 //     `data-state` to `copied` (or `failed`) for 1.4 s, then back to
-//     `idle`. CSS in `@place/design/styles.ts` keys off `data-state`
+//     `idle`. CSS in `@place-ts/design/styles.ts` keys off `data-state`
 //     to swap the visible label + show a tick.
 //   - `window.__placeCopy === 1` guard prevents double-install when
 //     the runtime is emitted multiple times (e.g. SPA-nav between

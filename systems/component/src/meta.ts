@@ -167,7 +167,7 @@ export interface PageMeta {
  * `{ inline: '...' }` (emits `<style>`). Pass an array to combine.
  *
  * Tailwind integration: `await tailwind({ ... })` from
- * `@place/component/tailwind` returns `{ inline: css }` which drops in
+ * `@place-ts/component/tailwind` returns `{ inline: css }` which drops in
  * here directly.
  */
 export type StyleSrc = string | { inline: string; media?: string }

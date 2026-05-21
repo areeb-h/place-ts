@@ -27,7 +27,7 @@ async function writePageFile(rel: string, src: string): Promise<string> {
 
 /**
  * Source of a leaf page module: imports `page` from
- * `@place/component`, default-exports `page('/path', { view })`.
+ * `@place-ts/component`, default-exports `page('/path', { view })`.
  *
  * `routePath` is the path the page will register at. `marker` is an
  * arbitrary identifier the test can grep to verify the right page

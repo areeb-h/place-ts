@@ -1,14 +1,14 @@
 // /api/app — app() reference. The single entry point that absorbs
 // server/client dispatch, cap install, port reading, and bundling.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const SIG = `app(config: AppConfig).run()`
 
-const FULL = `import { app } from '@place/component/server'
-import { pathRouter, RouterCap } from '@place/routing'
+const FULL = `import { app } from '@place-ts/component/server'
+import { pathRouter, RouterCap } from '@place-ts/routing'
 import { rootLayout } from './layouts/root.layout'
 import home from './pages/home.page'
 import about from './pages/about.page'
@@ -44,7 +44,7 @@ const BUILD = `// app().build({ outDir }) — pre-render to a static site. Runs 
 // The exported site is fully interactive — island bundles ship and
 // SPA-nav works. Server-side only; for CDN static hosts.
 
-import { app } from '@place/component/server'
+import { app } from '@place-ts/component/server'
 import { pages } from './pages'
 
 await app({ pages, theme: tokens }).build({ outDir: 'dist' })`
@@ -53,7 +53,7 @@ const DISCOVER = `// discoverPages(dir) — async helper that imports every *.pa
 // (plus subdir index.ts barrels) under a directory and returns a
 // flat Page[]. It does NOT derive routes from file paths — each
 // page's page('/path', def) declaration stays the source of truth.
-import { app, discoverPages } from '@place/component/server'
+import { app, discoverPages } from '@place-ts/component/server'
 
 export default app({
   pages: await discoverPages('./src/pages'),
@@ -62,7 +62,7 @@ export default app({
 const ROUTES = `// routes(prefix, pages, opts?) — a pure value transform: prefixes
 // every page's path and (optionally) applies a shared layout. Used
 // to group feature folders. No registration, no side effects.
-import { routes } from '@place/component/server'
+import { routes } from '@place-ts/component/server'
 
 // admin/index.ts
 export default routes('/admin', [dashboard, users, settings], {

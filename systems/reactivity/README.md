@@ -18,7 +18,7 @@ The foundation of the platform. Time-indexed reactive primitives, derivation as 
 ### Phase 1+2 — synchronous core + derivable state
 
 ```ts
-import { state, watch, untrack } from '@place/reactivity'
+import { state, watch, untrack } from '@place-ts/reactivity'
 
 const a = state(1)                // raw state
 const b = state(() => a() + 1)    // derived (also writable; revert policy)
@@ -37,7 +37,7 @@ a.set(3)                          // logs 4 (upstream change reverts override)
 ### Phase 3 — scheduler
 
 ```ts
-import { batch, flush } from '@place/reactivity'
+import { batch, flush } from '@place-ts/reactivity'
 
 batch(() => {
   a.write(1); b.write(2); c.write(3)
@@ -49,7 +49,7 @@ flush()  // synchronously drain pending watches (no-op inside a batch)
 ### Phase 5 (partial) — `resource(loader)` async-as-pending
 
 ```ts
-import { resource } from '@place/reactivity'
+import { resource } from '@place-ts/reactivity'
 
 const note = resource(() =>
   fetch(`/notes/${id.read()}`).then((r) => r.json()),
@@ -72,7 +72,7 @@ No Suspense, no compiler, no rendering boundary. Async lives inside the same two
 ### Phase 5 (partial) — `history(state, options?)` undo/redo
 
 ```ts
-import { history, state } from '@place/reactivity'
+import { history, state } from '@place-ts/reactivity'
 
 const note = state({ title: '', content: '' })
 const h = history(note, { limit: 50, equals: (a, b) => a.title === b.title && a.content === b.content })

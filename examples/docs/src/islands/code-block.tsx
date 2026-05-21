@@ -10,7 +10,7 @@
 // interactivity (e.g. server-only print views, future SSG snapshots) —
 // the island is the consumer's choice, not the component's.
 
-// `view` auto-imported via the @place/component plugin.
+// `view` auto-imported via the @place-ts/component plugin.
 import { CodeBlock as CodeBlockImpl, type CodeBlockProps } from '../components/code-block.tsx'
 
 const CodeBlockIsland = view<CodeBlockProps & Record<string, unknown>>(CodeBlockImpl)

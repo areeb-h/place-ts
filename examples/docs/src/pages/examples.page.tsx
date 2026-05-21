@@ -2,7 +2,7 @@
 // No live preview iframes here — each card links to source + a quick
 // description of what's exercised end-to-end.
 
-import { page } from '@place/component'
+import { page } from '@place-ts/component'
 
 interface Example {
   readonly title: string

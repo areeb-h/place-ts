@@ -2,12 +2,12 @@
 // unauthenticated. The shape works for OAuth, magic links, and any
 // custom session scheme.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const SESSION_CAP = `// src/auth.ts
-import { defineCapability } from '@place/capability'
+import { defineCapability } from '@place-ts/capability'
 
 interface SessionStore {
   get(req: Request): Promise<Session | null>
@@ -18,7 +18,7 @@ interface SessionStore {
 export const SessionCap = defineCapability<SessionStore>('Session')`
 
 const GUARD = `// Reusable layout that guards every page under it.
-import { layout } from '@place/component'
+import { layout } from '@place-ts/component'
 import { SessionCap } from '../auth'
 
 export const requireAuth = layout({
@@ -47,8 +47,8 @@ const CAN_EX = `// <Can> — render-time RBAC gate (T16-E, ADR 0044).
 // strict true → renders \`otherwise\` or nothing). Synchronous
 // predicate → works pre-hydration in SSR; denied content NEVER
 // appears in rendered HTML, NEVER ships JS for the hidden island.
-import { Can } from '@place/security'
-import { Button } from '@place/design'
+import { Can } from '@place-ts/security'
+import { Button } from '@place-ts/design'
 
 <Can do="post.delete">
   <Button intent="destructive" onClick={remove}>Delete</Button>
@@ -61,7 +61,7 @@ import { Button } from '@place/design'
 // Populate Session.can at session-install time from whatever policy
 // engine you use — Cerbos, Permify, hand-rolled RBAC. The framework
 // stays out of the policy DSL business.
-import { SessionCap } from '@place/security'
+import { SessionCap } from '@place-ts/security'
 
 SessionCap.provide(
   {
@@ -93,8 +93,8 @@ const CRITICAL_PROVISION = `// Auth flow for apps that use criticalAction() — 
 import {
   provisionActionKey,
   provisionMacaroon,
-} from '@place/component/server'
-import { attenuate, serializeMacaroon } from '@place/security'
+} from '@place-ts/component/server'
+import { attenuate, serializeMacaroon } from '@place-ts/security'
 
 export const login = action({
   path: 'POST /api/login',
@@ -134,7 +134,7 @@ import {
   installMacaroon,
   clearActionKey,
   clearMacaroon,
-} from '@place/component/client'
+} from '@place-ts/component/client'
 
 async function signIn(email: string, password: string) {
   const res = await login.call({ email, password })
@@ -195,8 +195,8 @@ export default page('/auth', {
       </p>
       <CodeBlock code={CAN_EX} />
       <p>
-        <code>&lt;Can&gt;</code> lives in <code>@place/security</code> (data lives there, not in the
-        design library). The framework doesn't ship a policy DSL — apps wire any authorization
+        <code>&lt;Can&gt;</code> lives in <code>@place-ts/security</code> (data lives there, not in
+        the design library). The framework doesn't ship a policy DSL — apps wire any authorization
         engine (Cerbos, Permify, hand-rolled) into <code>Session.can</code> at install time. See{' '}
         <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0044-can-rbac-gate.md">
           ADR 0044

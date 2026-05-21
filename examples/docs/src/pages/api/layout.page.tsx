@@ -1,9 +1,9 @@
 // /api/layout — layout() reference. Composable shells around pages.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 
-const BASIC = `import { layout } from '@place/component'
+const BASIC = `import { layout } from '@place-ts/component'
 
 export const rootLayout = layout({
   meta: { bodyClass: 'bg-bg text-fg' },

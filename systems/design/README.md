@@ -1,11 +1,11 @@
-# @place/design
+# @place-ts/design
 
 A curated component library shipped *with* the platform — **not** a
 tenth system. It ships opinionated UI primitives built on top of the
 nine platform systems; apps import from it directly.
 
 ```tsx
-import { Button, Field, Dialog } from '@place/design'
+import { Button, Field, Dialog } from '@place-ts/design'
 ```
 
 **Status:** shipping. 14 primitives + a pluggable code tokenizer.

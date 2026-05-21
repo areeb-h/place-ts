@@ -1,11 +1,11 @@
-# `@place/create-app`
+# `@place-ts/create-app`
 
 Scaffolder. Creates a new place-ts project from a starter template.
 
 ## Usage
 
 ```sh
-bunx @place/create-app my-app
+bunx @place-ts/create-app my-app
 ```
 
 Walks you through prompts (project name, template), copies the template into `./my-app/`, and runs `bun install`.
@@ -13,7 +13,7 @@ Walks you through prompts (project name, template), copies the template into `./
 ### Flags
 
 ```
-bunx @place/create-app <name> [options]
+bunx @place-ts/create-app <name> [options]
 
 Options:
   --template <name>   Template to scaffold. Default: minimal.

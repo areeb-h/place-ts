@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { renderToString } from '@place/component'
-import { state } from '@place/reactivity'
+import { renderToString } from '@place-ts/component'
+import { state } from '@place-ts/reactivity'
 import { describe, expect, test } from 'vitest'
 import { Disclosure } from '../../src/Disclosure.tsx'
 

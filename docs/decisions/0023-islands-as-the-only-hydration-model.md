@@ -66,7 +66,7 @@ shared chunk so any island can be the first to load it.
 
 ```ts
 // examples/docs/src/islands/_init.ts
-import { pathRouter, RouterCap } from '@place/routing'
+import { pathRouter, RouterCap } from '@place-ts/routing'
 const existing = RouterCap.use(null)
 if (existing === null) {
   RouterCap.install(pathRouter())
@@ -76,7 +76,7 @@ if (existing === null) {
 ```ts
 // any island using RouterCap:
 import './_init.ts'
-import { RouterCap } from '@place/routing'
+import { RouterCap } from '@place-ts/routing'
 // ... RouterCap.use() works
 ```
 

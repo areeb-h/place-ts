@@ -1,11 +1,11 @@
 // /api/define-capability — capability primitive reference.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 
 const SIG = `defineCapability<T>(name: string, options?: DefineCapabilityOptions): Capability<T>`
 
-const BASIC = `import { defineCapability } from '@place/capability'
+const BASIC = `import { defineCapability } from '@place-ts/capability'
 
 interface Logger {
   info(msg: string): void
@@ -34,7 +34,7 @@ const dispose = LoggerCap.install(myLogger)
 // ...later, to tear it down:
 dispose()`
 
-const SCOPED = `import { withCapability } from '@place/component'
+const SCOPED = `import { withCapability } from '@place-ts/component'
 
 // Provision for a single subtree:
 withCapability(LoggerCap, scopedLogger, <Subtree />)`

@@ -1,10 +1,10 @@
 ---
-description: Render layer + SSR/hydration/server primitives. Sits on top of @place/reactivity. JSX runtime, page() declarative pages, serve() Bun server wrapper, boot() client entry, typed CSP/HSTS, first-class Tailwind v4.
+description: Render layer + SSR/hydration/server primitives. Sits on top of @place-ts/reactivity. JSX runtime, page() declarative pages, serve() Bun server wrapper, boot() client entry, typed CSP/HSTS, first-class Tailwind v4.
 ---
 
 # Component System
 
-The render layer **and** the SSR layer. Sits on top of `@place/reactivity`. Defines components, mount lifecycle, prop reactivity, list reconciliation, error boundaries, the bridge to capabilities, and a complete server-side-rendering + client-hydration pipeline that ships as one cohesive `serve() / page() / boot()` API.
+The render layer **and** the SSR layer. Sits on top of `@place-ts/reactivity`. Defines components, mount lifecycle, prop reactivity, list reconciliation, error boundaries, the bridge to capabilities, and a complete server-side-rendering + client-hydration pipeline that ships as one cohesive `serve() / page() / boot()` API.
 
 **Status:** v0.3 shipping. JSX runtime per [ADR 0002](../../docs/decisions/0002-jsx-shape-via-ts-automatic-runtime.md). Page-as-data SSR per [ADR 0003](../../docs/decisions/0003-page-as-data-and-the-server-framework.md). 232 tests across 20 files.
 
@@ -13,7 +13,7 @@ The render layer **and** the SSR layer. Sits on top of `@place/reactivity`. Defi
 - [docs/02-design.md](docs/02-design.md) — direction document: principles, leading proposals, open questions
 - [src/index.ts](src/index.ts) — runtime
 - [src/jsx-runtime.ts](src/jsx-runtime.ts) — JSX automatic runtime entry point
-- [src/tailwind.ts](src/tailwind.ts) — Tailwind v4 helper, sub-exported as `@place/component/tailwind`
+- [src/tailwind.ts](src/tailwind.ts) — Tailwind v4 helper, sub-exported as `@place-ts/component/tailwind`
 
 ## Mental model
 
@@ -29,7 +29,7 @@ For SSR, the same `View` knows how to render itself to a string via an optional 
 
 ```ts
 // pages/home.page.tsx — shared between server and client.
-import { page } from '@place/component'
+import { page } from '@place-ts/component'
 export const home = page({
   url:  (u)         => ({ name: u.searchParams.get('name') ?? 'visitor' }),
   load: async (ctx) => ({ now: new Date().toISOString() }),
@@ -38,7 +38,7 @@ export const home = page({
 })
 
 // server.tsx
-import { serve } from '@place/component'
+import { serve } from '@place-ts/component'
 import { home } from './pages/home.page.tsx'
 await serve({
   port: 5180,
@@ -49,7 +49,7 @@ await serve({
 })
 
 // client.tsx
-import { boot } from '@place/component'
+import { boot } from '@place-ts/component'
 import { home } from './pages/home.page.tsx'
 boot({ '/': home })
 ```
@@ -92,7 +92,7 @@ That's the whole SSR-with-hydration story. No file-system routing, no `'use clie
 
 ### Tailwind (v4)
 
-Sub-exported as `@place/component/tailwind` so apps that don't use it pay zero dependency cost.
+Sub-exported as `@place-ts/component/tailwind` so apps that don't use it pay zero dependency cost.
 
 - **Standalone:** `await tailwind({ content: ['src/**/*.tsx'] })` returns `{ inline: css }` you drop into `page.styles`.
 - **First-class on `serve()`:** `serve({ tailwind: true })` auto-compiles, auto-injects the CSS into every page's `<head>`, and computes the SHA-256 of the inlined CSS — the hash is auto-added to the security CSP `style-src` so strict CSP keeps working without `'unsafe-inline'`.

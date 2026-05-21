@@ -1,15 +1,15 @@
-// /api/persistence — @place/persistence overview.
+// /api/persistence — @place-ts/persistence overview.
 // persistedState() + the storage adapters that back it.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const PERSISTED_STATE = `// persistedState(adapter) — a State<T> that loads from the adapter
 // on creation and saves on every change. Persistence sits ON TOP of
 // reactivity: the state primitive knows nothing about storage; the
 // adapter is a plain object with load() + save().
-import { persistedState, localStorageAdapter } from '@place/persistence'
+import { persistedState, localStorageAdapter } from '@place-ts/persistence'
 
 const { state: theme, dispose } = persistedState(
   localStorageAdapter('app:theme', 'dark'),
@@ -21,7 +21,7 @@ dispose()          // stops the auto-save watch (rarely needed —
                    // most state lives for the app's lifetime)`
 
 const LOCAL_STORAGE = `// localStorageAdapter — sync, JSON-serializable values.
-import { localStorageAdapter } from '@place/persistence'
+import { localStorageAdapter } from '@place-ts/persistence'
 
 const adapter = localStorageAdapter('notes:draft', '', {
   // Optional — defaults are JSON.stringify / JSON.parse.
@@ -33,7 +33,7 @@ const adapter = localStorageAdapter('notes:draft', '', {
 // falls back to the default value rather than throwing.`
 
 const MEMORY = `// memoryAdapter — in-memory, for tests and no-op fallbacks.
-import { memoryAdapter } from '@place/persistence'
+import { memoryAdapter } from '@place-ts/persistence'
 
 const adapter = memoryAdapter({ count: 0 })
 // Nothing touches disk / localStorage — useful in unit tests and
@@ -46,7 +46,7 @@ import {
   persistedState,
   localStorageAdapter,
   crossTabAdapter,
-} from '@place/persistence'
+} from '@place-ts/persistence'
 
 const { state: prefs } = persistedState(
   crossTabAdapter(
@@ -63,7 +63,7 @@ const INDEXED_DB = `// indexedDBAdapter — async storage for large values. The 
 // contract is sync at load() — it keeps a cached value, kicks off
 // the async IDB load on construction, and fires observe() when the
 // load resolves so persistedState picks up the stored value.
-import { persistedState, indexedDBAdapter } from '@place/persistence'
+import { persistedState, indexedDBAdapter } from '@place-ts/persistence'
 
 const { state: doc } = persistedState(
   indexedDBAdapter('editor:doc', { blocks: [] }, {
@@ -76,7 +76,7 @@ const SERVER = `// serverAdapter — HTTP + WebSocket backed persistence. Speaks
 // tiny key-value sync server: GET/PUT /kv/:key, plus a WebSocket
 // that pushes a change signal per write. Like IndexedDB, it caches
 // over async storage and fires observe() on remote changes.
-import { persistedState, serverAdapter } from '@place/persistence'
+import { persistedState, serverAdapter } from '@place-ts/persistence'
 
 const { state: shared } = persistedState(
   serverAdapter({
@@ -88,14 +88,14 @@ const { state: shared } = persistedState(
 )`
 
 export default page('/persistence', {
-  meta: '@place/persistence',
+  meta: '@place-ts/persistence',
   view: () => (
     <article class="prose max-w-3xl">
       <h1>
-        <code>@place/persistence</code>
+        <code>@place-ts/persistence</code>
       </h1>
       <p>
-        Storage adapters for <code>@place/reactivity</code> state. One primitive —{' '}
+        Storage adapters for <code>@place-ts/reactivity</code> state. One primitive —{' '}
         <code>persistedState()</code> — wraps a state so it loads from a backing store on creation
         and saves on every change. The adapter is a plain object (<code>load</code> +{' '}
         <code>save</code>, optionally <code>observe</code> / <code>refresh</code>), so adapters are
@@ -179,7 +179,7 @@ export default page('/persistence', {
           <Link to="/api/state">state · watch · derived</Link> — the reactivity primitives
         </li>
         <li>
-          <Link to="/api/data">@place/data</Link> — <code>collection()</code> composes with
+          <Link to="/api/data">@place-ts/data</Link> — <code>collection()</code> composes with
           persisted state
         </li>
       </ul>

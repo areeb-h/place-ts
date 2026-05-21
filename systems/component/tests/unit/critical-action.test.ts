@@ -14,7 +14,7 @@ import {
   serializeMacaroon,
   sha256Base64url,
   signEnvelope,
-} from '@place/security'
+} from '@place-ts/security'
 import { beforeEach, describe, expect, test } from 'vitest'
 import {
   _clearActionRootKey,

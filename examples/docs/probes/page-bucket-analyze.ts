@@ -16,8 +16,8 @@ const PROBE_ENTRY = `${PROBE_DIR}/entry.ts`
 // rest of the framework's surface deliberately NOT used so we isolate
 // what `page` drags in.
 const PROBE_CODE = `
-import { el, layout, page } from '@place/component'
-import { app } from '@place/component/server'
+import { el, layout, page } from '@place-ts/component'
+import { app } from '@place-ts/component/server'
 
 const home = page('/', {
   view: () => el('h1', {}, ['hi']),

@@ -1,13 +1,13 @@
-// /api/security — @place/security overview.
+// /api/security — @place-ts/security overview.
 // One place for sessions, RBAC, CSRF, signed tokens, rate-limit,
 // secure cookies, and CSP defaults.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const SESSION_EX = `// Session capability — typed runtime slot for the authenticated user.
-import { SessionCap, requireSession, type Session } from '@place/security'
+import { SessionCap, requireSession, type Session } from '@place-ts/security'
 
 // Install at the request boundary (typically in a layout's load()):
 SessionCap.provide(
@@ -32,8 +32,8 @@ const maybe = SessionCap.tryUse()`
 const CAN_EX = `// <Can do="..."> — render-time RBAC gate (ADR 0044).
 // Fails closed: no session, no .can, anything other than strict true.
 // Synchronous predicate → SSR-safe, denied content never reaches HTML.
-import { Can } from '@place/security'
-import { Button } from '@place/design'
+import { Can } from '@place-ts/security'
+import { Button } from '@place-ts/design'
 
 <Can do="post.delete">
   <Button intent="destructive" onClick={remove}>Delete</Button>
@@ -48,7 +48,7 @@ const FROM_STANDARD_EX = `// Schema-agnostic validation for action() inputs (ADR
 // ArkType, Effect Schema. Field-level errors land in
 // ActionError.payload.fields, narrowed via isValidationFailure.
 import { z } from 'zod'
-import { action, fromStandard, isValidationFailure } from '@place/component'
+import { action, fromStandard, isValidationFailure } from '@place-ts/component'
 
 export const signup = action({
   path: 'POST /api/signup',
@@ -69,7 +69,7 @@ export const signup = action({
 </Form>`
 
 const SIGNED_TOKEN_EX = `// HMAC-signed opaque payload. SHA-256, Web Crypto. Optional expiry.
-import { signedToken } from '@place/security'
+import { signedToken } from '@place-ts/security'
 
 const sessionToken = signedToken<{ userId: string }>(SECRET, {
   expiresInSeconds: 60 * 60 * 24 * 7, // 7 days
@@ -85,7 +85,7 @@ const payload = await sessionToken.verify(token) // null on bad sig / expired
 const CSRF_EX = `// Double-submit CSRF — auto-wired into action() + <Form> when
 // security: 'standard' is on (the default). The primitive is exposed
 // for apps that need it outside that path.
-import { csrfToken } from '@place/security'
+import { csrfToken } from '@place-ts/security'
 
 const csrf = csrfToken(SECRET)
 const token = await csrf.issue(sessionId)
@@ -93,7 +93,7 @@ const ok = await csrf.verify(sessionId, submittedToken)`
 
 const RATELIMIT_EX = `// In-memory token bucket. For multi-instance deployments wrap with
 // a shared backend (Redis, KV) behind the same interface.
-import { rateLimit } from '@place/security'
+import { rateLimit } from '@place-ts/security'
 
 const checkLogin = rateLimit({ windowMs: 60_000, max: 5 })
 
@@ -103,7 +103,7 @@ if (!checkLogin(req.headers.get('x-forwarded-for') ?? 'anon')) {
 }`
 
 const COOKIES_EX = `// Secure-by-default cookie helpers.
-import { parseCookies, setCookieHeader, clearCookieHeader } from '@place/security'
+import { parseCookies, setCookieHeader, clearCookieHeader } from '@place-ts/security'
 
 // Parse incoming Cookie header.
 const cookies = parseCookies(req.headers.get('cookie'))
@@ -124,7 +124,7 @@ const clear = clearCookieHeader('place-session')
 const CSP_EX = `// Strict CSP starter. The serve({ security: 'standard' }) path
 // applies this header with a fresh per-request nonce. No 'unsafe-inline'
 // anywhere; auto-hash injection covers inline-style attrs (ADR 0014).
-import { CSP_DEFAULTS, cspHeader } from '@place/security'
+import { CSP_DEFAULTS, cspHeader } from '@place-ts/security'
 
 const header = cspHeader(CSP_DEFAULTS)
 
@@ -142,7 +142,7 @@ const ENVELOPE_EX = `// HMAC envelope — the substrate criticalAction() builds 
 // Apps don't usually call these directly — criticalAction() does — but
 // they're exposed for custom transports (websocket frames, signed
 // pub/sub messages, etc.).
-import { signEnvelope, verifyEnvelope, sha256Base64url } from '@place/security'
+import { signEnvelope, verifyEnvelope, sha256Base64url } from '@place-ts/security'
 
 const wire = await signEnvelope(perSessionKey, {
   actionId: 'POST /__a/transfer',
@@ -177,7 +177,7 @@ import {
   verifyMacaroon,
   serializeMacaroon,
   deserializeMacaroon,
-} from '@place/security'
+} from '@place-ts/security'
 
 // Mint at the auth boundary.
 const root = await mintMacaroon(rootKey, session.id)
@@ -215,7 +215,7 @@ const AUDIT_EX = `// Hash-chained tamper-evident audit log. criticalAction() aut
 // Apps emit additional entries via ctx.audit() inside the handler.
 // Any modification to an existing entry breaks the chain and is caught
 // by verify().
-import { AuditLogCap, inMemoryAuditLog, useAuditLog } from '@place/security'
+import { AuditLogCap, inMemoryAuditLog, useAuditLog } from '@place-ts/security'
 
 // At app boot:
 AuditLogCap.install(inMemoryAuditLog({ maxEntries: 10_000 }))
@@ -238,11 +238,11 @@ const { ok, brokenAt } = await log.verify()
 if (!ok) reportTampering(brokenAt)`
 
 export default page('/security', {
-  meta: '@place/security',
+  meta: '@place-ts/security',
   view: () => (
     <article class="prose max-w-3xl">
       <h1>
-        <code>@place/security</code>
+        <code>@place-ts/security</code>
       </h1>
       <p>
         Primitives the framework's <code>security: 'standard'</code> default builds on: signed
@@ -293,7 +293,7 @@ export default page('/security', {
         <a href="https://standardschema.dev">Standard Schema v1</a> validator (Zod 3.24+, Valibot
         0.36+, ArkType, Effect Schema) into an <code>ActionSchema&lt;T&gt;</code>. On validation
         failure, throws <code>ActionError(400, 'Validation failed', {`{ fields }`})</code>. Lives in{' '}
-        <code>@place/component</code> (it's part of the action surface); re-documented here for
+        <code>@place-ts/component</code> (it's part of the action surface); re-documented here for
         discoverability.
       </p>
       <CodeBlock code={FROM_STANDARD_EX} />

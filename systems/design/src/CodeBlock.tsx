@@ -26,8 +26,8 @@
 // ONE prop. The recipe defaults render a tasteful block in two lines
 // of JSX: `<CodeBlock code={src} lang="ts" />`.
 
-import type { Children, View } from '@place/component'
-import { cls, markCopyUsedOnThisRequest, recipe } from '@place/component'
+import type { Children, View } from '@place-ts/component'
+import { cls, markCopyUsedOnThisRequest, recipe } from '@place-ts/component'
 import { getTokenizer, type Tok, type Tokenizer } from './code/tokenize.ts'
 
 // ===== Copy runtime emission =====

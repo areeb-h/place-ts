@@ -10,9 +10,9 @@ By v0.5 the framework primitive surface had grown enough that every
 `.tsx` file in a place app started with the same shape:
 
 ```tsx
-import { Tabs, Activity, ClientOnly, Show, Fragment } from '@place/component'
-import { state, watch, derived, onMount, cookieState } from '@place/component'
-import { setTheme, themeTokens } from '@place/component'
+import { Tabs, Activity, ClientOnly, Show, Fragment } from '@place-ts/component'
+import { state, watch, derived, onMount, cookieState } from '@place-ts/component'
+import { setTheme, themeTokens } from '@place-ts/component'
 // then 30 lines of actual component code
 ```
 
@@ -33,7 +33,7 @@ starter.
 A Bun plugin scans every `.tsx` / `.jsx` file passing through the
 build, detects framework identifiers that are referenced but not in
 scope, and prepends a single grouped `import { … } from
-'@place/component'` line. TypeScript sees those identifiers as
+'@place-ts/component'` line. TypeScript sees those identifiers as
 ambient globals via a companion `auto-imports.d.ts`.
 
 ### Implementation
@@ -53,14 +53,14 @@ Three files form the surface:
    - Idempotent: re-running on already-transformed source is a no-op.
 
 2. `preload.ts` — side-effect module that calls `Bun.plugin(placeAutoImport())`.
-   Activated via `preload = ["@place/component/preload"]` in the app's
+   Activated via `preload = ["@place-ts/component/preload"]` in the app's
    `bunfig.toml`. Plugin registers once at runtime startup; affects
    all subsequent file loads.
 
 3. `auto-imports.d.ts` — ambient `declare global` block declaring every
    registry name as a global value-binding typed to `typeof
    import('./index.ts').*`. Apps include via tsconfig:
-   `"types": ["@place/component/auto-imports"]` or by appending the
+   `"types": ["@place-ts/component/auto-imports"]` or by appending the
    path to `include`.
 
 The registry (`PLACE_AUTO_IMPORTS`) lives next to the plugin and is

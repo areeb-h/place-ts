@@ -1,5 +1,5 @@
 {
-  "name": "@place/docs",
+  "name": "@place-ts/docs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,11 +11,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@place/component": "workspace:*",
-    "@place/design": "workspace:*",
-    "@place/devtools": "workspace:*",
-    "@place/reactivity": "workspace:*",
-    "@place/routing": "workspace:*",
+    "@place-ts/component": "workspace:*",
+    "@place-ts/design": "workspace:*",
+    "@place-ts/devtools": "workspace:*",
+    "@place-ts/reactivity": "workspace:*",
+    "@place-ts/routing": "workspace:*",
     "@tailwindcss/node": "^4.2.4",
     "tailwindcss": "^4.2.4"
   }

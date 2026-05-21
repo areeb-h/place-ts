@@ -8,7 +8,7 @@
 // through CSS-level color-mix recomposition, so editing only the
 // anchors recolors the whole theme.
 
-import { theme } from '@place/component'
+import { theme } from '@place-ts/component'
 
 export const tokens = theme({
   default: 'dark',

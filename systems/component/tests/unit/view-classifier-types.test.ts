@@ -16,7 +16,7 @@ import {
 } from '../../src/build/view-classifier-types.ts'
 
 // Locate the repo root so the tsconfig's `paths` resolve against the
-// real `@place/*` workspace packages. We resolve from this test file's
+// real `@place-ts/*` workspace packages. We resolve from this test file's
 // import URL.
 const repoRoot = new URL('../../../..', import.meta.url).pathname
 
@@ -38,15 +38,15 @@ const TSCONFIG = {
     module: 'ESNext',
     moduleResolution: 'bundler',
     jsx: 'react-jsx',
-    jsxImportSource: '@place/component',
+    jsxImportSource: '@place-ts/component',
     strict: true,
     lib: ['ESNext', 'DOM'],
     types: [],
     paths: {
-      '@place/reactivity': [`${repoRoot}/systems/reactivity/src/index.ts`],
-      '@place/component': [`${repoRoot}/systems/component/src/index.ts`],
-      '@place/component/jsx-runtime': [`${repoRoot}/systems/component/src/jsx-runtime.ts`],
-      '@place/capability': [`${repoRoot}/systems/capability/src/index.ts`],
+      '@place-ts/reactivity': [`${repoRoot}/systems/reactivity/src/index.ts`],
+      '@place-ts/component': [`${repoRoot}/systems/component/src/index.ts`],
+      '@place-ts/component/jsx-runtime': [`${repoRoot}/systems/component/src/jsx-runtime.ts`],
+      '@place-ts/capability': [`${repoRoot}/systems/capability/src/index.ts`],
     },
   },
   include: ['*.tsx', '*.ts'],
@@ -68,7 +68,7 @@ describe('classifyIslandWithTypes', () => {
     const result = await classifyFixture(
       'pure.tsx',
       `
-        import { island } from '@place/component'
+        import { island } from '@place-ts/component'
         const Pure = (props: { label: string }) => <div>{props.label}</div>
         export default island(import.meta.url, Pure)
       `,
@@ -81,7 +81,7 @@ describe('classifyIslandWithTypes', () => {
     const result = await classifyFixture(
       'counter.tsx',
       `
-        import { island, state } from '@place/component'
+        import { island, state } from '@place-ts/component'
         const Counter = () => {
           const n = state(0)
           return <button onClick={() => n.set(n() + 1)}>{n}</button>
@@ -97,7 +97,7 @@ describe('classifyIslandWithTypes', () => {
     const result = await classifyFixture(
       'lifecycle.tsx',
       `
-        import { island, state, onMount } from '@place/component'
+        import { island, state, onMount } from '@place-ts/component'
         const Hooked = () => {
           const n = state(0)
           onMount(() => { /* side effect */ })
@@ -114,7 +114,7 @@ describe('classifyIslandWithTypes', () => {
     const result = await classifyFixture(
       'aliased.tsx',
       `
-        import { island, state as makeSignal } from '@place/component'
+        import { island, state as makeSignal } from '@place-ts/component'
         const X = () => {
           const n = makeSignal(0)
           return <div>{n}</div>
@@ -130,7 +130,7 @@ describe('classifyIslandWithTypes', () => {
     const result = await classifyFixture(
       'commented.tsx',
       `
-        import { island } from '@place/component'
+        import { island } from '@place-ts/component'
         // This island has no state, no onMount, no watch — just the word "state"
         // appearing in this docstring three times. The name-match prototype
         // counted such mentions as references; the typed classifier does not.
@@ -153,7 +153,7 @@ describe('classifyIslandWithTypes', () => {
     const result = await classifyFixture(
       'naming.tsx',
       `
-        import { island, state } from '@place/component'
+        import { island, state } from '@place-ts/component'
         const Hello = () => {
           const greeting = state('hi')
           return (

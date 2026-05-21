@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { mount } from '@place/component'
+import { mount } from '@place-ts/component'
 import { describe, expect, test, vi } from 'vitest'
 import { Menu } from '../../src/Menu.tsx'
 

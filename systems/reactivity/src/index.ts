@@ -1,4 +1,4 @@
-// @place/reactivity — synchronous core + derivable state + scheduler
+// @place-ts/reactivity — synchronous core + derivable state + scheduler
 //
 // Phases 1-3 of the reactivity system, shipping incrementally:
 //   Phase 1 — synchronous core (state + watch + two-color graph coloring)
@@ -49,7 +49,7 @@ interface BaseNode {
    * Dev-only stable id, assigned by `devRegister` when graph
    * introspection is live (see the "Dev-only reactive-graph
    * introspection" section). Never set in a production build — the
-   * registration call sites are DCE'd. `@place/devtools` reads it.
+   * registration call sites are DCE'd. `@place-ts/devtools` reads it.
    */
   devId?: number
   /**
@@ -802,7 +802,7 @@ function disposeStateNode<T>(node: StateNode<T>): void {
 
 /**
  * Run `fn` with no current observer — any state reads inside do not subscribe
- * the surrounding watch. Used by `@place/component`'s mount machinery so that
+ * the surrounding watch. Used by `@place-ts/component`'s mount machinery so that
  * descendant component bodies' reads don't accidentally subscribe their
  * ancestors' watches (which would cause the ancestor to re-fire — and the
  * descendant subtree to unmount + remount — on every reactive update inside).
@@ -939,7 +939,7 @@ export interface ResourceOptions {
   /**
    * Stable identifier for SSR ↔ client value transfer. When set:
    *   - Server: after the loader resolves, the streaming SSR layer
-   *     (`@place/component`'s `renderToStream`) serializes the resolved
+   *     (`@place-ts/component`'s `renderToStream`) serializes the resolved
    *     value into `<script>__place.r['<key>']=…</script>` so the
    *     client can read it back without re-fetching.
    *   - Client: at construction, `resource()` checks `globalThis.__place?.r?.[key]`
@@ -1204,7 +1204,7 @@ export function history<T>(s: State<T>, options?: HistoryOptions<T>): History {
 
 // ===== Dev-only reactive-graph introspection =====
 //
-// Powers `@place/devtools`' graph panel — a live view of every
+// Powers `@place-ts/devtools`' graph panel — a live view of every
 // `state` / `derived` / `watch` node, its current value, and the
 // dependency edges between them. The charter's clause 3 ("the graph
 // is observable") made literal.
@@ -1220,7 +1220,7 @@ export function history<T>(s: State<T>, options?: HistoryOptions<T>): History {
 //   - Dev browser build + the test runtime (happy-dom): `GRAPH_DEV`
 //     is `true` — the graph is observable.
 // The read side (`inspectGraph` / `onGraphTick`) is exported; an app
-// that never imports `@place/devtools` leaves them unreferenced and
+// that never imports `@place-ts/devtools` leaves them unreferenced and
 // the bundler shakes them away.
 
 declare const __PLACE_DEV__: boolean | undefined

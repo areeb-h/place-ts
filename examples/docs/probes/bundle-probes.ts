@@ -15,13 +15,13 @@ interface Probe {
   body: string
 }
 
-// Identifiers re-exported by `@place/component`, grouped by subsystem.
+// Identifiers re-exported by `@place-ts/component`, grouped by subsystem.
 const SUBSYS = {
   reactivity: ['state', 'watch', 'derived', 'untrack', 'batch', 'resource', 'peek', 'flush'],
   jsxRuntime: ['el', 'Fragment', 'mount', 'renderToString'],
   hydration: ['hydrate', '_setHydrated', '_drainHydrationDeltas'],
   components: ['component', 'Show', 'Activity', 'ClientOnly', 'Deferred', 'Tabs'],
-  routing: ['Link'], // RouterCap is in @place/routing, not re-exported
+  routing: ['Link'], // RouterCap is in @place-ts/routing, not re-exported
   capability: ['cap', 'provide'],
   theme: ['themeTokens', 'setTheme', 'readThemeFromRequest', 'themeCookieHeader'],
   cookies: ['cookie', 'cookieState', 'parseCookieHeader'],
@@ -36,7 +36,7 @@ function makeBody(idents: readonly string[]): string {
   // For each identifier, emit a `__use(X)` line so the bundler can't
   // tree-shake it. The body's correctness doesn't matter — we just
   // need each name to be a value reference.
-  const importLine = `import { ${idents.join(', ')} } from '@place/component'`
+  const importLine = `import { ${idents.join(', ')} } from '@place-ts/component'`
   const useLines = idents.map((n) => `__use(${n})`).join('\n')
   return `${importLine}
 const __use = (x: unknown) => { ;(globalThis as Record<string, unknown>).__sink = x }

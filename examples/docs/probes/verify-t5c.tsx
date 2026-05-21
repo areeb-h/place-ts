@@ -11,14 +11,14 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { island, renderToString, state } from '@place/component'
-import { placeAutoImport } from '@place/component/auto-import-plugin'
-import { buildIslandBundles } from '@place/component/build'
+import { island, renderToString, state } from '@place-ts/component'
+import { placeAutoImport } from '@place-ts/component/auto-import-plugin'
+import { buildIslandBundles } from '@place-ts/component/build'
 import {
   _beginIslandCollection,
   _endIslandCollection,
   _setIslandRegistry,
-} from '@place/component/internal'
+} from '@place-ts/component/internal'
 
 const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : `${n} B`)
 
@@ -31,7 +31,7 @@ const counterSrc = resolve(import.meta.dir, '.tmp/islands/counter.tsx')
 await mkdir(resolve(import.meta.dir, '.tmp/islands'), { recursive: true })
 await writeFile(
   counterSrc,
-  `import { island, state } from '@place/component'
+  `import { island, state } from '@place-ts/component'
 
 export default island(import.meta.url, ({ start = 0 }: { start?: number }) => {
   const count = state(start)

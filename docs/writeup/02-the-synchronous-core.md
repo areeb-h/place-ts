@@ -5,7 +5,7 @@
 The reactivity system has two primitives.
 
 ```ts
-import { state, watch } from '@place/reactivity'
+import { state, watch } from '@place-ts/reactivity'
 
 const count = state(0)
 const doubled = state(() => count.read() * 2)

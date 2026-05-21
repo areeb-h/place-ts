@@ -1,6 +1,6 @@
 # Search System
 
-Reactive search primitives over `@place/reactivity` collections. v0.1 ships one function and earns its keep by getting search OUT of every store interface.
+Reactive search primitives over `@place-ts/reactivity` collections. v0.1 ships one function and earns its keep by getting search OUT of every store interface.
 
 **Status:** v0.1 shipping. 11 tests green.
 
@@ -10,7 +10,7 @@ Reactive search primitives over `@place/reactivity` collections. v0.1 ships one 
 ## Shipping API
 
 ```ts
-import { searchable } from '@place/search'
+import { searchable } from '@place-ts/search'
 
 const find = searchable(() => store.all(), {
   fields: (note) => [note.title, note.content, ...note.tags],
@@ -39,7 +39,7 @@ The returned filter is reactive on **both** the items collection and the query �
 
 A "search" method baked into the storage interface is a category error. Storage is storage; retrieval is retrieval. Coupling them locks every future store into re-implementing the same filter, blocks search-strategy swaps (substring → fuzzy → indexed → external), and bloats the storage contract.
 
-The commonplace book makes this concrete. Before v0.1 of `@place/search`, `NoteStore` had a `search(query)` method. After: `NoteStore` is back to its actual job — `all/get/create/update/remove`. The Note-specific search is a 3-line helper composed at the call site:
+The commonplace book makes this concrete. Before v0.1 of `@place-ts/search`, `NoteStore` had a `search(query)` method. After: `NoteStore` is back to its actual job — `all/get/create/update/remove`. The Note-specific search is a 3-line helper composed at the call site:
 
 ```ts
 export const searchNotes = (store: NoteStore) =>

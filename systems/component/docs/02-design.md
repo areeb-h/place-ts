@@ -51,8 +51,8 @@ A `View` is the smallest possible interface: "I know how to attach myself to a D
 The leading proposal. Element factories return `View`s. Reactive bindings are first-class.
 
 ```ts
-import { div, span, button } from '@place/component/dom'
-import { state } from '@place/reactivity'
+import { div, span, button } from '@place-ts/component/dom'
+import { state } from '@place-ts/reactivity'
 
 function Counter(props: { initial: number }) {
   const count = state(props.initial)
@@ -119,7 +119,7 @@ The function-as-child form is how conditionals work. There is no `<Show>` primit
 Naive `items.map(item => Row(item))` re-mounts the entire list on any change. We need a keyed primitive.
 
 ```ts
-import { keyed } from '@place/component'
+import { keyed } from '@place-ts/component'
 
 div({},
   keyed(
@@ -151,7 +151,7 @@ A view's `mount` returns a disposer. Mounting is O(n) in the size of the rendere
 A component that needs custom cleanup (timers, subscriptions, IO) registers it via:
 
 ```ts
-import { onCleanup } from '@place/component'
+import { onCleanup } from '@place-ts/component'
 
 function StreamingCounter() {
   const count = state(0)

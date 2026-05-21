@@ -1,5 +1,5 @@
 {
-  "name": "@place/devtools",
+  "name": "@place-ts/devtools",
   "version": "0.1.0",
   "type": "module",
   "description": "In-app developer tools — a dev-only island that observes the reactive graph, islands, routing, and load performance. NOT a platform system; a curated dev package.",
@@ -41,8 +41,8 @@
     "prepublishOnly": "bun run typecheck && bun run test"
   },
   "dependencies": {
-    "@place/component": "workspace:*",
-    "@place/reactivity": "workspace:*",
-    "@place/routing": "workspace:*"
+    "@place-ts/component": "workspace:*",
+    "@place-ts/reactivity": "workspace:*",
+    "@place-ts/routing": "workspace:*"
   }
 }

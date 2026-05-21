@@ -7,7 +7,7 @@
 //
 // **Surface**
 //
-//   import { viewport } from '@place/component'
+//   import { viewport } from '@place-ts/component'
 //
 //   viewport.width()                  // () => number
 //   viewport.height()                 // () => number
@@ -37,7 +37,7 @@
 //
 // **Configuration**
 //
-//   import { configureViewport } from '@place/component'
+//   import { configureViewport } from '@place-ts/component'
 //
 //   configureViewport({
 //     breakpoints: { sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536 },
@@ -47,8 +47,8 @@
 // Tailwind v4 defaults are used out of the box; apps with custom
 // breakpoint widths call `configureViewport` once at module load.
 
-import type { Derived } from '@place/reactivity'
-import { derived, state } from '@place/reactivity'
+import type { Derived } from '@place-ts/reactivity'
+import { derived, state } from '@place-ts/reactivity'
 
 // ===== Configuration =====
 

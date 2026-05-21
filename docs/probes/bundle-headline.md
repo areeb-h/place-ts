@@ -86,12 +86,12 @@ The auto-import plugin's registered primitives (16 names):
 state, watch, derived, untrack, onMount, onCleanup, cookie, cookieState, Tabs, Activity, ClientOnly, Deferred, Show, Fragment, setTheme, themeTokens
 ```
 
-The plugin injects `import { X } from '@place/component'` at the top
+The plugin injects `import { X } from '@place-ts/component'` at the top
 of every `.tsx` / `.jsx` file that REFERENCES `X` without already
 importing it. Because every reference becomes an explicit import,
 per-primitive tree-shaking still works. The barrel-shape concern
 (webpack #16863 / Vite #14676) applies when the import TARGET is a
-barrel module — `@place/component`'s single `index.ts` IS a barrel.
+barrel module — `@place-ts/component`'s single `index.ts` IS a barrel.
 The fact that the delta is near zero suggests Bun's tree-shaker is
 ESM-pure enough for this case. **Charter contradiction (anti-magic)
 remains philosophical; it is not a bundle-size problem.**

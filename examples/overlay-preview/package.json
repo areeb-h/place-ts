@@ -1,5 +1,5 @@
 {
-  "name": "@place/overlay-preview",
+  "name": "@place-ts/overlay-preview",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,6 +9,6 @@
     "start": "bun src/server.ts"
   },
   "dependencies": {
-    "@place/component": "workspace:*"
+    "@place-ts/component": "workspace:*"
   }
 }

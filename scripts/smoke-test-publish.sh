@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Scratch-app smoke test for the publish surface (plan step 6.4).
 #
-# Packs all 10 @place/* tarballs, installs them into a fresh project
+# Packs all 10 @place-ts/* tarballs, installs them into a fresh project
 # OUTSIDE the workspace (so bun's workspace resolution doesn't paper
 # over publish-time bugs), starts the dev server, hits `/`, asserts
 # the route renders. Tears everything down at the end.
@@ -69,12 +69,12 @@ cp "$REPO/tools/create-app/templates/minimal/.gitignore" "$SCRATCH/.gitignore"
 
 STEP="rewrite deps to point at local tarballs"
 echo "[3/6] $STEP"
-# The minimal template only declares @place/component but the package
-# depends transitively on @place/capability, @place/reactivity,
-# @place/routing. Two-pronged fix:
-#   1. Declare all four @place/* deps at the root so they all resolve.
-#   2. Add `overrides` for every @place/* so transitive references in
-#      the tarball (which read `@place/capability: 0.1.0` — a version
+# The minimal template only declares @place-ts/component but the package
+# depends transitively on @place-ts/capability, @place-ts/reactivity,
+# @place-ts/routing. Two-pronged fix:
+#   1. Declare all four @place-ts/* deps at the root so they all resolve.
+#   2. Add `overrides` for every @place-ts/* so transitive references in
+#      the tarball (which read `@place-ts/capability: 0.1.0` — a version
 #      spec, not a file:) get force-redirected to the local tarball
 #      instead of being fetched from the registry (which doesn't have
 #      them yet — that's the whole point of this smoke test).
@@ -83,11 +83,11 @@ import { readFileSync, writeFileSync } from 'node:fs'
 const p = '$SCRATCH/package.json'
 const pkg = JSON.parse(readFileSync(p, 'utf8'))
 const local = {
-  '@place/capability': 'file:$REPO/systems/capability/place-capability-0.1.0.tgz',
-  '@place/component':  'file:$REPO/systems/component/place-component-0.1.0.tgz',
-  '@place/reactivity': 'file:$REPO/systems/reactivity/place-reactivity-0.1.0.tgz',
-  '@place/routing':    'file:$REPO/systems/routing/place-routing-0.1.0.tgz',
-  '@place/security':   'file:$REPO/systems/security/place-security-0.1.0.tgz',
+  '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
+  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.1.0.tgz',
+  '@place-ts/reactivity': 'file:$REPO/systems/reactivity/place-ts-reactivity-0.1.0.tgz',
+  '@place-ts/routing':    'file:$REPO/systems/routing/place-ts-routing-0.1.0.tgz',
+  '@place-ts/security':   'file:$REPO/systems/security/place-ts-security-0.1.0.tgz',
 }
 pkg.dependencies = local
 pkg.overrides = local

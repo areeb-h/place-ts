@@ -12,7 +12,7 @@ every `action()`, same-origin enforcement, body-size limits, and
 prototype-pollution guards on every page in `security: 'standard'`
 mode — which is the default for any `app({})` call (per ADR 0040).
 
-`@place/security` provides the **primitives** these defaults are
+`@place-ts/security` provides the **primitives** these defaults are
 built on. It is **not** an auth library — we don't ship login flows,
 OAuth dances, JWT libraries, or password hashing. We ship the
 substrate every auth library needs: HMAC-signed opaque tokens,
@@ -122,7 +122,7 @@ undefined and `<Can>` denies everything by default.
 - **SQL injection prevention.** `bun:sqlite`'s `prepare()` and any
   parameterized driver already cover this; the framework has nothing
   to add at the SQL boundary.
-- **The HTTP transport layer.** That's `@place/component`'s `serve()`.
+- **The HTTP transport layer.** That's `@place-ts/component`'s `serve()`.
   Security headers + CSP nonces are emitted there; the constants
   + factories live here.
 
@@ -143,10 +143,10 @@ undefined and `<Can>` denies everything by default.
 
 ## Cross-system contracts
 
-- `@place/component`'s `security-headers.ts` consumes `CSP_DEFAULTS`
+- `@place-ts/component`'s `security-headers.ts` consumes `CSP_DEFAULTS`
   and `cspHeader()` to construct per-response headers (with the
   per-request nonce).
-- `@place/component`'s `action()` + `<Form>` auto-inject + verify
+- `@place-ts/component`'s `action()` + `<Form>` auto-inject + verify
   CSRF tokens when `security: 'standard'` is on; the token shape is
   this system's `csrfToken()`.
 - `app({ security })` resolves the preset name (`'standard'`,
@@ -155,7 +155,7 @@ undefined and `<Can>` denies everything by default.
 
 ## Depends on
 
-- `@place/capability` — `SessionCap` is a `Capability<Session>`.
+- `@place-ts/capability` — `SessionCap` is a `Capability<Session>`.
 - Web Crypto API (`crypto.subtle.*`) — Bun + Node 19+ + every modern
   browser.
 

@@ -3,8 +3,8 @@
 // what each field does, when to use it, what the failure mode is when
 // you forget it.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 
 const SIG = `page<U, L, S>(
   path: string,

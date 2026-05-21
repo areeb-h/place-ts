@@ -2,12 +2,12 @@
 // routing is a leak; what "values" buys you for refactors, linking,
 // and action calls.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const DECLARE = `// src/pages/post.page.tsx
-import { page } from '@place/component'
+import { page } from '@place-ts/component'
 
 const postPage = page('/posts/:id', {
   view: ({ id }) => <Article id={id} />,

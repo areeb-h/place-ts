@@ -2,11 +2,11 @@
 
 **Status:** accepted
 **Date:** 2026-05-20
-**Affects:** `@place/component` (`exports` map + per-subpath barrels); `examples/docs/probes/forbidden-imports.ts` (CI gate)
+**Affects:** `@place-ts/component` (`exports` map + per-subpath barrels); `examples/docs/probes/forbidden-imports.ts` (CI gate)
 
 ## Context
 
-`@place/component` started life as one 9,518-line `index.ts` that
+`@place-ts/component` started life as one 9,518-line `index.ts` that
 exposed: the JSX runtime, the SSR engine, the client-mount runtime,
 the build tools, the static-export pipeline, the per-island bundler,
 the per-route splitter, framework-internal helpers, and the public
@@ -36,7 +36,7 @@ build tool would have to invent a new edge to violate the rule.
 
 ## Decision
 
-Split `@place/component`'s exports map into bounded subpaths, each
+Split `@place-ts/component`'s exports map into bounded subpaths, each
 backed by a small re-export barrel:
 
 | Subpath | Allowed reach | Holds |
@@ -58,7 +58,7 @@ server entry          → may also import: /server
 build entry           → may import everything
 ```
 
-A client bundle that imports `@place/component` reaches only the
+A client bundle that imports `@place-ts/component` reaches only the
 root barrel — which by construction does not re-export `serve()`,
 `Bun.build`-using helpers, or any `node:*`-touching code. The build
 tool cannot follow an edge that isn't in the source.
@@ -87,7 +87,7 @@ tokens**.
      define silently ships server code. The safety is not in the
      source.
 
-2. **One subpath per system (`@place/component/routing`, etc.).**
+2. **One subpath per system (`@place-ts/component/routing`, etc.).**
    - Pro: even cleaner separation.
    - Con: more surface to maintain; per-system splits don't map to
      the actual safety boundary (the boundary is "server / build vs
@@ -105,8 +105,8 @@ tokens**.
 
 ### What's now harder
 
-- Apps that previously deep-imported `import { serve } from '@place/component'`
-  must update to `@place/component/server`. (`serve` was always
+- Apps that previously deep-imported `import { serve } from '@place-ts/component'`
+  must update to `@place-ts/component/server`. (`serve` was always
   server-only; the old behaviour relied on DCE.)
 - New framework-side exports must choose a subpath at write time.
 - Adding a new subpath requires updating: the `package.json`
@@ -168,8 +168,8 @@ tokens**.
   (verify) and client (sign), so they're also reachable from
   `/client`. The bounded reach makes this rule audit-checkable.
 - Phase 3 implementation cuts (per the Tier 20 plan):
-  1. ✓ `@place/component/client` extracted (cut 1a).
-  2. ✓ `@place/component/build` extracted; `/server`, `/islands`,
+  1. ✓ `@place-ts/component/client` extracted (cut 1a).
+  2. ✓ `@place-ts/component/build` extracted; `/server`, `/islands`,
      `/internal`, `/jsx-runtime` audited (cut 1b).
   3. (pending) `clientEntry` legacy path removal — the deprecated
      single-bundle code path still woven through `_serveImpl`.
@@ -180,6 +180,6 @@ tokens**.
   5. (pending) `place explain <route>` / `place why-js <route>` —
      the diagnostics CLI that reads the build manifest and shows
      a developer which subpath each bundle drew from.
-- Commits: `19f5837` (`@place/component/build` subpath wiring +
+- Commits: `19f5837` (`@place-ts/component/build` subpath wiring +
   vitest aliases — the headline). Earlier cuts shipped progressively
   across Tier 20's first session.

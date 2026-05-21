@@ -36,7 +36,7 @@ Concretely:
   {
     "compilerOptions": {
       "jsx": "react-jsx",
-      "jsxImportSource": "@place/component"
+      "jsxImportSource": "@place-ts/component"
     }
   }
   ```

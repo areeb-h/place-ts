@@ -1,4 +1,4 @@
-// @place/data — data primitives over @place/reactivity.
+// @place-ts/data — data primitives over @place-ts/reactivity.
 //
 // Ships ONE primitive: `collection<T>(state, options?)`. Keyed CRUD
 // over a `State<T[]>` with reactive lookups and optional sorting —
@@ -29,7 +29,7 @@
 //
 // Each will land when a workload demands it. Anti-bloat over speculation.
 
-import type { State } from '@place/reactivity'
+import type { State } from '@place-ts/reactivity'
 
 export interface CollectionOptions<T> {
   /**

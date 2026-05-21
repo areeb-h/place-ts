@@ -1,7 +1,7 @@
 // Docs-local recipes — visual tokens that only the docs site uses.
 //
 // For widely-reusable primitives (Button, Card, Badge, Field, Dialog,
-// Toast, Tooltip, Menu, Avatar) import from `@place/design` instead.
+// Toast, Tooltip, Menu, Avatar) import from `@place-ts/design` instead.
 // The migration history: this file used to also hold `featureCard`
 // (→ `Card`), `pill` (→ `Badge`), and `navLink` (unused; removed).
 //
@@ -13,7 +13,7 @@
 // text-fg, border-border, bg-card) — never literal colors. Theme
 // switching is invisible to consumers.
 
-import { recipe } from '@place/component'
+import { recipe } from '@place-ts/component'
 
 // ===== Recipes with variants — functions =====
 

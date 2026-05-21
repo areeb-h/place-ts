@@ -13,8 +13,8 @@
 // (2) NAV is genuinely module-singleton; passing it through props
 // implies it could vary per render.
 
-import { Activity, view, watch } from '@place/component'
-import { RouterCap } from '@place/routing'
+import { Activity, view, watch } from '@place-ts/component'
+import { RouterCap } from '@place-ts/routing'
 import { Sidebar } from '../components/sidebar.tsx'
 import { NAV } from '../nav-index.ts'
 // Shared open-state lives in the sibling button island (T6-E). Bun's

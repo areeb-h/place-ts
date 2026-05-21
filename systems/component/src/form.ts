@@ -42,7 +42,7 @@ export interface FormProps<I, R> {
    *      (the action handler falls back to the body when the header
    *      is absent — same defense, two delivery channels)
    *
-   * Mint via `csrfToken().generate(audience)` from `@place/security`,
+   * Mint via `csrfToken().generate(audience)` from `@place-ts/security`,
    * embed in the page's load data, and pass here. Same secret +
    * audience used to verify on the server.
    */

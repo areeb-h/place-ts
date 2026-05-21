@@ -5,11 +5,11 @@
 // continuity. Then the boundary helpers that compose inside or outside
 // islands: Show, Suspense, errorBoundary, Form, keyed, virtualList.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
-const VIEW = `// \`view\`, \`state\`, \`onMount\` auto-imported via the @place/component
+const VIEW = `// \`view\`, \`state\`, \`onMount\` auto-imported via the @place-ts/component
 // Bun plugin (registered via bunfig.toml \`preload\`).
 
 const Counter = view((props: { start?: number }) => {
@@ -80,7 +80,7 @@ const ISLAND_STRATEGIES = `// The framework-reserved 'client' prop picks a hydra
 <Counter client="idle" />        // hydrate on requestIdleCallback
 <Counter client="interaction" /> // hydrate on first hover/focus`
 
-const SHOW = `import { Show, state } from '@place/component'
+const SHOW = `import { Show, state } from '@place-ts/component'
 
 const open = state(false)
 
@@ -142,20 +142,20 @@ const TodoList = island(() => {
   )
 })`
 
-const SUSPENSE = `import { Suspense } from '@place/component'
+const SUSPENSE = `import { Suspense } from '@place-ts/component'
 
 <Suspense fallback={<Spinner />}>
   {() => <AsyncRenderedChild />}
 </Suspense>`
 
-const ERROR = `import { errorBoundary } from '@place/component'
+const ERROR = `import { errorBoundary } from '@place-ts/component'
 
 errorBoundary({
   children: () => <Risky />,
   fallback: (err) => <p>Failed: {err.message}</p>,
 })`
 
-const FORM = `import { Form, action, shape } from '@place/component'
+const FORM = `import { Form, action, shape } from '@place-ts/component'
 
 const subscribe = action({
   path: 'POST /api/subscribe',
@@ -168,7 +168,7 @@ const subscribe = action({
   <button>Subscribe</button>
 </Form>`
 
-const KEYED = `import { keyed } from '@place/component'
+const KEYED = `import { keyed } from '@place-ts/component'
 
 <ul>
   {keyed(() => items, (item) => item.id, (item) => (
@@ -176,7 +176,7 @@ const KEYED = `import { keyed } from '@place/component'
   ))}
 </ul>`
 
-const VLIST = `import { virtualList } from '@place/component'
+const VLIST = `import { virtualList } from '@place-ts/component'
 
 const list = virtualList({
   count: () => rows.length,
@@ -193,7 +193,7 @@ const list = virtualList({
   </div>
 </div>`
 
-const COMPONENT = `import { component } from '@place/component'
+const COMPONENT = `import { component } from '@place-ts/component'
 
 // Plain components compose on both runtimes. No SSR opt-out flag
 // needed — anything that requires interactivity goes inside an

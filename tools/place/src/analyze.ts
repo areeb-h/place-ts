@@ -6,7 +6,7 @@
 // per route: what JavaScript ships, and why.
 //
 // **Design — decoupled by construction.** This module imports nothing
-// from `@place/component` or any framework system. It reads emitted
+// from `@place-ts/component` or any framework system. It reads emitted
 // files (HTML + JS) with `node:fs` and measures them. The manifest
 // shape is duplicated locally as `ManifestEntry` rather than imported
 // — the manifest is a stable on-disk artefact, and a local type keeps
@@ -22,13 +22,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { gzipSync } from 'node:zlib'
 
-/** Classifier level — mirrors `@place/reactivity`'s `ViewLevel`. */
+/** Classifier level — mirrors `@place-ts/reactivity`'s `ViewLevel`. */
 export type ViewLevel = 'static' | 'thaw' | 'island' | 'island+stream'
 
 /**
  * One entry from `view-manifest.json`. Local copy of the framework's
  * `ViewManifestEntry` — the manifest is a stable on-disk format, and
- * duplicating the shape keeps the CLI decoupled from `@place/component`.
+ * duplicating the shape keeps the CLI decoupled from `@place-ts/component`.
  */
 export interface ManifestEntry {
   readonly name: string

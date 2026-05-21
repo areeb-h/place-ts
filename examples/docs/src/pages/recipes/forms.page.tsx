@@ -1,8 +1,8 @@
 // /recipes/forms — typed mutation with <Form>, action(), shape().
 // JS-on and JS-off paths both supported by the same action.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const PAGE_ACTION = `// Co-located on a page — the natural shape for "form belongs to page".
@@ -27,7 +27,7 @@ const subscribe = page('/subscribe', {
 
 const STANDALONE = `// Standalone action — when the form lives on multiple pages or
 // outside a page entirely (e.g. a global newsletter form in the footer).
-import { action, Form, shape } from '@place/component'
+import { action, Form, shape } from '@place-ts/component'
 
 export const subscribe = action({
   path: 'POST /api/subscribe',
@@ -48,7 +48,7 @@ const VALIDATION = `// Bring your own validator — Zod 3.24+, Valibot 0.36+, Ar
 // Effect Schema, or the built-in shape(). All Standard-Schema-
 // compliant libraries plug in the same way via fromStandard().
 import { z } from 'zod'
-import { action, fromStandard } from '@place/component'
+import { action, fromStandard } from '@place-ts/component'
 
 const SubscribeIn = z.object({
   email: z.string().email(),
@@ -68,9 +68,9 @@ export const subscribe = action({
 const FIELD_ERRORS = `// Field-level errors via fromStandard + isValidationFailure +
 // <Field error={...}>. The validator's per-field messages route to
 // the matching <Field>'s error state cell automatically.
-import { state } from '@place/reactivity'
-import { ActionError, Form, isValidationFailure } from '@place/component'
-import { Field, Input, Button } from '@place/design'
+import { state } from '@place-ts/reactivity'
+import { ActionError, Form, isValidationFailure } from '@place-ts/component'
+import { Field, Input, Button } from '@place-ts/design'
 import { signup } from './shared.action'
 
 // One state cell per field. Apps that want sugar can compose a

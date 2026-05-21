@@ -1,12 +1,12 @@
-// @place/component/adapters/node — Node.js HTTP adapter.
+// @place-ts/component/adapters/node — Node.js HTTP adapter.
 //
 // Translates the framework's Web-fetch-shaped dispatch (`(req: Request)
 // => Promise<Response>`) into Node's `http.IncomingMessage`/`ServerResponse`
 // pair. Use with `serve({ adapter: nodeAdapter() })` when running on
 // Node instead of Bun.
 //
-//   import { serve } from '@place/component'
-//   import { nodeAdapter } from '@place/component/adapters/node'
+//   import { serve } from '@place-ts/component'
+//   import { nodeAdapter } from '@place-ts/component/adapters/node'
 //
 //   await serve({
 //     adapter: nodeAdapter({ port: 3000 }),

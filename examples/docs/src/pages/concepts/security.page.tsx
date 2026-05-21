@@ -2,8 +2,8 @@
 // same-origin, body-limit, prototype-pollution guard, what each one
 // stops, how the presets compose, and how to tighten or loosen.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const PRESET = `app({
@@ -109,7 +109,7 @@ const HIGH_ASSURANCE = `// criticalAction() — the high-assurance sibling of ac
 //   session_id  — session.id; user A's envelope rejected for user B
 //   key_id      — daily-rotation key id
 
-import { criticalAction, perm } from '@place/component/server'
+import { criticalAction, perm } from '@place-ts/component/server'
 
 export const transferFunds = criticalAction({
   path: 'POST /__a/transfer',

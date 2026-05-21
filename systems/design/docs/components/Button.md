@@ -1,6 +1,6 @@
 # Button
 
-`<Button>` is the first primitive in `@place/design`. It proves the
+`<Button>` is the first primitive in `@place-ts/design`. It proves the
 structural pattern every other primitive will follow.
 
 ## Trigger
@@ -13,7 +13,7 @@ Every app needs a button. Every framework's design library has one
 
 - **No `asChild` polymorphism.** A button renders a `<button>`. If
   you want an anchor, write `<a class="...">` and pull the recipe via
-  `import { recipe } from '@place/design'` directly.
+  `import { recipe } from '@place-ts/design'` directly.
 - **No icon library.** The `icon` prop accepts any `View` — bring your
   own.
 - **No "as" prop with type forwarding.** Same reasoning as `asChild`.
@@ -68,8 +68,8 @@ interface ButtonProps {
 ## Examples
 
 ```tsx
-import { Button } from '@place/design'
-import { state } from '@place/reactivity'
+import { Button } from '@place-ts/design'
+import { state } from '@place-ts/reactivity'
 
 // Static
 <Button intent="primary">Save</Button>

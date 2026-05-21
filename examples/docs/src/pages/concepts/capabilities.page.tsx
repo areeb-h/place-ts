@@ -3,11 +3,11 @@
 // and the clientOnly auto-detection that removes the typeof window
 // ceremony.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
-const DEFINE = `import { defineCapability } from '@place/capability'
+const DEFINE = `import { defineCapability } from '@place-ts/capability'
 
 interface NoteStore {
   all(): readonly Note[]

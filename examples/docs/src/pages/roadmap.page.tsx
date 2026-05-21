@@ -7,7 +7,7 @@
 // is registered in styles.ts since custom keyframes need Tailwind v4
 // @theme + @keyframes — handled there.
 
-import { page, recipe } from '@place/component'
+import { page, recipe } from '@place-ts/component'
 
 type Status = 'done' | 'now' | 'next' | 'later'
 
@@ -87,8 +87,8 @@ const ROADMAP: readonly Milestone[] = [
     title: 'Motion + design library',
     status: 'done',
     highlights: [
-      '@place/reactivity/motion — animate / tween / sequence / curve / motion / flip / colorMix',
-      '@place/design — 14 native-first primitives (Dialog, Sheet, Combobox, Menu, …)',
+      '@place-ts/reactivity/motion — animate / tween / sequence / curve / motion / flip / colorMix',
+      '@place-ts/design — 14 native-first primitives (Dialog, Sheet, Combobox, Menu, …)',
       'recipe() variants + themeTokens()',
     ],
   },

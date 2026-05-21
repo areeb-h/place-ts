@@ -1,15 +1,15 @@
-// /api/data — @place/data overview.
+// /api/data — @place-ts/data overview.
 // v0.1 ships ONE primitive: collection<T>().
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const COLLECTION = `// collection<T>(state, options?) — keyed CRUD over a State<T[]>.
 // The collection operates on a reactive array; the State stays
 // exposed so you can compose it with persistedState, history, etc.
-import { state } from '@place/reactivity'
-import { collection } from '@place/data'
+import { state } from '@place-ts/reactivity'
+import { collection } from '@place-ts/data'
 
 interface Note { id: string; title: string; tags: string[] }
 
@@ -37,9 +37,9 @@ const items = collection<Item>(state<Item[]>([]), {
 
 const COMPOSE = `// The underlying State<T[]> stays exposed — wrap it with
 // persistedState so the whole collection survives reloads.
-import { state } from '@place/reactivity'
-import { collection } from '@place/data'
-import { persistedState, localStorageAdapter } from '@place/persistence'
+import { state } from '@place-ts/reactivity'
+import { collection } from '@place-ts/data'
+import { persistedState, localStorageAdapter } from '@place-ts/persistence'
 
 const { state: noteState } = persistedState(
   localStorageAdapter<Note[]>('notes', []),
@@ -50,14 +50,14 @@ const notes = collection<Note>(noteState)
 // collection mutates the state, persistedState's watch saves it.`
 
 export default page('/data', {
-  meta: '@place/data',
+  meta: '@place-ts/data',
   view: () => (
     <article class="prose max-w-3xl">
       <h1>
-        <code>@place/data</code>
+        <code>@place-ts/data</code>
       </h1>
       <p>
-        Data primitives over <code>@place/reactivity</code>. v0.1 ships exactly one helper —{' '}
+        Data primitives over <code>@place-ts/reactivity</code>. v0.1 ships exactly one helper —{' '}
         <code>collection&lt;T&gt;()</code> — the keyed-CRUD shape that every entity store
         hand-rolls. The position is deliberate: most app-level "data" problems collapse to a typed
         array in a <code>State&lt;T[]&gt;</code> plus the existing capability, persistence, and
@@ -107,10 +107,10 @@ export default page('/data', {
           <Link to="/api/state">state · watch · derived</Link>
         </li>
         <li>
-          <Link to="/api/persistence">@place/persistence</Link>
+          <Link to="/api/persistence">@place-ts/persistence</Link>
         </li>
         <li>
-          <Link to="/api/search">@place/search</Link> — reactive search over a collection
+          <Link to="/api/search">@place-ts/search</Link> — reactive search over a collection
         </li>
       </ul>
     </article>

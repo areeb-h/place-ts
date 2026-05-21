@@ -83,8 +83,8 @@ export interface PersistenceAdapter<T> {
   refresh?(): Promise<void> | void            // optional manual re-pull
 }
 
-// `persistedState` lives in @place/persistence (NOT @place/reactivity):
-import { persistedState } from '@place/persistence'
+// `persistedState` lives in @place-ts/persistence (NOT @place-ts/reactivity):
+import { persistedState } from '@place-ts/persistence'
 export function persistedState<T>(adapter: PersistenceAdapter<T>): State<T> & Disposable
 ```
 
@@ -99,7 +99,7 @@ calls `load()` to fetch); the original `(next: T) => void` shape
 pushed the new value via the event, which complicates concurrent-
 write conflict handling.
 
-**Adapter family.** `@place/persistence` ships:
+**Adapter family.** `@place-ts/persistence` ships:
 `localStorageAdapter`, `indexedDBAdapter`, `serverAdapter` (HTTP
 GET/PUT with optional WebSocket observe), `memoryAdapter` (tests),
 and `crossTabAdapter(inner)` which decorates any inner adapter

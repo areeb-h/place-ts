@@ -2,7 +2,7 @@
 
 **Status:** accepted (2026-05-17)
 **Date:** 2026-05-17
-**Affects:** all 14 `@place/design` components, their tests, their docs examples.
+**Affects:** all 14 `@place-ts/design` components, their tests, their docs examples.
 
 ## Context
 

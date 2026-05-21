@@ -132,6 +132,6 @@ Run the full test suite:
   verify no server-only branch reaches a per-island bundle.
 - **Reduce public surface**: move internal `_`-prefixed exports
   (`_beginIslandCollection`, `_setIslandRegistry`, etc.) into an
-  internal module not re-exported from `@place/component`. Internal
+  internal module not re-exported from `@place-ts/component`. Internal
   callers import via the internal path; external code can't reach
   them at all.

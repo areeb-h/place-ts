@@ -1,8 +1,8 @@
 // /api/action — action() typed RPC. End-to-end-typed server functions
 // callable from the client by the same name with the same input shape.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const SIG = `action<I, O>(def: {
@@ -11,7 +11,7 @@ const SIG = `action<I, O>(def: {
   fn: (input: I, ctx: ActionCtx) => Promise<O> | O
 }): { handler, call, path }`
 
-const SHAPE = `import { action, shape } from '@place/component'
+const SHAPE = `import { action, shape } from '@place-ts/component'
 
 export const updateProfile = action({
   path: '/profile/update',
@@ -27,7 +27,7 @@ export const updateProfile = action({
 
 const REGISTER = `// An action() result carries a \`.handler\` — a { 'METHOD /path':
 // fn } route-table fragment. Spread it into serve()'s routes:
-import { serve } from '@place/component/server'
+import { serve } from '@place-ts/component/server'
 import { updateProfile, deleteAccount, createPost } from './actions'
 
 serve({
@@ -48,7 +48,7 @@ const FROM_STANDARD = `// Schema interop — fromStandard() adapts any Standard 
 // validator (Zod 3.24+, Valibot 0.36+, ArkType, Effect Schema) into
 // the (raw: unknown) => T shape \`input\` expects. No validation dep.
 import { z } from 'zod'
-import { action, fromStandard, isValidationFailure } from '@place/component'
+import { action, fromStandard, isValidationFailure } from '@place-ts/component'
 
 export const signup = action({
   path: 'POST /api/signup',

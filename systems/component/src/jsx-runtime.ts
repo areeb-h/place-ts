@@ -1,4 +1,4 @@
-// JSX automatic runtime for @place/component.
+// JSX automatic runtime for @place-ts/component.
 //
 // Per ADR 0002: TypeScript's automatic JSX runtime emits calls to `jsx`,
 // `jsxs`, and `jsxDEV` here. We translate those calls to element-factory
@@ -10,7 +10,7 @@
 //   {
 //     "compilerOptions": {
 //       "jsx": "react-jsx",
-//       "jsxImportSource": "@place/component"
+//       "jsxImportSource": "@place-ts/component"
 //     }
 //   }
 //

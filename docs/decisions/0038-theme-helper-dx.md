@@ -18,10 +18,10 @@ The fixes are different sizes but share a theme: lift framework-level concerns o
 
 ### 1. `theme()` — leaner theme helper
 
-New helper in `@place/component`. Wraps `themeTokens()` with two DX wins:
+New helper in `@place-ts/component`. Wraps `themeTokens()` with two DX wins:
 
 ```ts
-import { theme } from '@place/component'
+import { theme } from '@place-ts/component'
 
 export const tokens = theme({
   default: 'dark',
@@ -92,14 +92,14 @@ CSS for the visible state added a leading tick character via `::before`:
 Before (docs site, 47 lines):
 
 ```ts
-import { app } from '@place/component'
-import { styles as designStyles } from '@place/design'
-import { pathRouter } from '@place/routing'
+import { app } from '@place-ts/component'
+import { styles as designStyles } from '@place-ts/design'
+import { pathRouter } from '@place-ts/routing'
 // ... 10 page imports ...
 import { tokens } from './theme.ts'
 
 export default app({
-  name: '@place/docs',
+  name: '@place-ts/docs',
   pages: [landing, gettingStarted, why, ...concepts, ...api, ...recipes, examples, roadmap],
   layout: docsLayout,
   theme: tokens,
@@ -115,7 +115,7 @@ After (31 lines, drops `security` + `viewTransitions`):
 
 ```ts
 export default app({
-  name: '@place/docs',
+  name: '@place-ts/docs',
   pages: [landing, gettingStarted, why, ...concepts, ...api, ...recipes, examples, roadmap],
   layout: docsLayout,
   theme: tokens,
@@ -155,7 +155,7 @@ Pre-publish: no compatibility shims needed; both old and new APIs work.
 
 ## Out of scope
 
-- **Palette presets** (`palette: 'zinc'` / `'slate'` etc.) — could ship as `@place/design/palettes` later
+- **Palette presets** (`palette: 'zinc'` / `'slate'` etc.) — could ship as `@place-ts/design/palettes` later
 - **Live theme editor / devtools panel** — the reactive devtool ADR is open; theme editing is a natural feature there
 - **Auto-detect `islandsDir`** — needs `node:fs` access inside `app()`'s synchronous code path; investigated and deferred (the lazy fs import added more complexity than the line of config it would save)
-- **Auto-merge `@place/design` styles** — same issue (server-only dep detection from a universal entry); deferred
+- **Auto-merge `@place-ts/design` styles** — same issue (server-only dep detection from a universal entry); deferred

@@ -17,8 +17,8 @@
 //   6. Page-level `revalidate` at the framework boundary
 //   7. Codegen allowed only when it doesn't hide intent
 
-import { div, page, renderPage, span } from '@place/component'
-import { app } from '@place/component/server'
+import { div, page, renderPage, span } from '@place-ts/component'
+import { app } from '@place-ts/component/server'
 import { describe, expect, test } from 'vitest'
 
 describe('component charter conformance — architectural commitments', () => {

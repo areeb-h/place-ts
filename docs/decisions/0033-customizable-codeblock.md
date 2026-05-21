@@ -7,9 +7,9 @@ modules `systems/design/src/code/{tokenize,copy-runtime}.ts`;
 `systems/design/src/styles.ts` (token-color CSS variables, line/diff
 selectors); `systems/design/tests/unit/CodeBlock.test.ts` (27 new
 tests); `examples/docs/src/pages/**` (22 pages migrated from the
-local `islands/code-block.tsx` to `@place/design`);
+local `islands/code-block.tsx` to `@place-ts/design`);
 `examples/docs/src/components/typing-code.tsx` (tokenizer reused from
-`@place/design`); `examples/docs/src/pages/api/design.page.tsx`
+`@place-ts/design`); `examples/docs/src/pages/api/design.page.tsx`
 (docs entry added).
 
 ## Context
@@ -33,13 +33,13 @@ Issues with that setup:
   any of these you patched the docs-local file.
 
 The "highly customizable" target was set by the user: components in
-`@place/design` should be tuneable along every axis a real docs site
+`@place-ts/design` should be tuneable along every axis a real docs site
 or app needs, without copy-paste forking. Build the primitive once;
 let every axis be a prop.
 
 ## Decision
 
-Ship `<CodeBlock>` as a `@place/design` component with five layers
+Ship `<CodeBlock>` as a `@place-ts/design` component with five layers
 of customization, each orthogonal to the others, and zero island
 bundle.
 
@@ -92,7 +92,7 @@ semantic role; consumers override what they want, defaults flow.
 <CodeBlock code={json} tokenize={tokenizeJson} />
 
 // Global — every future <CodeBlock lang="rust"> picks it up.
-import { registerLanguage } from '@place/design'
+import { registerLanguage } from '@place-ts/design'
 registerLanguage('rust', tokenizeRust)
 
 // Pre-tokenized — skip the tokenizer entirely (caching pipelines).
@@ -191,9 +191,9 @@ island bundle's floor.
 ## Migration
 
 22 docs pages migrated mechanically (one-line `sed`):
-`from '../../islands/code-block.tsx'` → `from '@place/design'`.
+`from '../../islands/code-block.tsx'` → `from '@place-ts/design'`.
 
-`typing-code.tsx` now imports `getTokenizer` from `@place/design`
+`typing-code.tsx` now imports `getTokenizer` from `@place-ts/design`
 to reuse the framework tokenizer rather than its previous local
 fork.
 
@@ -238,12 +238,12 @@ deep variant unions compile without depth limits).
 
 Positive:
 - One importable, highly customizable code-block component for any
-  consumer (`@place/design` apps + the docs site + future demos).
+  consumer (`@place-ts/design` apps + the docs site + future demos).
 - Zero island bundle for code blocks. ~3 KB gzipped saved per docs
   page that uses one (most pages).
 - The same tokenizer powers the typing-code hero animation.
 - A reference pattern for "highly customizable component" inside
-  `@place/design`: variants + CSS vars + slots + pluggable
+  `@place-ts/design`: variants + CSS vars + slots + pluggable
   internals + per-element class overrides.
 
 Trade-offs:

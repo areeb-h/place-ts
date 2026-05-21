@@ -20,7 +20,7 @@ This is the entry-point doc for the platform. Every other doc — system charter
 | 8 | **security** | `signedToken` (HMAC-SHA256) / `csrfToken` (double-submit) / `rateLimit` (token bucket) / `SessionCap` + `requireSession` / cookie helpers (secure by default) / `CSP_DEFAULTS` + `cspHeader` | Login flows, OAuth, password hashing, the SQL layer | capability | shipped v0.1 |
 | 9 | **build** | Bundler integration (`Bun.build` plus per-route splitting), `discoverIslands`, view classifier, island bundler, copy-runtime emission, SRI hashing, dev supervisor + file watcher | Runtime behavior of any other system | (foundational with reactivity) | shipped v0.1 |
 
-**Removed from the map:** the original `cache` system (v0.2 slot) is deferred indefinitely per `systems/cache/README.md`. The framework's internal `CacheStore` (used by ISR + image optimizer) lives inside `@place/component`'s `cache.ts` as implementation detail; it is not a public-API system. The earlier "9 + cache" → now "9 with security promoted" rebalance keeps the count at nine.
+**Removed from the map:** the original `cache` system (v0.2 slot) is deferred indefinitely per `systems/cache/README.md`. The framework's internal `CacheStore` (used by ISR + image optimizer) lives inside `@place-ts/component`'s `cache.ts` as implementation detail; it is not a public-API system. The earlier "9 + cache" → now "9 with security promoted" rebalance keeps the count at nine.
 
 ---
 
@@ -42,16 +42,16 @@ These three commitments are non-negotiable. Any system design that violates them
 
 - **Standalone state management** (Redux, Zustand, etc. shape) — collapses into reactivity.
 - **Standalone form library** — composes from data + component + reactivity.
-- **Standalone animation library** — *shipped as a sub-module of reactivity*: `@place/reactivity/motion` (spring / tween / sequence / curve). Motion is interpolated derived state over time — the same primitive everything else reactive composes from. No new top-level system. See [ADR 0015](../decisions/0015-motion-as-reactivity-submodule.md).
+- **Standalone animation library** — *shipped as a sub-module of reactivity*: `@place-ts/reactivity/motion` (spring / tween / sequence / curve). Motion is interpolated derived state over time — the same primitive everything else reactive composes from. No new top-level system. See [ADR 0015](../decisions/0015-motion-as-reactivity-submodule.md).
 - **CSS / styling system** — we don't ship a styling solution; the component system pipes Tailwind v4 through as a first-class option (`serve({ tailwind: true })`) and `page.styles` accepts arbitrary stylesheet sources.
-- **Component library** — `@place/design` is a *curated package*, not a 10th system. It is shipped alongside the platform (Button, Field, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card) and built on top of the component system's `recipe()` + `themeTokens()` + Tailwind v4 base. Apps import from `@place/design`; the platform map keeps 9 systems. See [ADR 0016](../decisions/0016-design-library-as-package.md).
+- **Component library** — `@place-ts/design` is a *curated package*, not a 10th system. It is shipped alongside the platform (Button, Field, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card) and built on top of the component system's `recipe()` + `themeTokens()` + Tailwind v4 base. Apps import from `@place-ts/design`; the platform map keeps 9 systems. See [ADR 0016](../decisions/0016-design-library-as-package.md).
 - **Canvas / scene-graph system** — *charter written but deferred*: trigger is the reactive-graph devtool (charter clause 3, "the graph is observable"). The design (reactive scene graph, SVG SSR fallback, WebGL promote) is locked in via [ADR 0017](../decisions/0017-canvas-deferred-pending-devtool.md); no code until the trigger fires.
 
 ### What changed in v0.3: server framework is in scope
 
 The original system map called server framework out as "not on the map — this is a client-first platform." That changed when the component system grew the SSR layer. The shift is intentional, narrow, and bounded:
 
-- The server framework lives **inside** the component system as `serve()` / `page()` / `boot()`. There is no separate `@place/server` package.
+- The server framework lives **inside** the component system as `serve()` / `page()` / `boot()`. There is no separate `@place-ts/server` package.
 - Persistence is still a peer of other backends; `serve()` does not own data or state. It dispatches HTTP, renders pages, serves the client bundle, and applies security headers.
 - Local-first remains the default. SSR is the page-load entry; persistence + reactivity own everything after first paint.
 

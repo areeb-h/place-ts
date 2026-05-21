@@ -1,4 +1,4 @@
-// @place/component criticalAction() — high-assurance server action.
+// @place-ts/component criticalAction() — high-assurance server action.
 //
 // The high-assurance sibling of `action()`. Same author shape (one
 // declaration produces a typed `call()` and a route handler), but
@@ -63,7 +63,7 @@ import {
   useNonceStore,
   verifyEnvelope,
   verifyMacaroon,
-} from '@place/security'
+} from '@place-ts/security'
 import { ActionError, type ActionSchema, type LoadCtx, rejectsPollution } from './action.ts'
 
 // ===== Public API =====
@@ -290,8 +290,8 @@ export async function deriveSessionKey(
  *
  * Apps mint user macaroons in their auth flow:
  *
- *   import { mintMacaroon, attenuate } from '@place/security'
- *   import { deriveMacaroonKey } from '@place/component/server'
+ *   import { mintMacaroon, attenuate } from '@place-ts/security'
+ *   import { deriveMacaroonKey } from '@place-ts/component/server'
  *
  *   const { key } = await deriveMacaroonKey(session.id)
  *   const root = await mintMacaroon(key, session.id)
@@ -334,11 +334,11 @@ export async function deriveMacaroonKey(
  */
 export async function provisionMacaroon(
   sessionId: string,
-): Promise<{ macaroon: import('@place/security').Macaroon; keyId: string; expiresAt: number }> {
+): Promise<{ macaroon: import('@place-ts/security').Macaroon; keyId: string; expiresAt: number }> {
   if (typeof sessionId !== 'string' || sessionId.length === 0) {
     throw new Error('provisionMacaroon: sessionId must be a non-empty string')
   }
-  const { mintMacaroon } = await import('@place/security')
+  const { mintMacaroon } = await import('@place-ts/security')
   const { key, keyId } = await deriveMacaroonKey(sessionId)
   const macaroon = await mintMacaroon(key, sessionId)
   // Macaroons rotate with the daily root. After expiry the
@@ -509,7 +509,7 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
       if (macaroonWire === null || macaroonWire.length === 0) {
         return forbidden('no-macaroon')
       }
-      let macaroon: import('@place/security').Macaroon
+      let macaroon: import('@place-ts/security').Macaroon
       try {
         macaroon = deserializeMacaroon(macaroonWire)
       } catch {
@@ -644,7 +644,7 @@ export function criticalAction<I, R>(def: CriticalActionDef<I, R>): CriticalActi
     // Client-side validation — fail-fast before network.
     def.input(input)
     // The browser-side action-key helpers live in a separate module
-    // (`@place/component/client`) so they can be tree-shaken from
+    // (`@place-ts/component/client`) so they can be tree-shaken from
     // server bundles. We dynamic-import on first use to avoid a hard
     // dep cycle.
     const { signClientEnvelope, loadMacaroonWire } = await import('./critical-action-client.ts')

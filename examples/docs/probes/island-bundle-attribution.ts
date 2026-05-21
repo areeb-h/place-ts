@@ -20,7 +20,7 @@ const fmt = (n: number): string => (n >= 1024 ? `${(n / 1024).toFixed(2)} KB` : 
 const islandSrc = resolve(TMP, 'counter.tsx')
 await writeFile(
   islandSrc,
-  `import { island, state } from '@place/component'
+  `import { island, state } from '@place-ts/component'
 
 export default island(import.meta.url, ({ start = 0 }: { start?: number }) => {
   const count = state(start)

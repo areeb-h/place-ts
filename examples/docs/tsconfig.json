@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   // The framework's auto-import plugin (registered via bunfig's preload)
-  // prepends `import { ... } from '@place/component'` at load time for
+  // prepends `import { ... } from '@place-ts/component'` at load time for
   // referenced framework primitives. Include the ambient declarations
   // here so TypeScript sees the SAME identifiers as globals.
   "include": ["src/**/*.ts", "src/**/*.tsx", "../../systems/component/src/auto-imports.d.ts"],

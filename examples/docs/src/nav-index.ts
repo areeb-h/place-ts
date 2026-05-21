@@ -9,9 +9,9 @@
 //   3. Reference — grouped by purpose:
 //        - API — the core framework spine (app/page/layout/action/
 //          state/caps/components/motion)
-//        - Packages — the on-top systems & libraries: @place/design,
-//          @place/security, @place/persistence, @place/data,
-//          @place/search
+//        - Packages — the on-top systems & libraries: @place-ts/design,
+//          @place-ts/security, @place-ts/persistence, @place-ts/data,
+//          @place-ts/search
 //   4. Explore — roadmap
 
 export interface NavLink {
@@ -243,7 +243,7 @@ export const NAV: readonly NavSection[] = [
     links: [
       {
         to: '/api/design',
-        label: '@place/design',
+        label: '@place-ts/design',
         keywords: [
           'button',
           'field',
@@ -269,7 +269,7 @@ export const NAV: readonly NavSection[] = [
       },
       {
         to: '/api/security',
-        label: '@place/security',
+        label: '@place-ts/security',
         keywords: [
           'session',
           'sessioncap',
@@ -287,7 +287,7 @@ export const NAV: readonly NavSection[] = [
       },
       {
         to: '/api/persistence',
-        label: '@place/persistence',
+        label: '@place-ts/persistence',
         keywords: [
           'persistedState',
           'localStorage',
@@ -304,7 +304,7 @@ export const NAV: readonly NavSection[] = [
       },
       {
         to: '/api/data',
-        label: '@place/data',
+        label: '@place-ts/data',
         keywords: [
           'collection',
           'crud',
@@ -319,7 +319,7 @@ export const NAV: readonly NavSection[] = [
       },
       {
         to: '/api/search',
-        label: '@place/search',
+        label: '@place-ts/search',
         keywords: [
           'searchable',
           'search',

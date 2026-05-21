@@ -5,7 +5,7 @@
 // `.can` populated on the session, OR `.can(action)` returns
 // false/undefined → renders `otherwise` (or nothing).
 //
-// **Why this lives in `@place/security`, not `@place/design`**.
+// **Why this lives in `@place-ts/security`, not `@place-ts/design`**.
 // `<Can>` is a behavior primitive that reads `SessionCap`, not a
 // visual component. Putting it next to its data source (Session) is
 // the right scope. The design library can still compose with it.
@@ -26,8 +26,8 @@
 //
 // Usage:
 //
-//   import { Can } from '@place/security'
-//   import { Button } from '@place/design'
+//   import { Can } from '@place-ts/security'
+//   import { Button } from '@place-ts/design'
 //
 //   <Can do="post.delete">
 //     <Button intent="destructive" on:click={remove}>Delete</Button>
@@ -41,7 +41,7 @@
 // `session.can()` resolves is what gets gated. Apps choose: dotted
 // names, RBAC role:resource:verb tuples, Cerbos policy IDs, etc.
 
-import { type Child, Fragment, type View } from '@place/component'
+import { type Child, Fragment, type View } from '@place-ts/component'
 import { SessionCap } from './index.ts'
 
 export interface CanProps {

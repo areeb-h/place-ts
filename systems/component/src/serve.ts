@@ -1,4 +1,4 @@
-// @place/component — the serve() orchestrator.
+// @place-ts/component — the serve() orchestrator.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 9) — the
 // server entrypoint and everything it threads together:
@@ -24,9 +24,9 @@
 declare const __PLACE_BROWSER__: boolean | undefined
 declare const __PLACE_DEV__: boolean | undefined
 
-import { runWithCapabilityScope } from '@place/capability'
-import { route } from '@place/routing'
-import { bunCryptoProvider, rotatingKey } from '@place/security'
+import { runWithCapabilityScope } from '@place-ts/capability'
+import { route } from '@place-ts/routing'
+import { bunCryptoProvider, rotatingKey } from '@place-ts/security'
 
 import { HMR_WS_PATH } from './__hmr.ts'
 import { placeAutoImport } from './auto-import-plugin.ts'
@@ -133,7 +133,7 @@ import {
 // ===== Tailwind integration in serve() =====
 //
 // `tailwind: true | { ... }` on serve() compiles Tailwind CSS once at
-// startup (via the lazy-imported `@place/component/tailwind` helper)
+// startup (via the lazy-imported `@place-ts/component/tailwind` helper)
 // and auto-injects it into every page's <head>. Two delivery modes:
 //
 //   - inline (default): `<style>…</style>` in the document. Faster
@@ -512,7 +512,7 @@ export interface ServeOptions {
   security?: Security
   /**
    * Auto-Tailwind. Compile Tailwind CSS once at startup (via the
-   * lazy-imported `@place/component/tailwind` helper) and inject it
+   * lazy-imported `@place-ts/component/tailwind` helper) and inject it
    * into every page's <head>. `true` uses sensible defaults; pass an
    * object for explicit control. Lazy import — projects that don't
    * use Tailwind pay zero dependency cost.
@@ -684,13 +684,13 @@ export interface ServeOptions {
    *   - `true`: always on.
    *   - `false`: always off.
    *
-   * When enabled the framework lazy-imports `@place/devtools/island`,
+   * When enabled the framework lazy-imports `@place-ts/devtools/island`,
    * adds it to the island registry, and emits a
    * `<div data-view="island" data-view-id="place-devtools" data-view-strategy="idle">`
    * marker at the end of `<body>` on every page. The devtools bundle
    * mounts on idle so the panel doesn't compete with first paint.
    *
-   * `@place/devtools` must be on the consuming app's dependency list
+   * `@place-ts/devtools` must be on the consuming app's dependency list
    * for the auto-attach path to resolve; if it isn't installed and
    * `devtools` is truthy, the framework emits a one-line warning and
    * continues (the rest of the app boots fine).
@@ -754,7 +754,7 @@ export interface ServeOptions {
    *
    * Example:
    * ```ts
-   * import { extractMainHeadings, patchIslandMarker } from '@place/component'
+   * import { extractMainHeadings, patchIslandMarker } from '@place-ts/component'
    *
    * app({
    *   transformBody: (body) => {
@@ -892,7 +892,7 @@ function compileServeRoutes(routes: ServeRoutes, clientPath: string): CompiledRo
  *     `_serveImpl`'s dynamic imports of `./build/*` through the
  *     framework barrel; without this entry, that path would ship the
  *     full TS compiler in every visitor's bundle. Keep until the
- *     split-entry refactor lands (`@place/component/server` subpath),
+ *     split-entry refactor lands (`@place-ts/component/server` subpath),
  *     at which point this is redundant.
  */
 const BROWSER_BUILD_EXTERNAL: readonly string[] = [
@@ -964,7 +964,7 @@ function browserSourcemap(isProduction: boolean): 'linked' | 'none' {
  * regardless of which function the call sits inside. Type-narrowing
  * happens via the explicit cast at each call site.
  *
- * The split-entry refactor (`@place/component/server` subpath) makes
+ * The split-entry refactor (`@place-ts/component/server` subpath) makes
  * this helper unnecessary by removing `_serveImpl` from any chunk
  * graph that browser builds can reach; this is the transitional shape.
  */
@@ -1321,7 +1321,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       mergedMap[name] = reg
     }
   }
-  // 3. Auto-attach `@place/devtools` when enabled. 'auto' (default)
+  // 3. Auto-attach `@place-ts/devtools` when enabled. 'auto' (default)
   //    resolves to enabled when NODE_ENV !== 'production'. The dynamic
   //    import keeps the devtools dependency off the prod-build module
   //    graph — apps not running devtools don't pay even an import.
@@ -1340,7 +1340,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   let devtoolsRegistered = false
   if (devtoolsEnabled) {
     try {
-      const devtoolsMod = (await _serverDynImport('@place/devtools')) as {
+      const devtoolsMod = (await _serverDynImport('@place-ts/devtools')) as {
         devtoolsIsland?: IslandComponent<never>
       }
       const dt = devtoolsMod.devtoolsIsland
@@ -1352,13 +1352,13 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         devtoolsRegistered = true
       }
     } catch (e) {
-      // `@place/devtools` isn't installed — that's fine, the app still
+      // `@place-ts/devtools` isn't installed — that's fine, the app still
       // boots. One-line warning so the developer knows the option was
       // observed.
       // biome-ignore lint/suspicious/noConsole: one-shot startup misconfig warning
       console.warn(
-        'serve: `devtools` was enabled but `@place/devtools` is not installed. ' +
-          'Either `bun add @place/devtools` (workspace dep), or pass `devtools: false` to silence this. ' +
+        'serve: `devtools` was enabled but `@place-ts/devtools` is not installed. ' +
+          'Either `bun add @place-ts/devtools` (workspace dep), or pass `devtools: false` to silence this. ' +
           `Underlying error: ${e instanceof Error ? e.message : String(e)}`,
       )
     }

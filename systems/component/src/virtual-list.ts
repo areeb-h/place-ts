@@ -40,7 +40,7 @@
 // over once `containerRef` attaches. The trade-off is documented and
 // the initialViewport size is tunable per call.
 
-import { state } from '@place/reactivity'
+import { state } from '@place-ts/reactivity'
 import { onCleanup } from './index.ts'
 
 /**

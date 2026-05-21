@@ -1,4 +1,4 @@
-// @place/component — the page / layout / handler authoring API.
+// @place-ts/component — the page / layout / handler authoring API.
 //
 // Extracted from index.ts (Tier 20 decomposition, cut 7) — the
 // declarative surface authors call to build a server-rendered app:
@@ -14,7 +14,7 @@
 // resident symbols only inside runtime functions, so the page ⇄ index
 // cycle stays benign — same shape as element.ts / mount.ts / ssr.ts.
 
-import type { ParamsOf } from '@place/routing'
+import type { ParamsOf } from '@place-ts/routing'
 import { action } from './action.ts'
 // `component` still lives in index.ts; `mergeMeta` / `resolveMeta`
 // moved to ./render-page.ts with `renderPage`. Both are touched only
@@ -288,7 +288,7 @@ export interface PageDef<U extends object = object, L extends object = object, S
   /**
    * Stylesheets. URL strings emit `<link rel="stylesheet">`, `{ inline }`
    * emits `<style>`. Pass an array to combine. The `tailwind()` helper
-   * from `@place/component/tailwind` returns an `{ inline }` source.
+   * from `@place-ts/component/tailwind` returns an `{ inline }` source.
    */
   styles?: StyleSrc | StyleSrc[]
   /** Extra response headers for this page (merged with serve()'s headers). */
@@ -464,7 +464,7 @@ export interface PageDef<U extends object = object, L extends object = object, S
  * Throw `notFound()` from `load()` to tell the framework to render
  * the page's `onNotFound` view (or fall through to the global handler).
  */
-const NOT_FOUND_MARKER: unique symbol = Symbol.for('@place/component:notFound')
+const NOT_FOUND_MARKER: unique symbol = Symbol.for('@place-ts/component:notFound')
 
 /**
  * Construct a not-found signal for `load()` to throw. The framework
@@ -1114,7 +1114,7 @@ export interface RenderPageOptions {
    * When set, `renderPage` appends a `<div data-view="island"
    * data-view-id="place-devtools" data-view-strategy="idle">` marker at
    * the end of the body. The marker triggers the island runtime to
-   * fetch + mount `@place/devtools`'s panel on idle. `serve()` sets
+   * fetch + mount `@place-ts/devtools`'s panel on idle. `serve()` sets
    * this when its own `devtools` option resolves to enabled and the
    * island registration succeeded. Apps should not set this directly.
    */

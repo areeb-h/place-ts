@@ -51,19 +51,19 @@ Source-to-test LOC is roughly **1.8:1** across the platform — well within sane
 ### Public API export counts
 
 ```
-@place/component   ~240 named exports (after barrel expansion)  — 393 KB barrel
-@place/design        41 (16 values, 25 types)
-@place/reactivity    23 (state/watch/derived/untrack/batch/flush/peek/resource/history + types)
-@place/reactivity/motion  33 (animate/tween/sequence/curve/clock + presets + easings)
-@place/routing       14
-@place/capability    12
-@place/data           3
-@place/persistence    9
-@place/search         2
-@place/security      13
+@place-ts/component   ~240 named exports (after barrel expansion)  — 393 KB barrel
+@place-ts/design        41 (16 values, 25 types)
+@place-ts/reactivity    23 (state/watch/derived/untrack/batch/flush/peek/resource/history + types)
+@place-ts/reactivity/motion  33 (animate/tween/sequence/curve/clock + presets + easings)
+@place-ts/routing       14
+@place-ts/capability    12
+@place-ts/data           3
+@place-ts/persistence    9
+@place-ts/search         2
+@place-ts/security      13
 ```
 
-`@place/component` carries ~85% of the public-API mass. That's the platform's biggest single risk surface for breaking changes.
+`@place-ts/component` carries ~85% of the public-API mass. That's the platform's biggest single risk surface for breaking changes.
 
 ---
 
@@ -144,7 +144,7 @@ The dominant finding from the critic-agent pass: **charters are not being touche
 - **`docs/platform/00-system-map.md`** — `cache` still listed as system #4 ("v0.2") but `systems/cache/README.md` says "deferred indefinitely." `security` shipped but not on the map. Component-system row hasn't caught up with islands-as-the-only-hydration-model (ADR 0023), dev supervisor (ADR 0032), or `discoverPages` (ADR 0039).
 - **`docs/platform/04-interfaces.md`** — `PersistenceAdapter<T>` declared as `initial/observe/write/conflict?`; shipped is `load/save/observe/refresh?`. Three of four method names diverge. Carried from baseline; unchanged.
 - **`systems/routing/docs/00-charter.md`** + **`systems/capability/docs/00-charter.md`** — Both still v0.3-era stubs. The shipped surface for both is 2 tiers ahead.
-- **`@place/design`** — Charter NN#6 forbids arbitrary Tailwind values. Live violations: `presentational.tsx` (`text-[10px]`, `text-[11px]`, oklch literals), `Toast.tsx`, `Dialog.tsx`, `Field.tsx`, `Menu.tsx`, plus newly-added `CodeBlock.tsx` lines 66-68 (`text-[12px/13px/14px]`). The charter NN#6 erosion got 1 file *worse* in T13.
+- **`@place-ts/design`** — Charter NN#6 forbids arbitrary Tailwind values. Live violations: `presentational.tsx` (`text-[10px]`, `text-[11px]`, oklch literals), `Toast.tsx`, `Dialog.tsx`, `Field.tsx`, `Menu.tsx`, plus newly-added `CodeBlock.tsx` lines 66-68 (`text-[12px/13px/14px]`). The charter NN#6 erosion got 1 file *worse* in T13.
 - **Design charter §"Public surface"** lists Button as the only export with the rest as "backlog." Reality: 12 components + a tokenizer surface ship. Wildly stale.
 
 ### Minor
@@ -163,7 +163,7 @@ The single highest-leverage move: a per-system charter rewrite sweep (capability
 
 ### Headline naming-drift collisions (highest user-DX impact)
 
-1. **`themeTokens()` vs `theme()`** (both in `@place/component`) — both build theme tokens. `theme({ modes })` is the new T13 helper; `themeTokens({ themes })` is the underlying primitive. Same return type. No JSDoc on either explains which to reach for. **Blocking for DX.**
+1. **`themeTokens()` vs `theme()`** (both in `@place-ts/component`) — both build theme tokens. `theme({ modes })` is the new T13 helper; `themeTokens({ themes })` is the underlying primitive. Same return type. No JSDoc on either explains which to reach for. **Blocking for DX.**
 
 2. **`cap()` vs `defineCapability()`** — `cap()` JSDoc says "the canonical API in v1.0" but `defineCapability` is what the stability covenant pins under "What never changes." Contradiction; pick one canonical name.
 
@@ -192,11 +192,11 @@ Five minutes per export to add `@provisional` JSDoc tags; saves a v2.0 by leavin
 
 ### What's solid
 
-- `@place/reactivity` core — disciplined small surface, sharp JSDoc on every primitive
-- `@place/persistence` — adapter family has identical shape; `crossTabAdapter` composition pattern is the cleanest piece of API in the platform
-- `@place/routing` — `RouterHandle`'s triple-duty (Router + Provision + Disposable) is a model
-- `@place/security` — tight, secure-by-default, each function does one thing
-- `@place/data`, `@place/search` — anti-bloat directive observed visibly
+- `@place-ts/reactivity` core — disciplined small surface, sharp JSDoc on every primitive
+- `@place-ts/persistence` — adapter family has identical shape; `crossTabAdapter` composition pattern is the cleanest piece of API in the platform
+- `@place-ts/routing` — `RouterHandle`'s triple-duty (Router + Provision + Disposable) is a model
+- `@place-ts/security` — tight, secure-by-default, each function does one thing
+- `@place-ts/data`, `@place-ts/search` — anti-bloat directive observed visibly
 
 ---
 
@@ -372,13 +372,13 @@ Ordered by user-impact-per-effort.
 
 ### Tertiary
 
-7. **`<Table>` / `<DataGrid>`** primitive in `@place/design` — unblocks dashboards + internal tools + admin (3/5 → 4/5 on three use cases).
+7. **`<Table>` / `<DataGrid>`** primitive in `@place-ts/design` — unblocks dashboards + internal tools + admin (3/5 → 4/5 on three use cases).
 
 8. **`<Image>` primitive** with sharp integration — unblocks e-commerce.
 
 9. **Rebuild `examples/commonplace`** as a real end-to-end app — currently a stub.
 
-10. **Re-export `@place/design` styles automatically** when detected — drop the `styles: [designStyles, appStyles]` boilerplate.
+10. **Re-export `@place-ts/design` styles automatically** when detected — drop the `styles: [designStyles, appStyles]` boilerplate.
 
 11. **Remove `peek()` deprecated re-export** — pre-publish freedom.
 
@@ -391,7 +391,7 @@ Ordered by user-impact-per-effort.
 - Live competitor benchmarks (running their dev servers locally) — too expensive; used published numbers.
 - Real-user / adopter feedback — no users yet.
 - Production-load testing — no production traffic.
-- Security audit of cryptographic operations — `@place/security`'s `signedToken` / `csrfToken` shapes are standard but unaudited.
+- Security audit of cryptographic operations — `@place-ts/security`'s `signedToken` / `csrfToken` shapes are standard but unaudited.
 - License / dependency audit — not yet performed.
 
 ## Companion documents

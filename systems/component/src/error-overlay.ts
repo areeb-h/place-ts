@@ -1,4 +1,4 @@
-// @place/component — dev error overlay.
+// @place-ts/component — dev error overlay.
 //
 // Extracted from index.ts (Tier 20 decomposition). Fully self-contained
 // HTML string-building: a render-time throw becomes a pretty page with

@@ -11,8 +11,8 @@
 // nesting). Shipping them with the design library's recipe makes the
 // details consistent across the platform.
 
-import type { Children, RefCallback, View } from '@place/component'
-import { cls, recipe } from '@place/component'
+import type { Children, RefCallback, View } from '@place-ts/component'
+import { cls, recipe } from '@place-ts/component'
 
 // ===== Avatar =====
 

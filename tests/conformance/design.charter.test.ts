@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 //
-// Conformance tests for the @place/design charter.
+// Conformance tests for the @place-ts/design charter.
 //
 // One test per architectural commitment in
 // systems/design/docs/00-charter.md, post Tier 15-D refresh.
@@ -15,15 +15,15 @@
 //      layout pragmatic
 //   7. The tokenizer subsystem is part of the charter (Tier 13 ADR)
 
-import { renderToString } from '@place/component'
-import { Badge, Button, CodeBlock } from '@place/design'
+import { renderToString } from '@place-ts/component'
+import { Badge, Button, CodeBlock } from '@place-ts/design'
 import { describe, expect, test } from 'vitest'
 
-describe('@place/design charter conformance — architectural commitments', () => {
+describe('@place-ts/design charter conformance — architectural commitments', () => {
   // ── Commitment #1: No copy-paste — components are imported ───────────
   test('charter: components are imported as values, not copy-pasted', () => {
     // Trivially true at the type level: `Button` is a value imported
-    // from `@place/design`. The negation (the absence of a `pnpm dlx
+    // from `@place-ts/design`. The negation (the absence of a `pnpm dlx
     // shadcn add button`-style installer) is the actual contract.
     expect(typeof Button).toBe('function')
   })
@@ -93,7 +93,7 @@ describe('@place/design charter conformance — architectural commitments', () =
 
   // ── Commitment #7: Tokenizer is part of the charter ──────────────────
   test('charter: the tokenizer subsystem is a charter-sanctioned surface', () => {
-    // CodeBlock + Copy + tokenizer family ship from @place/design's
+    // CodeBlock + Copy + tokenizer family ship from @place-ts/design's
     // main barrel; this is the Tier-13 sanction (ADRs 0033/0036/0037).
     const html = renderToString(CodeBlock({ code: 'const x = 1', lang: 'ts' }))
     // Token spans are present — proving the tokenizer ran.

@@ -1,4 +1,4 @@
-// @place/security — security primitives.
+// @place-ts/security — security primitives.
 //
 // Built on Web Crypto + the capability system. Runs in browsers, Bun,
 // and Node 19+. Five primitives total:
@@ -39,7 +39,7 @@
 //     when the consumer's `Bun.serve` handler builds responses; the
 //     constants below are starter values, not a one-call solution.
 
-import { defineCapability } from '@place/capability'
+import { defineCapability } from '@place-ts/capability'
 
 // ===== Internal: HMAC + base64url + constant-time compare =====
 
@@ -279,8 +279,8 @@ export const bunCryptoProvider: CryptoProvider = {
  * Capability slot for the active crypto provider. Apps install at
  * boot:
  *
- *   import { app } from '@place/component/server'
- *   import { CryptoProviderCap, awsLcFipsProvider } from '@place/security'
+ *   import { app } from '@place-ts/component/server'
+ *   import { CryptoProviderCap, awsLcFipsProvider } from '@place-ts/security'
  *
  *   app({
  *     caps: [[CryptoProviderCap, awsLcFipsProvider]],
@@ -353,7 +353,7 @@ export function rotatingKey(
 ): RotatingKey {
   if (root.length < 32) {
     throw new Error(
-      '@place/security: rotatingKey root must be at least 32 bytes (256 bits). ' +
+      '@place-ts/security: rotatingKey root must be at least 32 bytes (256 bits). ' +
         'Use `bunCryptoProvider.randomBytes(32)` or equivalent to generate one.',
     )
   }
@@ -479,7 +479,7 @@ export interface NonceStore {
 export function inMemoryNonceStore(opts: { windowSize?: number } = {}): NonceStore {
   const W = opts.windowSize ?? 64
   if (W < 1 || W > 256) {
-    throw new Error(`@place/security: NonceStore windowSize must be 1..256 (got ${W})`)
+    throw new Error(`@place-ts/security: NonceStore windowSize must be 1..256 (got ${W})`)
   }
   const sessions = new Map<string, { right: number; bitmap: bigint }>()
   const WMask = (1n << BigInt(W)) - 1n
@@ -565,7 +565,7 @@ export function signedToken<T = unknown>(secret: string): SignedToken<T> {
     // deployments should use 32+ random bytes (256 bits). Throw loudly
     // rather than ship a quietly-weakened token.
     throw new Error(
-      '@place/security: signedToken secret must be at least 16 characters. ' +
+      '@place-ts/security: signedToken secret must be at least 16 characters. ' +
         'Use a cryptographically random value (e.g. crypto.randomUUID() + crypto.randomUUID()).',
     )
   }

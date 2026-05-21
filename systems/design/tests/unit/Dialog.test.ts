@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
-import { mount } from '@place/component'
-import { state } from '@place/reactivity'
+import { mount } from '@place-ts/component'
+import { state } from '@place-ts/reactivity'
 import { describe, expect, test, vi } from 'vitest'
 import { Dialog } from '../../src/Dialog.tsx'
 

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { mount, renderToString } from '@place/component'
+import { mount, renderToString } from '@place-ts/component'
 import { describe, expect, test } from 'vitest'
 import { Avatar, Badge, Card } from '../../src/presentational.tsx'
 

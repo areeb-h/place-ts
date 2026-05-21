@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// `bunx @place/create-app <name>` — minimal-viable scaffolder.
+// `bunx @place-ts/create-app <name>` — minimal-viable scaffolder.
 //
 // Design (per research-img-vt-cli.md gap 3):
 //   - Inline templates (templates/ directory in this package), not

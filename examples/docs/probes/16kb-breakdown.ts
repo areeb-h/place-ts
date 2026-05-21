@@ -57,11 +57,13 @@ const EXTERNAL = [
 // Dynamically import the auto-import plugin so the build matches what
 // `serve()` actually emits in production. `placeAutoImport()` is the
 // plugin factory.
-const { placeAutoImport } = (await import('@place/component/auto-import-plugin').catch(async () => {
-  // Fallback: load via project-relative path if the package export isn't
-  // declared yet.
-  return await import(resolve(ROOT, 'systems/component/src/auto-import-plugin.ts'))
-})) as { placeAutoImport: () => unknown }
+const { placeAutoImport } = (await import('@place-ts/component/auto-import-plugin').catch(
+  async () => {
+    // Fallback: load via project-relative path if the package export isn't
+    // declared yet.
+    return await import(resolve(ROOT, 'systems/component/src/auto-import-plugin.ts'))
+  },
+)) as { placeAutoImport: () => unknown }
 
 async function buildAndMeasure(opts: {
   name: string
@@ -114,7 +116,7 @@ await writeFile(
 // Static JSX returning a tree. THIS is the floor we want to hit on
 // content pages.
 
-import { renderToString } from '@place/component'
+import { renderToString } from '@place-ts/component'
 
 const view = () => (
   <article class="prose">
@@ -139,7 +141,7 @@ console.log('Building absolute floor probe (renderToString import only)...')
 const floorEntry = join(TMP, 'floor.ts')
 await writeFile(
   floorEntry,
-  `import { renderToString } from '@place/component'
+  `import { renderToString } from '@place-ts/component'
 ;(globalThis as Record<string, unknown>).__sink = renderToString
 `,
 )
@@ -154,7 +156,7 @@ console.log('Building app()-only probe...')
 const appEntry = join(TMP, 'app-only.ts')
 await writeFile(
   appEntry,
-  `import { app } from '@place/component/server'
+  `import { app } from '@place-ts/component/server'
 ;(globalThis as Record<string, unknown>).__sink = app
 `,
 )
@@ -169,7 +171,7 @@ console.log('Building reactivity-only probe...')
 const reactEntry = join(TMP, 'reactivity.ts')
 await writeFile(
   reactEntry,
-  `import { state, watch, derived } from '@place/component'
+  `import { state, watch, derived } from '@place-ts/component'
 ;(globalThis as Record<string, unknown>).__sink = [state, watch, derived]
 `,
 )
@@ -312,12 +314,12 @@ The auto-import plugin's registered primitives (${AUTO_IMPORT_NAMES.length} name
 ${AUTO_IMPORT_NAMES.join(', ')}
 \`\`\`
 
-The plugin injects \`import { X } from '@place/component'\` at the top
+The plugin injects \`import { X } from '@place-ts/component'\` at the top
 of every \`.tsx\` / \`.jsx\` file that REFERENCES \`X\` without already
 importing it. Because every reference becomes an explicit import,
 per-primitive tree-shaking still works. The barrel-shape concern
 (webpack #16863 / Vite #14676) applies when the import TARGET is a
-barrel module — \`@place/component\`'s single \`index.ts\` IS a barrel.
+barrel module — \`@place-ts/component\`'s single \`index.ts\` IS a barrel.
 The fact that the delta is near zero suggests Bun's tree-shaker is
 ESM-pure enough for this case. **Charter contradiction (anti-magic)
 remains philosophical; it is not a bundle-size problem.**

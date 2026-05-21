@@ -12,7 +12,7 @@ DX layer** (theme, viewport, discoverPages, dev supervisor, copy
 runtime). All ship as one cohesive API because they share a single
 rendering primitive (`View`), a single mental model (component =
 function from props to View, run once at mount), and one barrel
-import (`@place/component`).
+import (`@place-ts/component`).
 
 ### Render layer
 
@@ -46,7 +46,7 @@ import (`@place/component`).
 - **Per-route bundle splitting** (ADR 0018) — each route's client JS lives at `/client/<route-hash>.js`; framework + layout amortize into a shared chunk.
 - **Islands** (ADR 0019/0023) — `island(srcUrl, fn)` factory with `client="load|idle|visible|interaction"` strategy; default + only hydration model. `islandsDir` auto-discovers islands; SRI on every bundle (ADR 0025).
 - **Dev supervisor** (ADR 0032) — `bun src/app.ts` auto-spawns a subprocess supervisor; framework owns the file watcher; HMR via WebSocket reconnect.
-- **`@place/component`-level runtimes** (all emitted by `renderPage` with the per-request CSP nonce): `placeHmr`, `placeSpaNav`, `placeTabs`, `placeDeferredIslands`, `placeViewport`, `placeCopyRuntime`, `placeEarly`.
+- **`@place-ts/component`-level runtimes** (all emitted by `renderPage` with the per-request CSP nonce): `placeHmr`, `placeSpaNav`, `placeTabs`, `placeDeferredIslands`, `placeViewport`, `placeCopyRuntime`, `placeEarly`.
 
 ### App-level DX layer (Tier 12-13 additions, mostly `@provisional`)
 
@@ -59,18 +59,18 @@ import (`@place/component`).
 
 ## What this system does not own
 
-- Reactivity primitives (`@place/reactivity`).
-- Data fetching or compile-time dependency declarations (`@place/data`).
-- URL ↔ state mapping or typed routes (`@place/routing`). The `page()` model uses URL as a value but does not own the route DSL.
-- Storage adapters (`@place/persistence`).
+- Reactivity primitives (`@place-ts/reactivity`).
+- Data fetching or compile-time dependency declarations (`@place-ts/data`).
+- URL ↔ state mapping or typed routes (`@place-ts/routing`). The `page()` model uses URL as a value but does not own the route DSL.
+- Storage adapters (`@place-ts/persistence`).
 - General-purpose styling or UI components. We provide the `styles` plumbing and a Tailwind helper; we do not own a component library.
 
 ## Depends on
 
-- `@place/reactivity` — primitives, scope, graph
-- `@place/capability` — for `withCapability` and the error-boundary cap
-- `@place/routing` — `page()` re-uses the `route()` matcher to compile URL patterns
-- `@place/security` — only the demo uses it (cookies/CSRF/sessions); the component system itself does not depend on it
+- `@place-ts/reactivity` — primitives, scope, graph
+- `@place-ts/capability` — for `withCapability` and the error-boundary cap
+- `@place-ts/routing` — `page()` re-uses the `route()` matcher to compile URL patterns
+- `@place-ts/security` — only the demo uses it (cookies/CSRF/sessions); the component system itself does not depend on it
 
 Optional peer deps (only loaded if used):
 - `@tailwindcss/node` + `@tailwindcss/oxide` + `tailwindcss` — for the Tailwind helper

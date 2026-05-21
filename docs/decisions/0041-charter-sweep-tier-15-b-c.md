@@ -106,13 +106,13 @@ narrowed to a signal-only callback so consumer-driven load() picks
 up the new value, not the event). Added the adapter family list
 (`localStorageAdapter` / `indexedDBAdapter` / `serverAdapter` /
 `memoryAdapter` / `crossTabAdapter`). Corrected the `persistedState`
-location — lives in `@place/persistence`, not `@place/reactivity`.
+location — lives in `@place-ts/persistence`, not `@place-ts/reactivity`.
 
 ### `docs/platform/00-system-map.md` (refresh)
 
 - `cache` removed from the nine-system table (deferred per
   `systems/cache/README.md`); the framework's internal `CacheStore`
-  is now noted as `@place/component` implementation detail.
+  is now noted as `@place-ts/component` implementation detail.
 - `security` promoted onto the table as system #8 (between
   capability and build).
 - Every row's §Owns column refreshed to match shipped surface

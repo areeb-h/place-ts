@@ -1,8 +1,8 @@
 {
-  "name": "@place/search",
+  "name": "@place-ts/search",
   "version": "0.1.0",
   "type": "module",
-  "description": "Reactive search primitives over @place/reactivity collections. v0.1 ships substring search across declared fields; ranking, tokenization, and indexed search arrive when a workload requires them.",
+  "description": "Reactive search primitives over @place-ts/reactivity collections. v0.1 ships substring search across declared fields; ranking, tokenization, and indexed search arrive when a workload requires them.",
   "keywords": [
     "place",
     "place-ts",

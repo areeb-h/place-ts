@@ -12,9 +12,9 @@
 //   4. The URL is reactive state
 //   5. SSR is read-only
 
-import { div, page } from '@place/component'
-import { routes } from '@place/component/server'
-import { memoryRouter, parsePath, route, serverRouter } from '@place/routing'
+import { div, page } from '@place-ts/component'
+import { routes } from '@place-ts/component/server'
+import { memoryRouter, parsePath, route, serverRouter } from '@place-ts/routing'
 import { describe, expect, test } from 'vitest'
 
 describe('routing charter conformance — architectural commitments', () => {

@@ -2,7 +2,7 @@
 
 **Status:** accepted (Phases 1, 2, 3, 4 shipped; Phase 5 partially shipped — `shape()` codegen lands, `fromStandard()` Bun plugin deferred)
 **Date:** 2026-05-20
-**Affects:** `@place/security` (substrate); `@place/component` (`criticalAction()`,
+**Affects:** `@place-ts/security` (substrate); `@place-ts/component` (`criticalAction()`,
 `provisionActionKey`, `installActionKey`, `ServeOptions.secret`)
 
 ## Context
@@ -293,7 +293,7 @@ codegen target: ~90 µs saved on schema validation; net result
   `provisionActionKey`, `installActionKey`, `ServeOptions.secret`).
   47 tests added (28 substrate + 19 factory). Total 1483 → 1547.
 
-- **Phase 3 — Macaroon caveats.** Shipped. `@place/security/macaroon.ts`
+- **Phase 3 — Macaroon caveats.** Shipped. `@place-ts/security/macaroon.ts`
   primitive (mint / attenuate / serialize / deserialize / verify with
   constant-time HMAC compare); `perm('comments.create')` declarator on
   `criticalAction({ requires: [...] })`; `deriveMacaroonKey()` +

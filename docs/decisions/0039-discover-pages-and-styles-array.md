@@ -62,7 +62,7 @@ Internally arrays are filtered (drop empties) and concatenated with `\n` separat
 New server-only helper:
 
 ```ts
-import { app, discoverPages } from '@place/component'
+import { app, discoverPages } from '@place-ts/component'
 
 export default app({
   pages: await discoverPages('./src/pages'),
@@ -102,9 +102,9 @@ Bun supports top-level `await` natively in ESM modules. The app entry already ru
 Docs `app.ts` before (39 lines, 10 imports):
 
 ```ts
-import { app } from '@place/component'
-import { styles as designStyles } from '@place/design'
-import { pathRouter } from '@place/routing'
+import { app } from '@place-ts/component'
+import { styles as designStyles } from '@place-ts/design'
+import { pathRouter } from '@place-ts/routing'
 
 import { docsLayout } from './layouts/docs.layout.tsx'
 import api from './pages/api/index.ts'
@@ -119,7 +119,7 @@ import { styles as appStyles } from './styles.ts'
 import { tokens } from './theme.ts'
 
 export default app({
-  name: '@place/docs',
+  name: '@place-ts/docs',
   pages: [landing, gettingStarted, why, ...concepts, ...api, ...recipes, examples, roadmap],
   layout: docsLayout,
   theme: tokens,
@@ -132,16 +132,16 @@ export default app({
 After (32 lines, 5 imports):
 
 ```ts
-import { app, discoverPages } from '@place/component'
-import { styles as designStyles } from '@place/design'
-import { pathRouter } from '@place/routing'
+import { app, discoverPages } from '@place-ts/component'
+import { styles as designStyles } from '@place-ts/design'
+import { pathRouter } from '@place-ts/routing'
 
 import { docsLayout } from './layouts/docs.layout.tsx'
 import { styles as appStyles } from './styles.ts'
 import { tokens } from './theme.ts'
 
 export default app({
-  name: '@place/docs',
+  name: '@place-ts/docs',
   pages: await discoverPages('./src/pages'),
   layout: docsLayout,
   theme: tokens,

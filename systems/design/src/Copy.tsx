@@ -19,9 +19,9 @@
 //
 // **DX**:
 //
-//   import { Copy } from '@place/design'
+//   import { Copy } from '@place-ts/design'
 //
-//   <Copy text="bun add @place/design" />
+//   <Copy text="bun add @place-ts/design" />
 //
 //   <Copy text="API_KEY_..." idleLabel="copy key" copiedLabel="copied!" />
 //
@@ -29,7 +29,7 @@
 //     <SomeIcon /> copy
 //   </Copy>
 
-import { type Children, markCopyUsedOnThisRequest, type View } from '@place/component'
+import { type Children, markCopyUsedOnThisRequest, type View } from '@place-ts/component'
 
 export interface CopyProps {
   /** Text to write to the clipboard on click. Required. */

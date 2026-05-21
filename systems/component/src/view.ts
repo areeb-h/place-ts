@@ -1,4 +1,4 @@
-// @place/component view() — unified hydration factory (ADR 0030).
+// @place-ts/component view() — unified hydration factory (ADR 0030).
 //
 // `view()` is the public successor to `island()`. The author shape is
 // identical — `view((props) => <…/>)` with the auto-import plugin, or
@@ -56,7 +56,7 @@ import type { View } from './index.ts'
 import { type IslandComponent, type IslandOptions, island } from './islands.ts'
 
 /** Public hydration levels the framework recognises (per ADR 0030 +
- *  `@place/reactivity/effects` `ViewLevel`). */
+ *  `@place-ts/reactivity/effects` `ViewLevel`). */
 export type ViewLevel = 'static' | 'thaw' | 'island' | 'island+stream'
 
 /** Per-view options. Extends `IslandOptions` with a `level` hint

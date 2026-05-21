@@ -1,4 +1,4 @@
-// @place/component font helpers — typed @font-face + preload markup.
+// @place-ts/component font helpers — typed @font-face + preload markup.
 //
 // Better than Next's `next/font` for our use case:
 //   - No build-time download magic. You self-host the font file (drop it

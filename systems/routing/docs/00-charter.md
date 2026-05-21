@@ -88,11 +88,11 @@ external code can listen for it. (Currently absent from
 
 ## What this system does NOT own
 
-- HTTP / SSR transport — `@place/component`'s `serve()` does that.
-- Component lifecycle — `@place/component` owns mount/hydrate.
+- HTTP / SSR transport — `@place-ts/component`'s `serve()` does that.
+- Component lifecycle — `@place-ts/component` owns mount/hydrate.
 - Data fetching — loaders are `page({ load })`; this system just
   hands the params off.
-- Scroll restoration — `__spa_nav.ts` (in `@place/component`) handles
+- Scroll restoration — `__spa_nav.ts` (in `@place-ts/component`) handles
   scroll; routing only signals the navigation.
 
 ## Architectural commitments
@@ -110,10 +110,10 @@ external code can listen for it. (Currently absent from
 
 ## Depends on
 
-- `@place/capability` — `RouterCap` install/use machinery
-- `@place/reactivity` — `Router.path()` is `Derived<string>`; `state()`
+- `@place-ts/capability` — `RouterCap` install/use machinery
+- `@place-ts/reactivity` — `Router.path()` is `Derived<string>`; `state()`
   cells back the path / search / hash internally
-- `@place/component` — Link uses the cap, SPA-nav runtime listens
+- `@place-ts/component` — Link uses the cap, SPA-nav runtime listens
   for navigation
 
 ## Public surface (v0.1)

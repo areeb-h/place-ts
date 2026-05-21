@@ -24,9 +24,9 @@
 // onMouseLeave/onFocusOut handlers). Feature-detect happens once at
 // module load — see `POPOVER_KIND` below.
 
-import type { Children, View } from '@place/component'
-import { cls, onMount } from '@place/component'
-import { state } from '@place/reactivity'
+import type { Children, View } from '@place-ts/component'
+import { cls, onMount } from '@place-ts/component'
+import { state } from '@place-ts/reactivity'
 import { closePopover, nextAnchorName, openPopover, popoverStyle } from './_popover.ts'
 
 // **`popover="hint"` feature detect** (Tier 17-E v2 fix). The hint

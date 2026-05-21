@@ -1,4 +1,4 @@
-// @place/component action() — typed mutation endpoint, no codegen.
+// @place-ts/component action() — typed mutation endpoint, no codegen.
 //
 // One declaration produces three outputs: a route handler that the
 // server registers, a typed client `call()` function, and the path
@@ -294,7 +294,7 @@ export interface ActionDef<I, R> {
    * Optional signed CSRF token verification. When set, the request must
    * include a valid `X-CSRF-Token` header (or `__csrf` form field) that
    * verifies under the same secret + audience used to mint it. Use
-   * `csrfToken()` from `@place/security` to mint tokens at session
+   * `csrfToken()` from `@place-ts/security` to mint tokens at session
    * establishment; pass the same `verify` here.
    *
    * Origin check (`sameOrigin`) covers most CSRF surface; this is the
@@ -350,7 +350,7 @@ export class ActionError extends Error {
 // `ActionSchema<T>` with structured field-level errors. The framework
 // stays validator-agnostic: no library dep, no bespoke API. The
 // types below are inlined from the spec rather than pulled from
-// `@standard-schema/spec` so `@place/component` ships with zero
+// `@standard-schema/spec` so `@place-ts/component` ships with zero
 // validation-related deps.
 //
 // On validation failure, throws `ActionError(400, 'Validation failed',
@@ -438,7 +438,7 @@ export function isValidationFailure(payload: unknown): payload is ValidationFail
  *
  * ```ts
  * import { z } from 'zod'
- * import { action, fromStandard } from '@place/component'
+ * import { action, fromStandard } from '@place-ts/component'
  *
  * export const signup = action({
  *   path: 'POST /api/signup',

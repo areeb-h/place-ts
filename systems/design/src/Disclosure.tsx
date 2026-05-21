@@ -36,9 +36,9 @@
 //     <Disclosure name="faq" summary="…">…</Disclosure>
 //   </Disclosure.Group>
 
-import type { Children, View } from '@place/component'
-import { cls, recipe } from '@place/component'
-import { watch } from '@place/reactivity'
+import type { Children, View } from '@place-ts/component'
+import { cls, recipe } from '@place-ts/component'
+import { watch } from '@place-ts/reactivity'
 
 // ===== Recipe =====
 

@@ -2,8 +2,8 @@
 // Envelope-signed, replay-protected, capability-gated, audit-logged.
 // See ADR 0055 for the full design + threat model.
 
-import { Link, page } from '@place/component'
-import { CodeBlock } from '@place/design'
+import { Link, page } from '@place-ts/component'
+import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
 const SIG = `criticalAction<I, R>(def: {
@@ -21,7 +21,7 @@ const SIG = `criticalAction<I, R>(def: {
 const APP_BOOT = `// 1. Add a 32+ byte app secret. Every node in a multi-node deployment
 //    derives the same per-session HMAC key from it.
 
-import { app } from '@place/component/server'
+import { app } from '@place-ts/component/server'
 
 app({
   pages: [...],
@@ -32,8 +32,8 @@ app({
 // registered without a SessionCap install. Critical actions REQUIRE
 // an authenticated session — the envelope binds session.id.`
 
-const DEFINE = `import { criticalAction } from '@place/component/server'
-import { shape } from '@place/component'
+const DEFINE = `import { criticalAction } from '@place-ts/component/server'
+import { shape } from '@place-ts/component'
 
 export const transferFunds = criticalAction({
   path: 'POST /__a/transfer',
@@ -47,7 +47,7 @@ export const transferFunds = criticalAction({
 })`
 
 const REGISTER = `// Same registration shape as action() — spread .handler into serve().
-import { serve } from '@place/component/server'
+import { serve } from '@place-ts/component/server'
 import { transferFunds, withdrawFunds } from './actions'
 
 serve({
@@ -58,7 +58,7 @@ serve({
   },
 })`
 
-const PERM_DECL = `import { criticalAction, perm } from '@place/component/server'
+const PERM_DECL = `import { criticalAction, perm } from '@place-ts/component/server'
 
 export const deleteUser = criticalAction({
   path: 'POST /__a/users/delete',
@@ -89,8 +89,8 @@ const PROVISION = `// Server-side auth flow. After successful login, return BOTH
 import {
   provisionActionKey,
   provisionMacaroon,
-} from '@place/component/server'
-import { attenuate, serializeMacaroon } from '@place/security'
+} from '@place-ts/component/server'
+import { attenuate, serializeMacaroon } from '@place-ts/security'
 
 export const login = action({
   path: 'POST /api/login',
@@ -123,7 +123,7 @@ const INSTALL = `// Browser-side, right after login resolves.
 // WebCrypto CryptoKey + persists to IndexedDB so reloads keep it.
 // installMacaroon stores the serialised macaroon alongside.
 
-import { installActionKey, installMacaroon } from '@place/component/client'
+import { installActionKey, installMacaroon } from '@place-ts/component/client'
 
 const onLoginSuccess = async () => {
   const res = await login.call({ email, password })
@@ -134,7 +134,7 @@ const onLoginSuccess = async () => {
 }
 
 // On logout: drop both. Subsequent criticalAction calls 403.
-import { clearActionKey, clearMacaroon } from '@place/component/client'
+import { clearActionKey, clearMacaroon } from '@place-ts/component/client'
 await Promise.all([clearActionKey(), clearMacaroon()])`
 
 const CALL = `// Client-side call() is identical to action().call() — no extra
@@ -176,7 +176,7 @@ export const escalate = criticalAction({
 })
 
 // Verification:
-import { useAuditLog } from '@place/security'
+import { useAuditLog } from '@place-ts/security'
 const log = useAuditLog()
 const { ok, brokenAt } = await log.verify()
 if (!ok) reportTampering(brokenAt)`
@@ -390,7 +390,7 @@ export default page('/critical-action', {
         </li>
         <li>
           <Link to="/api/security">
-            <code>@place/security</code> — macaroon primitive, session, RBAC, CSP
+            <code>@place-ts/security</code> — macaroon primitive, session, RBAC, CSP
           </Link>
         </li>
         <li>

@@ -10,7 +10,7 @@
 // root — pages live under cwd so their stack frames classify as "user"
 // code, which is what triggers the inline source-window preview.
 
-import { page, renderPage } from '@place/component'
+import { page, renderPage } from '@place-ts/component'
 
 const capPage = page('/cap', {
   view: () => {
