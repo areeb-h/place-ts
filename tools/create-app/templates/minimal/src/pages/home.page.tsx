@@ -1,33 +1,41 @@
-// The home page. A `page()` is a value — its route is the first
-// argument, so the route survives a rename and TypeScript catches
-// every stale reference. This page has no interactive island, so it
-// ships zero framework JavaScript to the browser.
+// Home page. A `page()` is a value — its route is the first argument,
+// so the route survives a rename and TypeScript catches every stale
+// reference.
+//
+// The `<Counter />` below is an island: it ships its own tiny JS
+// bundle for the click handler + reactive label swap. Static parts of
+// this page (the prose, the headings) ship ZERO JS — only the island
+// gets hydrated.
 
-import { page } from '@place-ts/component'
+import { Link, page } from '@place-ts/component'
 
-export const homePage = page('/', {
-  meta: {
-    title: '__APP_NAME__',
-    description: 'A place app.',
-  },
+import Counter from '../islands/counter.tsx'
+
+export default page('/', {
+  meta: { title: 'Home' },
   view: () => (
-    <main style="font-family: ui-sans-serif, system-ui, sans-serif; max-width: 720px; margin: 4rem auto; padding: 0 1rem; line-height: 1.6">
-      <h1 style="font-size: 2rem; margin: 0 0 1rem 0">welcome to __APP_NAME__</h1>
+    <article class="prose">
+      <h1>welcome to __APP_NAME__</h1>
       <p>
-        Edit{' '}
-        <code style="background: #f3f3f3; padding: 0.1rem 0.4rem; border-radius: 0.25rem">
-          src/pages/home.page.tsx
-        </code>{' '}
-        and reload — the dev server rebuilds automatically.
+        Edit <code>src/pages/home.page.tsx</code> and reload — the dev server rebuilds
+        automatically.
       </p>
+
+      <h2>Try the island below</h2>
       <p>
-        Need interactivity? Add an island under{' '}
-        <code style="background: #f3f3f3; padding: 0.1rem 0.4rem; border-radius: 0.25rem">
-          src/islands/
-        </code>
-        , point <code>islandsDir</code> at it in <code>src/app.ts</code>, and drop it into a page.
-        Only pages that use an island ship any JavaScript at all.
+        It's an interactive client component. The button increments reactive state — the only
+        JavaScript shipped on this page is the counter's tiny bundle.
       </p>
-    </main>
+      <div class="my-6">
+        <Counter />
+      </div>
+
+      <h2>Next steps</h2>
+      <p>
+        Add another page under <code>src/pages/</code> — see <Link to="/about">about</Link> for the
+        shape. Add an interactive component under <code>src/islands/</code> and import it from any
+        page; only pages that actually use an island ship its bundle.
+      </p>
+    </article>
   ),
 })

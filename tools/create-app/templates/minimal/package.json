@@ -6,11 +6,16 @@
   "scripts": {
     "dev": "bun src/app.ts",
     "start": "NODE_ENV=production bun src/app.ts",
-    "build": "PLACE_BUILD=dist bun src/app.ts",
+    "build": "PLACE_BUILD=dist NODE_ENV=production bun src/app.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@place-ts/component": "^0.1.0"
+    "@place-ts/component": "^0.1.0",
+    "@place-ts/design": "^0.1.0",
+    "@place-ts/routing": "^0.1.0",
+    "@tailwindcss/node": "^4.2.4",
+    "@tailwindcss/oxide": "^4.2.4",
+    "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
     "@types/bun": "latest"
