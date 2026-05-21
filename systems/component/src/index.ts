@@ -350,6 +350,11 @@ export {
   type IslandSsrResult,
   island,
 } from './islands.ts'
+// view() — unified hydration factory (ADR 0030 Phase 1). The public
+// successor to island(); same author shape, opt-in `level` option to
+// unlock L0 static emit (zero per-island JS for pure components).
+// island() remains exported as a deprecated alias.
+export { view, type ViewLevel, type ViewOptions } from './view.ts'
 
 // T6-B inline-style-attr hash collector — extracted to
 // `./_internal/inline-style.ts` (cut 5b). The dispatch path uses the

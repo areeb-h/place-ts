@@ -1,32 +1,46 @@
 # ADR 0030: Unified hydration via effect-typed classification (`view()`)
 
-**Status:** classifier shipped report-only; `view()` factory deferred (2026-05-21)
+**Status:** Phase 1 shipped — `view()` factory + L0 static path; L1 thaw runtime still deferred (2026-05-21)
 **Date:** 2026-05-15
-**Affects:** `systems/component/src/build/view-classifier.ts` (shipped); `systems/component/src/build/view-classifier-types.ts` (shipped); effect-kind brands (`EffectBranded<E>`) shipped on `state`, `derived`, `watch`, `Suspense` (see `systems/reactivity/src/effects.ts`); a future `systems/component/src/view.ts` factory replacing `island()` — **NOT shipped**.
+**Affects:** `systems/component/src/view.ts` (shipped); `systems/component/src/build/view-classifier.ts` (shipped); `systems/component/src/build/view-classifier-types.ts` (shipped); `systems/component/src/islands.ts` (`island()` JSDoc-deprecated as a `view()` alias).
 
-> **Inventory note (2026-05-21).** What landed: the build-time
-> classifier ([view-classifier.ts]) and its effect-kind map
-> ([view-classifier-types.ts]) — 722 lines that walk each island's
-> source, identify which effect primitives it uses, and predict the
-> level (L0/L1/L2/L3) the future `view()` would compile to. It
-> ships in the build manifest + console report ("Tier 8" comment in
-> the file's header) but does NOT change emission — every island
-> still ships at L2 ("island") today.
+> **Inventory note (2026-05-21).** Phase 1 of the unification
+> landed: the `view()` factory ships in
+> [`systems/component/src/view.ts`](systems/component/src/view.ts)
+> with the same author shape as `island()` (one-arg with the
+> auto-import plugin; two-arg explicit form). The `level` option
+> drives emission:
 >
-> What didn't land: the `view()` factory that consumes the
-> classifier output and dispatches to the right emitter. Without
-> `view()`, the unification this ADR proposes (one primitive, four
-> emitters, deprecate `island()` + `thaw()` as aliases) hasn't
-> materialised. The current shape — `island()` always L2, classifier
-> as advisor — is fine for what the docs site and the in-flight
-> demos need; the trigger for `view()` is a real workload that
-> demonstrates the L0/L1/L3 emitters paying off (a thaw runtime
-> for a static-mostly app, or streaming for a suspense-heavy app
-> per ADR 0029's deferred coalescing).
+>   - `level: 'static'` (L0) — pure component, no effects. View
+>     callable does NOT call `_registerIslandDef`, so the bundler
+>     emits NO per-island bundle. `toHtml` returns the impl's HTML
+>     with no marker wrap; SSR is the final state. Real shipping
+>     savings: a `view({ level: 'static' })` saves the per-island
+>     bundle (~4-7 KB gzipped per island avoided).
+>   - `level: 'island'` (L2) — default if `level` is unset. Same
+>     emit shape as today's `island()`: per-island bundle, marker,
+>     full hydration.
+>   - `level: 'island+stream'` (L3) — alias for `'island'`. Streaming
+>     is wrapped from outside via `<Suspense>` + `renderToStream`
+>     (ADR 0029) — not a separate emit shape per island.
+>   - `level: 'thaw'` (L1) — THROWS at definition time with a
+>     migration hint. The L1 thaw runtime is deferred (ADR 0027);
+>     dropping the option falls back to `'island'`.
 >
-> Since the classifier is wired and the brands are real types, the
-> migration to `view()` is a future tier flag-flip: emit per the
-> classifier instead of always-L2. No re-architecture pending.
+> `island()` is now a JSDoc-deprecated alias of `view()` — same
+> behavior, same brand, same JSX-callable shape. Migration is a
+> rename only. Existing apps keep working unchanged.
+>
+> What didn't land in Phase 1: the L1 thaw runtime (ADR 0027) and
+> automatic emit selection via classifier prediction. The
+> classifier remains REPORT-ONLY — `view()` requires the author
+> to opt in to `level: 'static'` explicitly. Auto-selection is
+> deferred until the L1 runtime exists; until then, the conservative
+> "author asserts, framework validates" contract avoids the
+> silent-promotion footgun discussed in the Decision section.
+>
+> Tests: 9 unit tests across the four level paths
+> (`systems/component/tests/unit/view.test.ts`).
 
 ## Context
 

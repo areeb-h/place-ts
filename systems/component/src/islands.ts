@@ -373,6 +373,13 @@ export interface IslandProps {
  * ```tsx
  * island(import.meta.url, fn)
  * ```
+ *
+ * @deprecated Prefer `view()` ([ADR 0030](docs/decisions/0030-unified-hydration.md)).
+ *   `island()` is now an alias for `view()` with no `level` option set —
+ *   identical behavior, but `view()` is the canonical name and unlocks
+ *   the `level: 'static'` emit path (ships zero JS for pure components).
+ *   Migration: rename `island` → `view`; the import + call shape is
+ *   otherwise identical.
  */
 /**
  * Per-island options. Currently just `ssrProps` — a resolver that

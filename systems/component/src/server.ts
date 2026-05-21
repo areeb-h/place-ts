@@ -90,6 +90,13 @@ export {
   shape,
   slugifyHeading,
   type ValidationFailure,
+  // ADR 0030 — unified view() factory + types. `view()` is the public
+  // primitive; `island()` (still exported on the root barrel) is its
+  // deprecated alias. `level: 'static'` is the immediate win — pure
+  // components ship 0 KB per-island JS.
+  view,
+  type ViewLevel,
+  type ViewOptions,
 } from './index.ts'
 
 export {
