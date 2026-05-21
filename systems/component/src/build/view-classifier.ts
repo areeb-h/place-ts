@@ -464,6 +464,28 @@ export function renderReport(manifest: ViewManifest): string {
         `    + ${steadyL2} more island${steadyL2 === 1 ? '' : 's'} at L2 (steady state — see .place/island-entries/view-manifest.json)`,
       )
     }
+    // Migration hints. ONLY 'static' savings are actionable today —
+    // the L1 thaw runtime is deferred (ADR 0027). Surface the
+    // distinction precisely so a dev seeing the row knows whether
+    // they can act on it OR whether they're waiting on framework work.
+    const hasStatic = actionable.some((r) => r.level === 'static')
+    const hasThaw = actionable.some((r) => r.level === 'thaw')
+    if (hasStatic || hasThaw) {
+      lines.push('')
+      if (hasStatic) {
+        lines.push(
+          `    Apply 'static' savings: set { level: 'static' } on the view() call.`,
+        )
+        lines.push(
+          `      Build verifies the assertion against the classifier — wrong assertions fail the build.`,
+        )
+      }
+      if (hasThaw) {
+        lines.push(
+          `    'thaw' savings need the L1 runtime (ADR 0027) — deferred. No action available yet.`,
+        )
+      }
+    }
   }
   return lines.join('\n')
 }

@@ -211,9 +211,15 @@ export const NAV: readonly NavSection[] = [
       },
       {
         to: '/api/components',
-        label: 'Components: Show / Suspense / Form / island',
+        label: 'Components: view / Show / Suspense / Form',
         keywords: [
+          'view',
           'island',
+          'level',
+          'static',
+          'thaw',
+          'island+stream',
+          'classifier',
           'boundary',
           'streaming',
           'hydrate',

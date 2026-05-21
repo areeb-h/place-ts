@@ -1,18 +1,18 @@
 // /api/components — typed component primitives.
 //
-// Leads with `island()` because that's the hydration boundary in
-// place's islands-only model. Then the boundary helpers that compose
-// inside or outside islands: Show, Suspense, errorBoundary, Form,
-// keyed, virtualList.
+// Leads with `view()` — the unified hydration boundary (ADR 0030).
+// `island()` is a deprecated alias; keep it documented for migration
+// continuity. Then the boundary helpers that compose inside or outside
+// islands: Show, Suspense, errorBoundary, Form, keyed, virtualList.
 
 import { Link, page } from '@place/component'
 import { CodeBlock } from '@place/design'
 import { Callout } from '../../components/callout.tsx'
 
-const ISLAND = `// \`island\`, \`state\`, \`onMount\` auto-imported via the @place/component
+const VIEW = `// \`view\`, \`state\`, \`onMount\` auto-imported via the @place/component
 // Bun plugin (registered via bunfig.toml \`preload\`).
 
-const Counter = island((props: { start?: number }) => {
+const Counter = view((props: { start?: number }) => {
   const n = state(props.start ?? 0)
   return (
     <button onClick={() => n.set(n() + 1)}>
@@ -24,15 +24,53 @@ const Counter = island((props: { start?: number }) => {
 // Use anywhere — JSX-callable, props flow naturally:
 <Counter start={5} />`
 
-const ISLAND_EXPLICIT = `// Equivalent to the sugar form above; the plugin rewrites
-// island(fn) → island(import.meta.url, fn) at load time. Reach for the
+const VIEW_EXPLICIT = `// Equivalent to the sugar form above; the plugin rewrites
+// view(fn) → view(import.meta.url, fn) at load time. Reach for the
 // explicit form only if you're NOT using the framework's Bun plugin
-// (tests importing island directly, custom build pipelines, etc.).
+// (tests importing view directly, custom build pipelines, etc.).
 
-const Counter = island(import.meta.url, (props: { start?: number }) => {
+const Counter = view(import.meta.url, (props: { start?: number }) => {
   const n = state(props.start ?? 0)
   return <button onClick={() => n.set(n() + 1)}>count: {n}</button>
 })`
+
+const VIEW_STATIC = `// \`level: 'static'\` (L0) — ships ZERO per-island JS. For pure-
+// render components that need the view() shape (typed JSX-callable
+// props, classifier integration, prop serialization) but have no
+// reactive effects, lifecycle hooks, timers, or DOM mutations.
+//
+// The framework:
+//   - Does NOT generate a per-island bundle for this name
+//   - Does NOT emit a \`<div data-view="island" data-view-id="…">\` marker
+//   - Does NOT load any client JS for it
+// The SSR'd HTML is the final state.
+
+const StaticGreeting = view(
+  (props: { name: string }) => <h2>Hello, {props.name}!</h2>,
+  { level: 'static' },
+)
+
+// Build-time validation (Phase 2): if you assert level: 'static' on a
+// body that has effects (calls state(), onMount(), watch(), etc.), the
+// build FAILS with the offending primitive named. Drop the option, or
+// remove the effect — silent zero-JS-for-broken-code can't happen.`
+
+const VIEW_LEVELS = `// The level option's full matrix:
+//
+//   level: 'static'        L0  no marker, no bundle, no hydration.
+//                              SSR HTML is the final state.
+//                              Build-validated against the classifier.
+//   level: 'island'        L2  the default. Per-island bundle, full
+//                              hydration. Identical to today's island().
+//   level: 'island+stream' L3  alias for 'island'. Streaming is wrapped
+//                              from outside via <Suspense> + renderToStream
+//                              (ADR 0029); no separate per-island shape.
+//   level: 'thaw'          L1  throws at definition time. The L1 thaw
+//                              runtime is deferred (ADR 0027); drop the
+//                              option to fall back to 'island'.
+//   level: undefined            defaults to 'island'. Classifier output
+//                              is informational — opt in to 'static'
+//                              explicitly.`
 
 const ISLAND_STRATEGIES = `// The framework-reserved 'client' prop picks a hydration strategy.
 // Defaults to 'load' (hydrate as soon as the bundle parses).
@@ -167,47 +205,88 @@ const Heading = component((props: { children: unknown }) => (
 export default page('/components', {
   // String shorthand — h1 says 'Component primitives' but search-friendly
   // title lists each primitive name. Layout adds ' · place docs'.
-  meta: 'island · Tabs · Show · Suspense · Form',
+  meta: 'view · Tabs · Show · Suspense · Form',
   view: () => (
     <article class="prose max-w-2xl">
       <h1>Component primitives</h1>
       <p>
-        The typed components that compose pages: the island boundary, conditional rendering, the
-        streaming suspense boundary, the form helper, list keying, and the windowed list. Each runs
-        on both the server and the client; islands additionally chunk the client portion.
+        The typed components that compose pages: the view (hydration) boundary, conditional
+        rendering, the streaming suspense boundary, the form helper, list keying, and the windowed
+        list. Each runs on both the server and the client; views additionally chunk the client
+        portion (unless asserted <code>level: 'static'</code>, in which case they ship zero JS).
       </p>
 
-      <h2 id="island">island()</h2>
+      <h2 id="view">view()</h2>
       <p>
-        The hydration boundary. <code>island(fn)</code> wraps a render function as a JSX-callable
-        component; pages that render the result emit a typed <code>data-view="island"</code> marker,
-        and the framework's bundler produces a per-island chunk that the marker's auto-mount wrapper
-        hydrates into the existing DOM.
+        The unified hydration boundary (
+        <a href="https://github.com/anthropics/place-ts/blob/main/docs/decisions/0030-unified-hydration.md">
+          ADR 0030
+        </a>
+        ). <code>view(fn)</code> wraps a render function as a JSX-callable component; pages that
+        render the result emit a typed <code>data-view="island"</code> marker by default, and the
+        framework's bundler produces a per-island chunk that the marker's auto-mount wrapper
+        hydrates into the existing DOM. An optional <code>level</code> option picks among four emit
+        shapes — most apps never set it.
       </p>
-      <CodeBlock code={ISLAND} />
+      <CodeBlock code={VIEW} />
       <p>
-        Pages without any island call ship <strong>zero</strong> framework JS. Pages with islands
-        ship one chunk per <em>distinct</em> island used on the page, plus a small shared client
-        runtime emitted by per-route bundle splitting.
+        Pages without any view call ship <strong>zero</strong> framework JS. Pages with views ship
+        one chunk per <em>distinct</em> view used on the page, plus a small shared client runtime
+        emitted by per-route bundle splitting.
       </p>
 
       <Callout kind="note" title="What the plugin does for you">
         The framework's Bun plugin (registered via <code>preload</code> in <code>bunfig.toml</code>)
-        rewrites <code>island(fn)</code> to <code>island(import.meta.url, fn)</code> at load time so
-        the bundler can locate the source. You write the sugar form; the build emits the typed
-        shape.
+        rewrites <code>view(fn)</code> to <code>view(import.meta.url, fn)</code> at load time so the
+        bundler can locate the source. You write the sugar form; the build emits the typed shape.
+        Same treatment for the legacy <code>island()</code> alias.
       </Callout>
 
-      <h3 id="island-explicit">Without the plugin</h3>
-      <CodeBlock code={ISLAND_EXPLICIT} />
+      <h3 id="view-explicit">Without the plugin</h3>
+      <CodeBlock code={VIEW_EXPLICIT} />
 
-      <h3 id="island-strategies">Hydration strategies</h3>
+      <h3 id="view-static">
+        <code>level: 'static'</code> — zero JS for pure components
+      </h3>
+      <p>
+        The immediate win of the unified factory. When a component has no reactive effects, no
+        lifecycle hooks, no timers, no DOM mutations beyond what JSX already renders, assert{' '}
+        <code>level: 'static'</code> to opt out of hydration entirely. The build emits no per-view
+        bundle and no marker; the SSR'd HTML ships verbatim.
+      </p>
+      <CodeBlock code={VIEW_STATIC} />
+      <Callout kind="tip" title="Build-validated, no silent regressions">
+        The build's view-classifier reads the source for every <code>view()</code> call. If you
+        assert <code>level: 'static'</code> and the body actually uses <code>state()</code>,{' '}
+        <code>onMount()</code>, or any other effect-producing primitive, the build fails with the
+        offending identifier named. Wrong assertions can't ship.
+      </Callout>
+
+      <h3 id="view-levels">The level matrix</h3>
+      <CodeBlock code={VIEW_LEVELS} lang="text" />
+      <p>
+        Most authors leave <code>level</code> unset — the default <code>'island'</code> matches the
+        legacy <code>island()</code> behavior. Set <code>'static'</code> for pure components that
+        genuinely have no effects. <code>'thaw'</code> currently throws — the L1 thaw runtime is
+        deferred to a future tier.
+      </p>
+
+      <h3 id="view-strategies">Hydration strategies</h3>
       <CodeBlock code={ISLAND_STRATEGIES} />
       <p>
         The <code>client</code> prop is reserved by the framework and stripped before props reach
         the impl. The strategy controls when the auto-mount wrapper attaches; it never affects SSR
-        output.
+        output. Strategies apply to <code>level: 'island'</code> only — <code>'static'</code> views
+        ship no JS, so there's nothing to schedule.
       </p>
+
+      <Callout kind="note" title="island() → view() migration">
+        <code>island()</code> is a JSDoc-deprecated alias for{' '}
+        <code>view()</code> with no <code>level</code> option set. Existing code keeps working
+        unchanged. Migration is a rename:{' '}
+        <code>import {'{ island }'}</code> → <code>import {'{ view }'}</code>, and{' '}
+        <code>island(fn)</code> → <code>view(fn)</code>. No behavior change.
+      </Callout>
 
       <h2 id="show">Show</h2>
       <CodeBlock code={SHOW} />
