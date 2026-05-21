@@ -37,6 +37,12 @@ export default defineConfig({
   test: {
     include: ['systems/**/tests/**/*.test.ts', 'tests/**/*.test.ts', 'tools/**/tests/**/*.test.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/benchmark/**'],
+    // Some publishable packages (e.g. @place-ts/devtools) have no test
+    // files of their own. Their `prepublishOnly` hook runs `vitest run`,
+    // which by default exits 1 if no files match — failing publish.
+    // Suppress that since the workspace tests cover those packages
+    // transitively (via @place-ts/component, etc.).
+    passWithNoTests: true,
     typecheck: {
       enabled: false,
     },
