@@ -26,6 +26,17 @@ import { escapeHtmlAttrFull } from './utils/escape.ts'
 export const isProductionRuntime = (): boolean =>
   typeof process !== 'undefined' && process.env && process.env['NODE_ENV'] === 'production'
 
+/**
+ * True when the runtime is a test environment — `NODE_ENV=test` OR
+ * `VITEST=true` (vitest sets this even without changing NODE_ENV).
+ * Centralized so test-mode behavior (dev-supervisor skip, devtools
+ * skip) stays in sync with the test runner's own signal.
+ */
+export const isTestRuntime = (): boolean =>
+  typeof process !== 'undefined' &&
+  process.env &&
+  (process.env['NODE_ENV'] === 'test' || process.env['VITEST'] === 'true')
+
 export async function renderRouteError(
   error: unknown,
   req: Request,

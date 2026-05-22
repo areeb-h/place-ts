@@ -395,12 +395,15 @@ function indent(lines: string[], by = '  '): string {
   return lines.map((l) => `${by}${l}`).join('\n')
 }
 
-function tokensToLines(tokens: ThemeMap): string[] {
+function tokensToLines(tokens: ThemeMap, themeName?: string): string[] {
   const out: string[] = []
   for (const [k, v] of Object.entries(tokens)) {
     if (!isTokenName(k)) {
+      // Include the theme name so users with multi-theme configs don't
+      // have to diff each token map to find the culprit.
+      const where = themeName ? ` (in theme '${themeName}')` : ''
       throw new Error(
-        `themeTokens: token name '${k}' must start with '--' (CSS custom property convention)`,
+        `themeTokens: token name '${k}'${where} must start with '--' (CSS custom property convention)`,
       )
     }
     // Trim and end with semicolon — single source for emitted lines so
@@ -596,7 +599,10 @@ export function themeTokens<Themes extends Readonly<Record<string, ThemeMap>>>(
   // 2. @theme block — registers the default theme's color tokens +
   //    typography scale tokens with v4. These also serve as `:root`
   //    defaults: pages with no theme class get this theme.
-  const themeBlockLines = [...tokensToLines(defaultTokens), ...(typo?.themeAdditions ?? [])]
+  const themeBlockLines = [
+    ...tokensToLines(defaultTokens, defaultName),
+    ...(typo?.themeAdditions ?? []),
+  ]
   sections.push(`@theme {\n${indent(themeBlockLines)}\n}`)
 
   // 3. Per-theme override classes — emitted for EVERY theme, including
@@ -607,7 +613,7 @@ export function themeTokens<Themes extends Readonly<Record<string, ThemeMap>>>(
   //    class would still get overridden by the opposite system pref.
   for (const name of themeNames) {
     const sel = `.${classNameFor(classPrefix, name)}`
-    const lines = tokensToLines(themes[name] as ThemeMap)
+    const lines = tokensToLines(themes[name] as ThemeMap, name)
     sections.push(`${sel} {\n${indent(lines)}\n}`)
   }
 
@@ -619,19 +625,21 @@ export function themeTokens<Themes extends Readonly<Record<string, ThemeMap>>>(
     const allThemeClasses = themeNames.map((n) => `.${classNameFor(classPrefix, n)}`)
     const notSelector = `:root:not(${allThemeClasses.join('):not(')})`
     if (sysPref.dark && sysPref.dark !== defaultName) {
+      const darkName = String(sysPref.dark)
       const tokens = themes[sysPref.dark] as ThemeMap
       sections.push(
         `@media (prefers-color-scheme: dark) {\n  ${notSelector} {\n${indent(
-          tokensToLines(tokens),
+          tokensToLines(tokens, darkName),
           '    ',
         )}\n  }\n}`,
       )
     }
     if (sysPref.light && sysPref.light !== defaultName) {
+      const lightName = String(sysPref.light)
       const tokens = themes[sysPref.light] as ThemeMap
       sections.push(
         `@media (prefers-color-scheme: light) {\n  ${notSelector} {\n${indent(
-          tokensToLines(tokens),
+          tokensToLines(tokens, lightName),
           '    ',
         )}\n  }\n}`,
       )

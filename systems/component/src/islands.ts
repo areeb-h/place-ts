@@ -25,21 +25,44 @@ import { escapeHtmlAttrFull } from './utils/escape.ts'
 // bundle into the framework runtime chunk instead, dropping the
 // leaf-fetch count by one. The bundler (`island-bundler.ts`) keeps
 // its own copy server-side.
+// Slugify-style normalizer used for the "did you mean" hint on
+// invalid-character errors. Replaces every disallowed char with `-`,
+// collapses repeats, strips leading/trailing dashes. Cheap to compute
+// at error-time; turns a hostile error into an actionable suggestion.
+function slugifyIslandName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 function validateIslandName(name: string): void {
   if (typeof name !== 'string' || name.length === 0) {
     throw new Error(`island: name must be a non-empty string (got ${typeof name})`)
   }
   if (name.length > 64) {
-    throw new Error(`island: name exceeds 64 chars (got ${name.length})`)
+    throw new Error(
+      `island: name exceeds 64 chars (got ${name.length}) — '${name.slice(0, 32)}…'. ` +
+        `Use a shorter name (e.g. '${name
+          .slice(0, 32)
+          .toLowerCase()
+          .replace(/[^a-z0-9_-]+/g, '-')}').`,
+    )
   }
   if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+    const suggestion = slugifyIslandName(name)
+    const didYouMean = suggestion.length > 0 ? ` Did you mean '${suggestion}'?` : ''
     throw new Error(
       `island: name '${name}' contains invalid characters. Use only ` +
-        `letters, digits, '_', '-'.`,
+        `letters, digits, '_', '-'.${didYouMean}`,
     )
   }
   if (name === '__proto__' || name === 'constructor' || name === 'prototype') {
-    throw new Error(`island: name '${name}' is reserved.`)
+    throw new Error(
+      `island: name '${name}' is reserved (JavaScript object key). ` +
+        `Pick a different name — e.g. '${name}-island' or 'my-${name}'.`,
+    )
   }
 }
 

@@ -114,7 +114,21 @@ describe('themeTokens — typed, SSR-safe theme registration', () => {
         default: 'light',
         themes: { light: { 'color-bg': 'white' } as Record<string, string> },
       }),
-    ).toThrow(/'color-bg' must start with '--'/)
+    ).toThrow(/'color-bg'.*must start with '--'/)
+  })
+
+  test('token-name error names the theme (0.5.1 DX fix)', () => {
+    // The error message identifies WHICH theme had the bad token —
+    // critical when an app has 5+ themes and you need to know which
+    // one to fix. (The bad token is in the default theme; that's the
+    // path that flows through `tokensToLines` with the theme-name
+    // annotation we added in 0.5.1.)
+    expect(() =>
+      themeTokens({
+        default: 'main',
+        themes: { main: { 'color-bg': 'white' } as Record<string, string> },
+      }),
+    ).toThrow(/in theme 'main'/)
   })
 
   test('throws on theme name with invalid CSS class chars', () => {

@@ -269,7 +269,24 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       )
     }
     if (Object.hasOwn(routes, p.path)) {
-      throw new Error(`app(): duplicate path '${p.path}'. Two pages cannot share the same route.`)
+      // Surface BOTH pages' identifying info so the user doesn't have
+      // to scan their full pages array. `meta.title` is the most
+      // common identifier; the position in the input array catches
+      // unnamed duplicates. (Path is in `p.path` regardless.)
+      const existing = routes[p.path] as AnyPage
+      const labelFor = (page: AnyPage): string => {
+        const meta = typeof page.meta === 'function' ? null : page.meta
+        if (typeof meta === 'string') return `'${meta}'`
+        if (meta && typeof meta === 'object' && typeof meta.title === 'string') {
+          return `'${meta.title}'`
+        }
+        return '(no meta.title)'
+      }
+      throw new Error(
+        `app(): duplicate path '${p.path}' — two pages share this route. ` +
+          `First page: ${labelFor(existing)}. Second page: ${labelFor(p)}. ` +
+          `If you're using discoverPages, check for accidentally duplicated files (e.g. 'home.page.tsx' and 'home copy.page.tsx').`,
+      )
     }
     routes[p.path] = p
   }
@@ -408,13 +425,37 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
   // Resolve the port: explicit > env > default. `typeof process` guard
   // lets the same code path compile to dead-code on `target: 'browser'`
   // (Bun.build replaces `typeof process` with `'undefined'`).
+  //
+  // **Misconfig diagnostics (0.5.1).** Silently defaulting on an
+  // unparseable `PORT` env var was a known footgun — a typo in a
+  // deployment env var would land the app on 5174 with no signal.
+  // We now warn loudly on:
+  //   - `PORT` set but unparseable (NaN, negative, > 65535).
+  //   - No `PORT` but a port-like env var (`APP_PORT`, `SERVER_PORT`,
+  //     etc.) is set — likely the user meant `PORT`.
   const resolvePort = (): number => {
     if (typeof config.port === 'number') return config.port
     if (typeof process !== 'undefined') {
       const raw = process.env?.['PORT']
-      if (typeof raw === 'string') {
+      if (typeof raw === 'string' && raw.length > 0) {
         const parsed = Number.parseInt(raw, 10)
-        if (Number.isFinite(parsed)) return parsed
+        if (Number.isFinite(parsed) && parsed > 0 && parsed <= 65535) return parsed
+        // biome-ignore lint/suspicious/noConsole: explicit misconfig warning
+        console.warn(
+          `app(): env var PORT='${raw}' is not a valid port number (expected 1-65535). Falling back to 5174.`,
+        )
+      } else {
+        // No PORT set — check for likely-typo env vars that contain
+        // "port" so a misnamed env var doesn't silently get ignored.
+        const portLikeVars = Object.keys(process.env ?? {}).filter(
+          (k) => k !== 'PORT' && /port/i.test(k) && /^\d+$/.test(String(process.env?.[k] ?? '')),
+        )
+        if (portLikeVars.length > 0) {
+          // biome-ignore lint/suspicious/noConsole: explicit misconfig warning
+          console.warn(
+            `app(): no PORT env var set, but found port-like vars: ${portLikeVars.join(', ')}. Did you mean PORT? Falling back to 5174.`,
+          )
+        }
       }
     }
     return 5174

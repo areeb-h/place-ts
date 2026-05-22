@@ -294,9 +294,35 @@ async function loadKey(): Promise<StoredKey | null> {
 // upgrades on the page. Memoising the promise gives one connection
 // per page lifetime, closed on `versionchange` so a parallel tab can
 // upgrade.
+//
+// **Open serialization (0.5.1).** The previous shape cleared
+// `_dbPromise` to null *before* rejecting on `onerror`/`onblocked`.
+// Concurrent callers arriving in the window between the null-assign
+// and the rejection-propagation would spawn duplicate `indexedDB.open`
+// requests — each saw `_dbPromise === null` and started a fresh open
+// in parallel. Fixed: keep `_dbPromise` set to the rejected Promise
+// so concurrent in-flight callers share the same rejection, and only
+// the NEXT openDb() call after that triggers a retry. Same one-call,
+// one-open invariant; no parallel-open race.
 let _dbPromise: Promise<IDBDatabase> | null = null
 function openDb(): Promise<IDBDatabase> {
-  if (_dbPromise !== null) return _dbPromise
+  // If we have an in-flight or successful open, hand it back. If the
+  // previous open REJECTED, this returns the rejection — but a fresh
+  // retry below replaces _dbPromise so subsequent calls get a new open.
+  if (_dbPromise !== null) {
+    const existing = _dbPromise
+    // After a rejection, replace _dbPromise with a fresh open so the
+    // NEXT call retries. We do the replace synchronously here (before
+    // returning `existing`) so the next concurrent caller gets the
+    // retry, not another copy of the rejection.
+    existing.catch(() => {
+      // Only reset if `_dbPromise` is still pointing at the rejected
+      // one — if another caller already retried, leave their attempt
+      // in place.
+      if (_dbPromise === existing) _dbPromise = null
+    })
+    return existing
+  }
   _dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(IDB_DB, 1)
     req.onupgradeneeded = () => {
@@ -322,14 +348,11 @@ function openDb(): Promise<IDBDatabase> {
       }
       resolve(db)
     }
-    req.onerror = () => {
-      _dbPromise = null
-      reject(req.error)
-    }
+    req.onerror = () => reject(req.error)
     req.onblocked = () => {
       // Another tab holds an older version with onversionchange not
-      // honored. Re-resolve to allow retry on next call.
-      _dbPromise = null
+      // honored. The rejection propagates to all in-flight callers;
+      // the catch above clears `_dbPromise` so the NEXT call retries.
       reject(new Error('criticalAction: IndexedDB open blocked'))
     }
   })

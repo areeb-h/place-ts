@@ -163,14 +163,19 @@ function navKey(u){
 // Validate a Response + resolve its HTML text. Shared by prefetch and
 // the live fetch so both apply identical same-origin / content-type /
 // size guards.
+//
+// Errors include the target URL + a one-line "what to try" hint so
+// the user can act on them — anonymous "http 404" / "not html" alone
+// is a known DX paper cut (fixed in 0.5.1).
 function readHtml(r){
-  if(!r.ok)throw new Error('http '+r.status);
+  var url=r.url||'';
+  if(!r.ok)throw new Error('SPA nav: '+url+' returned HTTP '+r.status+' — check the route exists');
   try{
-    if(new URL(r.url).origin!==location.origin)throw new Error('cross-origin redirect');
-  }catch(_){throw new Error('bad response URL');}
-  if((r.headers.get('content-type')||'').indexOf('text/html')!==0)throw new Error('not html');
+    if(new URL(r.url).origin!==location.origin)throw new Error('SPA nav: '+url+' redirected to a different origin — SPA nav only handles same-origin');
+  }catch(_){throw new Error('SPA nav: '+url+' has an unparseable response URL');}
+  if((r.headers.get('content-type')||'').indexOf('text/html')!==0)throw new Error('SPA nav: '+url+' returned non-HTML ('+(r.headers.get('content-type')||'no Content-Type')+') — falling back to full reload');
   return r.text().then(function(html){
-    if(html.length>MAX_BYTES)throw new Error('response too large');
+    if(html.length>MAX_BYTES)throw new Error('SPA nav: '+url+' response exceeded '+MAX_BYTES+' bytes — falling back to full reload');
     return html;
   });
 }

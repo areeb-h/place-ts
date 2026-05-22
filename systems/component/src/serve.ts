@@ -40,7 +40,7 @@ import type { CacheEntry, CacheStore } from './cache.ts'
 import { _registeredCaches } from './component.ts'
 import { maybeCompress } from './compress.ts'
 import { setActionRootKey } from './critical-action.ts'
-import { isProductionRuntime } from './error-overlay.ts'
+import { isProductionRuntime, isTestRuntime } from './error-overlay.ts'
 import { INLINE_STYLE_HASHES_HEADER } from './index.ts'
 import {
   _setIslandBundleUrls,
@@ -232,42 +232,49 @@ async function readStaticFile(filePath: string): Promise<FileHandle> {
       size: file.size,
     }
   }
-  // Node fallback: fs.stat + fs.createReadStream wrapped in a Web stream.
-  // We avoid `import 'node:fs'` at module scope so browsers don't try
-  // to resolve it; lazy-import inside the function so bundlers can
-  // tree-shake it out for browser builds.
-  const { stat, createReadStream } = await import('node:fs')
-  return new Promise<FileHandle>((resolve) => {
-    stat(filePath, (err, stats) => {
-      if (err || !stats.isFile()) {
-        resolve({ exists: false, body: null, contentType: null, size: null })
-        return
-      }
-      // node:stream Readable → Web ReadableStream. Node 17+ has
-      // Readable.toWeb but not in all environments; build manually.
-      const nodeStream = createReadStream(filePath)
-      const webStream = new ReadableStream<Uint8Array>({
-        start(controller) {
-          nodeStream.on('data', (chunk) => {
-            controller.enqueue(
-              chunk instanceof Uint8Array ? chunk : new Uint8Array(Buffer.from(chunk)),
-            )
-          })
-          nodeStream.on('end', () => controller.close())
-          nodeStream.on('error', (e) => controller.error(e))
-        },
-        cancel() {
-          nodeStream.destroy()
-        },
+  // Node fallback: fs.promises.stat + fs.createReadStream wrapped in a
+  // Web stream. We avoid `import 'node:fs'` at module scope so browsers
+  // don't try to resolve it; lazy-import inside the function so
+  // bundlers can tree-shake it out for browser builds.
+  //
+  // Why `fs.promises.stat` and not the callback form: a callback that
+  // never fires (rare but real on slow FS, FUSE mounts, broken
+  // network volumes) would hang the request indefinitely because the
+  // Promise constructor's `resolve` is never called and there's no
+  // reject branch. `fs.promises.stat` rejects on error and surfaces
+  // any hung file system as a Node error after its internal timeout.
+  const { createReadStream } = await import('node:fs')
+  const { stat } = await import('node:fs/promises')
+  let stats: Awaited<ReturnType<typeof stat>>
+  try {
+    stats = await stat(filePath)
+  } catch {
+    return { exists: false, body: null, contentType: null, size: null }
+  }
+  if (!stats.isFile()) {
+    return { exists: false, body: null, contentType: null, size: null }
+  }
+  // node:stream Readable → Web ReadableStream. Node 17+ has
+  // Readable.toWeb but not in all environments; build manually.
+  const nodeStream = createReadStream(filePath)
+  const webStream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      nodeStream.on('data', (chunk) => {
+        controller.enqueue(chunk instanceof Uint8Array ? chunk : new Uint8Array(Buffer.from(chunk)))
       })
-      resolve({
-        exists: true,
-        body: webStream,
-        contentType: contentTypeFromExt(filePath),
-        size: stats.size,
-      })
-    })
+      nodeStream.on('end', () => controller.close())
+      nodeStream.on('error', (e) => controller.error(e))
+    },
+    cancel() {
+      nodeStream.destroy()
+    },
   })
+  return {
+    exists: true,
+    body: webStream,
+    contentType: contentTypeFromExt(filePath),
+    size: stats.size,
+  }
 }
 
 // Tiny MIME map for the common static-asset extensions. Bun's Bun.file
@@ -978,6 +985,12 @@ function _serverDynImport(specifier: string): Promise<unknown> {
 // stringify, Bun.serve, Bun.build, fs/promises, tailwindcss) from the
 // client bundle. See `export const serve = …` near the bottom of this
 // file for the gating pattern.
+// Tracks cache keys whose ISR background revalidation has already
+// logged a failure, so a persistently broken route emits ONE warn
+// instead of one per stale-request that triggers a revalidate. Per-
+// process; reset on restart.
+const _swrLoggedKeys = new Set<string>()
+
 async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // **Dev-mode self-supervisor.** In dev, `serve()` runs as a long-
   // lived supervisor that spawns the actual server in a subprocess.
@@ -1018,8 +1031,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // discriminator, independent of `NODE_ENV`, so a static build is
   // correct whether or not the caller set `NODE_ENV=production`.
   const staticMode = options.staticExport !== undefined
-  const isDevMode = process.env['NODE_ENV'] !== 'production'
-  const isTest = process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test'
+  // Use the shared env-truth helpers from error-overlay.ts. Previously
+  // serve.ts read `process.env['NODE_ENV']` directly in ~4 places with
+  // subtly different semantics — easy to drift. One reader per fact.
+  const isDevMode = !isProductionRuntime()
+  const isTest = isTestRuntime()
   if (isDevMode && !isTest && !staticMode && !process.env['__PLACE_DEV_CHILD']) {
     await runDevSupervisor()
     // `runDevSupervisor` only returns when the child exits non-zero
@@ -1065,7 +1081,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // semantics: minified island bundles, stable SRI, no HMR, no dev
   // watcher. A static site IS a production artefact. `staticMode` is
   // resolved above — it also gates the dev supervisor.
-  const isDev = !staticMode && process.env['NODE_ENV'] !== 'production'
+  const isDev = !staticMode && !isProductionRuntime()
   const wantsBanner = options.log?.banner ?? isDev
   const wantsRequestLog = options.log?.requests ?? isDev
   // Timings captured during startup; emitted by the banner.
@@ -1082,7 +1098,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // Production deploys use a process supervisor (the bundle is fixed
   // for the process lifetime), so a 5-minute cache is harmless and
   // saves CDN hits.
-  const isProduction = staticMode || process.env['NODE_ENV'] === 'production'
+  const isProduction = staticMode || isProductionRuntime()
   const bundleCacheControl = isProduction
     ? 'public, max-age=300'
     : 'no-cache, no-store, must-revalidate'
@@ -1330,13 +1346,12 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // support, and we shouldn't force a build there. The test flag is
   // VITEST=true; we ALSO bail when Bun.build isn't available, which is
   // the structural check (broader than just vitest).
-  const isVitest = process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test'
+  const isVitest = isTestRuntime()
   const hasBunBuild = typeof Bun !== 'undefined' && typeof Bun.build === 'function'
   const devtoolsEnabled =
     !isVitest &&
     hasBunBuild &&
-    (options.devtools === true ||
-      (options.devtools !== false && process.env['NODE_ENV'] !== 'production'))
+    (options.devtools === true || (options.devtools !== false && !isProductionRuntime()))
   let devtoolsRegistered = false
   if (devtoolsEnabled) {
     try {
@@ -2053,11 +2068,23 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
             // Stale: serve cached, kick off background revalidation.
             // The promise is intentionally floating — we don't await it,
             // and we don't return a rejected promise to the request.
+            //
+            // Failures are LOGGED (0.5.1) instead of silently swallowed.
+            // Without this, a fatal render bug (template throws, infinite
+            // loop, OOM) leaves users seeing stale content forever with
+            // no signal anywhere — silent broken-state. The log is
+            // dev-loud / prod-rate-limited (one warn per cacheKey
+            // tracked in `_swrLoggedKeys` below) so a persistently
+            // failing route doesn't spam stderr.
             void renderAndCache(r.page, req, params, cacheKey, rev, nonce, htmlClassPrefix).catch(
-              () => {
-                // Background revalidation failed: keep the stale entry. A
-                // future request retries; meanwhile users see slightly old
-                // content rather than 500. This is the SWR contract.
+              (err: unknown) => {
+                if (_swrLoggedKeys.has(cacheKey)) return
+                _swrLoggedKeys.add(cacheKey)
+                const msg = err instanceof Error ? err.message : String(err)
+                // biome-ignore lint/suspicious/noConsole: explicit warn for silent-failure recovery
+                console.warn(
+                  `[place] ISR background revalidation failed for '${cacheKey}': ${msg}. Serving stale entry; logged once per key.`,
+                )
               },
             )
             return mergeHeaders(
@@ -2573,10 +2600,24 @@ async function runDevSupervisor(): Promise<never> {
   // supervisor's watcher just sits idle (no listeners). Only after a
   // crash do we attach a one-shot listener that resolves on the next
   // change event.
+  //
+  // **Watcher availability is tracked** (0.5.1) so a post-crash wait
+  // doesn't hang forever when fs.watch is unsupported (exotic FS,
+  // restricted sandbox). We surface the failure to the wait Promise
+  // and exit with a clear message instead of blocking the supervisor.
   let onCrashFileChange: ((filename: string) => void) | null = null
-  void startSupervisorWatcher(process.cwd(), (filename) => {
-    if (onCrashFileChange) onCrashFileChange(filename)
-  })
+  let watcherAvailable = true
+  let onWatcherFailed: (() => void) | null = null
+  void startSupervisorWatcher(
+    process.cwd(),
+    (filename) => {
+      if (onCrashFileChange) onCrashFileChange(filename)
+    },
+    () => {
+      watcherAvailable = false
+      if (onWatcherFailed) onWatcherFailed()
+    },
+  )
 
   while (true) {
     child = Bun.spawn(['bun', Bun.main], {
@@ -2613,19 +2654,44 @@ async function runDevSupervisor(): Promise<never> {
     //   2. 500ms cooldown after the next valid event resolves — so a
     //      stray follow-up event doesn't queue an immediate second
     //      respawn before the new child boots.
+    // If the supervisor's own watcher isn't running (fs.watch
+    // unsupported, permission denied, exotic FS), we have no signal
+    // for "user saved a fix" — staying alive forever would just hang.
+    // Exit with a clear message so the user can re-run `bun dev`
+    // themselves after fixing the issue.
+    if (!watcherAvailable) {
+      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
+      console.error(
+        `\n[place] dev server crashed (exit ${code ?? 'unknown'}). File watcher is unavailable — can't auto-restart. Fix the error, then run \`bun dev\` again.\n`,
+      )
+      process.exit(code ?? 1)
+    }
     // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
     console.error(
       `\n[place] dev server crashed (exit ${code ?? 'unknown'}). Watching for source changes — save any file to restart.\n`,
     )
     const crashedAt = Date.now()
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
       onCrashFileChange = (filename: string): void => {
         if (Date.now() - crashedAt < 250) return
         onCrashFileChange = null
+        onWatcherFailed = null
         // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
         console.log(`[place] ${filename} changed — restarting...`)
         resolve()
       }
+      // If the watcher dies mid-wait (rare — the loop in
+      // `startSupervisorWatcher` ended), reject so we exit cleanly
+      // instead of hanging on a never-resolving Promise.
+      onWatcherFailed = (): void => {
+        onCrashFileChange = null
+        onWatcherFailed = null
+        reject(new Error("file watcher unavailable; can't auto-restart"))
+      }
+    }).catch((err: Error) => {
+      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
+      console.error(`\n[place] ${err.message}. Fix the error, then run \`bun dev\` again.\n`)
+      process.exit(code ?? 1)
     })
     await new Promise((r) => setTimeout(r, 500))
   }
@@ -2643,6 +2709,7 @@ async function runDevSupervisor(): Promise<never> {
 async function startSupervisorWatcher(
   cwd: string,
   onChange: (filename: string) => void,
+  onFailure: () => void,
 ): Promise<void> {
   try {
     const { existsSync, statSync } = (await _serverDynImport('node:fs')) as typeof import('node:fs')
@@ -2669,11 +2736,15 @@ async function startSupervisorWatcher(
       if (!isWatched(event.filename)) continue
       onChange(event.filename ?? 'unknown')
     }
+    // Iterator ended without throwing — uncommon (the watcher usually
+    // runs until process exit). Treat as failure so the supervisor
+    // knows it can't auto-restart anymore.
+    onFailure()
   } catch (_) {
-    // fs.watch unsupported / permission denied — supervisor watcher
-    // degrades to no-op. The dev experience falls back to the pre-0.3.1
-    // behaviour (crash kills the supervisor); this matches platforms
-    // where the child's own watcher also can't run.
+    // fs.watch unsupported / permission denied / exotic FS. The
+    // supervisor flags this so the post-crash wait Promise exits with
+    // a clear message instead of hanging on a never-resolving Promise.
+    onFailure()
   }
 }
 
@@ -2725,6 +2796,12 @@ async function startSrcWatcher(
 
   // Throttle the island fast-path rebuild — coalesces save
   // bursts (editors that write multiple files in one save, etc.).
+  //
+  // **Shutdown cleanup** (0.5.1): the pending timer is cleared on
+  // SIGINT / SIGTERM so a save during the throttle window doesn't
+  // leak a timer that fires after process exit. The handlers are
+  // additive — they don't replace the supervisor's signal propagation
+  // (which exits the process anyway); they just clear our own state.
   let islandPending: ReturnType<typeof setTimeout> | null = null
   const triggerIslandRebuild = (): void => {
     if (islandPending) return
@@ -2733,6 +2810,14 @@ async function startSrcWatcher(
       void rebuildIslands()
     }, 50)
   }
+  const clearPending = (): void => {
+    if (islandPending) {
+      clearTimeout(islandPending)
+      islandPending = null
+    }
+  }
+  process.on('SIGINT', clearPending)
+  process.on('SIGTERM', clearPending)
   // **Initial-burst grace period.** `fs.watch(dir, { recursive: true })`
   // on Linux + Bun walks the tree to attach inotify watches; that walk
   // briefly fires "change" events for files we just started watching.
