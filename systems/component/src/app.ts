@@ -409,11 +409,10 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
   if (globalStyles !== undefined && globalStyles.length > 0) {
     const tw = serveOpts.tailwind
     if (tw === false) {
-      if (typeof console !== 'undefined') {
-        // biome-ignore lint/suspicious/noConsole: one-shot misconfig warning at app() construction
-        console.warn(
-          'app(): `styles` is ignored when `tailwind: false`. ' +
-            'Set `tailwind: true` (or pass `tailwind: { … }`) or remove `styles`.',
+      if (typeof process !== 'undefined') {
+        const { log } = require('./logging.ts') as typeof import('./logging.ts')
+        log.systemMessage(
+          '`styles` ignored when `tailwind: false` — set `tailwind: true` or remove `styles`',
         )
       }
     } else {
@@ -453,10 +452,10 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       if (typeof raw === 'string' && raw.length > 0) {
         const parsed = Number.parseInt(raw, 10)
         if (Number.isFinite(parsed) && parsed > 0 && parsed <= 65535) return parsed
-        // biome-ignore lint/suspicious/noConsole: explicit misconfig warning
-        console.warn(
-          `app(): env var PORT='${raw}' is not a valid port number (expected 1-65535). Falling back to 5174.`,
-        )
+        // Routed through the system-message buffer so it lands above
+        // the startup banner rather than interleaving.
+        const { log } = require('./logging.ts') as typeof import('./logging.ts')
+        log.systemMessage(`PORT='${raw}' invalid (expected 1-65535) — falling back to 5174`)
       }
     }
     return 5174

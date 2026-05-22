@@ -4,7 +4,7 @@
 // hermetic, zero install-time dependencies. Bun's stdout/stdin work
 // unchanged from Node.
 
-import { confirm, isPromptCancelled, multiSelect, railLine, select, text } from './prompt.ts'
+import { isPromptCancelled, multiSelect, railLine, select, text } from './prompt.ts'
 
 /**
  * Known variants — kept as a closed enum so unknown values are caught

@@ -51,7 +51,7 @@ import {
   type IslandSsrPropsResolver,
 } from './islands.ts'
 import { _setTrailingSlash } from './link.ts'
-import { formatRequestLogLine, formatStartupBanner } from './logging.ts'
+import { formatRequestLogLine, formatStartupBanner, log } from './logging.ts'
 import type { StyleSrc } from './meta.ts'
 import { type AnyLayout, type AnyPage, isPage, type Page } from './page.ts'
 // `renderPage` lives in ./render-page.ts; the private inline-style-
@@ -1366,15 +1366,13 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         }
         devtoolsRegistered = true
       }
-    } catch (e) {
+    } catch (_e) {
       // `@place-ts/devtools` isn't installed — that's fine, the app still
-      // boots. One-line warning so the developer knows the option was
-      // observed.
-      // biome-ignore lint/suspicious/noConsole: one-shot startup misconfig warning
-      console.warn(
-        'serve: `devtools` was enabled but `@place-ts/devtools` is not installed. ' +
-          'Either `bun add @place-ts/devtools` (workspace dep), or pass `devtools: false` to silence this. ' +
-          `Underlying error: ${e instanceof Error ? e.message : String(e)}`,
+      // boots. Routed through the system-message buffer so it appears
+      // above the startup banner in a coherent diagnostics block.
+      log.systemMessage(
+        '`devtools` enabled but `@place-ts/devtools` not installed — ' +
+          '`bun add @place-ts/devtools` to enable, or pass `devtools: false` to silence',
       )
     }
   }
@@ -1518,14 +1516,11 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         } else {
           broadcastHmrReload()
         }
-        process.stdout.write(
-          `[place hmr] islands rebuilt in ${Math.round(performance.now() - t0)} ms` +
-            (updates.length > 0 ? ` (${updates.length} swapped)` : '') +
-            '\n',
-        )
+        const elapsed = Math.round(performance.now() - t0)
+        const suffix = updates.length > 0 ? ` (${updates.length} swapped)` : ''
+        log.scope('hmr').info(`islands rebuilt in ${elapsed}ms${suffix}`)
       } catch (e) {
-        // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-        console.error('[place hmr] island rebuild failed:', e)
+        log.scope('hmr').error('island rebuild failed', e)
       }
     }
     // T8-D classifier report (ADR 0030). Printed once per startup so
@@ -2080,11 +2075,12 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
               (err: unknown) => {
                 if (_swrLoggedKeys.has(cacheKey)) return
                 _swrLoggedKeys.add(cacheKey)
-                const msg = err instanceof Error ? err.message : String(err)
-                // biome-ignore lint/suspicious/noConsole: explicit warn for silent-failure recovery
-                console.warn(
-                  `[place] ISR background revalidation failed for '${cacheKey}': ${msg}. Serving stale entry; logged once per key.`,
-                )
+                log
+                  .scope('isr')
+                  .warn(
+                    `background revalidation failed for '${cacheKey}' — serving stale; logged once per key`,
+                    err,
+                  )
               },
             )
             return mergeHeaders(
@@ -2239,9 +2235,16 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         const res = await innerFetch(req, srv)
         if (res === undefined) return undefined
         const ms = performance.now() - reqStart
-        process.stdout.write(
-          formatRequestLogLine(req.method, new URL(req.url).pathname, res.status, ms),
-        )
+        const redirectTo =
+          res.status >= 300 && res.status < 400 ? res.headers.get('Location') : null
+        const line = formatRequestLogLine({
+          method: req.method,
+          path: new URL(req.url).pathname,
+          status: res.status,
+          ms,
+          redirectTo,
+        })
+        if (line !== null) process.stdout.write(line)
         return res
       }
     : innerFetch
@@ -2474,9 +2477,19 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       // emit it at build time (matches the live server's behaviour).
       ...(options.robots !== undefined ? { robots: options.robots } : {}),
     })
+    // Build banner uses the new compact format. Routes through stdout
+    // directly because the formatter returns a multi-line block.
+    const { formatBuildBanner } = await import('./logging.ts')
     process.stdout.write(
-      `place: static export → ${staticResult.outDir} ` +
-        `(${staticResult.pages.length} pages, ${staticResult.bundles.length} bundles)\n`,
+      formatBuildBanner({
+        name: options.name ?? 'place-app',
+        outDir: staticResult.outDir,
+        pagesCount: staticResult.pages.length,
+        islandsCount: staticResult.bundles.length,
+        ...(timings.tailwindBytes !== undefined ? { tailwindBytes: timings.tailwindBytes } : {}),
+        totalMs: performance.now() - startupStart,
+        hasHeaders: true,
+      }),
     )
     // Static export produces no server. `app().build()` discards this
     // return; the cast keeps `_serveImpl`'s signature intact for the
@@ -2517,10 +2530,9 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     if (result instanceof Object && 'stop' in result) {
       server = result as Bun.Server<unknown>
       if (attempt > 0) {
-        // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-        console.error(
-          `[place] port ${port} in use — using ${candidate} instead. ` +
-            `Set PORT (or app({ port })) to pin a specific port.`,
+        log.systemMessage(
+          `port ${port} in use — using ${candidate} instead ` +
+            `(set PORT or app({ port }) to pin a specific port)`,
         )
       }
       break
@@ -2703,15 +2715,14 @@ async function runDevSupervisor(): Promise<never> {
     // Exit with a clear message so the user can re-run `bun dev`
     // themselves after fixing the issue.
     if (!watcherAvailable) {
-      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-      console.error(
-        `\n[place] dev server crashed (exit ${code ?? 'unknown'}). File watcher is unavailable — can't auto-restart. Fix the error, then run \`bun dev\` again.\n`,
+      log.error(
+        `dev server crashed (exit ${code ?? 'unknown'}) — file watcher unavailable, can't auto-restart. ` +
+          'Fix the error, then run `bun dev` again.',
       )
       process.exit(code ?? 1)
     }
-    // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-    console.error(
-      `\n[place] dev server crashed (exit ${code ?? 'unknown'}). Watching for source changes — save any file to restart.\n`,
+    log.warn(
+      `dev server crashed (exit ${code ?? 'unknown'}) — watching for source changes, save any file to restart`,
     )
     const crashedAt = Date.now()
     await new Promise<void>((resolve, reject) => {
@@ -2719,8 +2730,7 @@ async function runDevSupervisor(): Promise<never> {
         if (Date.now() - crashedAt < 250) return
         onCrashFileChange = null
         onWatcherFailed = null
-        // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-        console.log(`[place] ${filename} changed — restarting...`)
+        log.info(`${filename} changed — restarting`)
         resolve()
       }
       // If the watcher dies mid-wait (rare — the loop in
@@ -2732,8 +2742,7 @@ async function runDevSupervisor(): Promise<never> {
         reject(new Error("file watcher unavailable; can't auto-restart"))
       }
     }).catch((err: Error) => {
-      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-      console.error(`\n[place] ${err.message}. Fix the error, then run \`bun dev\` again.\n`)
+      log.error(`${err.message}. Fix the error, then run \`bun dev\` again.`)
       process.exit(code ?? 1)
     })
     await new Promise((r) => setTimeout(r, 500))
@@ -2894,8 +2903,7 @@ async function startSrcWatcher(
       // log and exit on the first event; subsequent events are
       // dropped silently.
       restarting = true
-      // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
-      console.log(`[place hmr] ${event.filename} changed — restarting...`)
+      log.scope('hmr').info(`${event.filename} changed — restarting`)
       process.exit(0)
     }
   } catch (_) {

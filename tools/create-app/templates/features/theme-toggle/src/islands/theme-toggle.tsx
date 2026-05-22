@@ -21,6 +21,7 @@ export default island(() => {
   const toggle = (): void => {
     const next = mode() === 'dark' ? 'light' : 'dark'
     mode.set(next)
+    // biome-ignore lint/suspicious/noDocumentCookie: sample template — direct cookie matches framework's early-paint reader
     document.cookie = `${COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
     // Apply immediately — the framework keys the body on `<theme>` class.
     document.documentElement.classList.remove('dark', 'light')
