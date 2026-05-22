@@ -24,7 +24,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p systems/capability && tsc --noEmit -p systems/data && tsc --noEmit -p systems/persistence && tsc --noEmit -p systems/routing && tsc --noEmit -p systems/search && tsc --noEmit -p systems/security && tsc --noEmit -p systems/component && tsc --noEmit -p systems/design && tsc --noEmit -p systems/devtools && tsc --noEmit -p examples/docs && tsc --noEmit -p tools/create-app && tsc --noEmit -p tools/place",
-    "ci": "bun run lint && bun run typecheck && bun run test && bun examples/docs/probes/forbidden-imports.ts"
+    "ci": "bun run lint && bun run typecheck && bun run test && bun examples/docs/probes/forbidden-imports.ts && bun tools/create-app/scripts/check-template-pins.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "latest",
