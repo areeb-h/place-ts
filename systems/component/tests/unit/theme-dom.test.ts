@@ -120,4 +120,44 @@ describe('useTheme() — reactive handle', () => {
     expect(theme.modes).toEqual([])
     expect(theme.current()).toBe('system')
   })
+
+  test('removes the place:theme-changed listener on cleanup', async () => {
+    // Regression: useTheme used to addEventListener with no removal,
+    // leaking a listener per island mount. Now uses onCleanup() to
+    // unregister when the enclosing view is disposed.
+    const { withCleanups, disposeAll } = await import('../../src/_internal/cleanup.ts')
+    ;(window as { __placeTheme?: unknown }).__placeTheme = stash
+    document.documentElement.dataset['placeTheme'] = 'system'
+
+    // Track addEventListener / removeEventListener calls for the
+    // place:theme-changed event.
+    const origAdd = window.addEventListener.bind(window)
+    const origRemove = window.removeEventListener.bind(window)
+    let addCount = 0
+    let removeCount = 0
+    window.addEventListener = ((type: string, ...rest: unknown[]) => {
+      if (type === 'place:theme-changed') addCount++
+      // biome-ignore lint/suspicious/noExplicitAny: spy proxy
+      return origAdd(type as any, ...(rest as [any]))
+    }) as typeof window.addEventListener
+    window.removeEventListener = ((type: string, ...rest: unknown[]) => {
+      if (type === 'place:theme-changed') removeCount++
+      // biome-ignore lint/suspicious/noExplicitAny: spy proxy
+      return origRemove(type as any, ...(rest as [any]))
+    }) as typeof window.removeEventListener
+
+    try {
+      const cleanups: Array<() => void> = []
+      const handle = withCleanups(cleanups, () => useTheme())
+      expect(handle.current()).toBe('system')
+      expect(addCount).toBe(1)
+      expect(removeCount).toBe(0)
+      // Simulate the enclosing view being disposed.
+      disposeAll(cleanups)
+      expect(removeCount).toBe(1)
+    } finally {
+      window.addEventListener = origAdd
+      window.removeEventListener = origRemove
+    }
+  })
 })

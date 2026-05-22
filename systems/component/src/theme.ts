@@ -48,6 +48,8 @@
 
 import { state } from '@place-ts/reactivity'
 
+import { onCleanup } from './_internal/cleanup.ts'
+
 /**
  * Per-theme tokens. Keys are CSS custom property names (must start with
  * `--`); values are CSS expressions (`oklch(...)`, `#fff`, `1rem`, etc).
@@ -931,10 +933,19 @@ export function useTheme(): ThemeApi {
   // dispatches `place:theme-changed` after every write; we receive it
   // here and keep the local state cell aligned. Same-tab only —
   // cross-tab sync via BroadcastChannel is deferred.
-  window.addEventListener('place:theme-changed', (e) => {
+  //
+  // **Cleanup**: the listener is removed when the enclosing view is
+  // disposed (island unmount, SPA-nav away, etc). Without this, every
+  // useTheme() call leaks a listener for the lifetime of the page —
+  // the closure pins the state cell + the captured DOM in memory.
+  // `onCleanup` is a no-op outside a mount context (e.g. when useTheme
+  // is called from a test harness), so this stays safe.
+  const onPlaceThemeChanged = (e: Event): void => {
     const detail = (e as CustomEvent<string>).detail
     if (typeof detail === 'string' && detail !== cur()) cur.set(detail)
-  })
+  }
+  window.addEventListener('place:theme-changed', onPlaceThemeChanged)
+  onCleanup(() => window.removeEventListener('place:theme-changed', onPlaceThemeChanged))
 
   return {
     current: () => cur(),

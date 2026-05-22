@@ -6,22 +6,25 @@
 > This is the Tier 20 entrypoint-split enforcement: client safety is
 > an impossible import graph, not define-based dead-code elimination.
 
-## CLEAN — 74 client bundles, zero forbidden tokens
+## CLEAN — 88 client bundles, zero forbidden tokens
 
 | Bundle | Raw | Gzipped |
 |---|--:|--:|
 | `islands/chunk-17r93v7c.js` | 457 B | 340 B |
 | `islands/chunk-1yn4entb.js` | 457 B | 338 B |
 | `islands/chunk-3j7qzb6m.js` | 44710 B | 16251 B |
+| `islands/chunk-4yjkjcsw.js` | 457 B | 337 B |
 | `islands/chunk-5jj8gvrb.js` | 4202 B | 1663 B |
 | `islands/chunk-62pseks6.js` | 2389 B | 1091 B |
 | `islands/chunk-6hpy49c7.js` | 2389 B | 1090 B |
 | `islands/chunk-7hd5hyae.js` | 4217 B | 1668 B |
+| `islands/chunk-b89f6fe5.js` | 2389 B | 1091 B |
 | `islands/chunk-bby4jdxx.js` | 2389 B | 1090 B |
 | `islands/chunk-eta5hdyx.js` | 47253 B | 17205 B |
 | `islands/chunk-mfanct0a.js` | 457 B | 339 B |
 | `islands/chunk-ntmwg5t6.js` | 46299 B | 16855 B |
 | `islands/chunk-q9fcdvs6.js` | 44719 B | 16254 B |
+| `islands/chunk-rdmjcjxg.js` | 47253 B | 17204 B |
 | `islands/chunk-rypg0waw.js` | 457 B | 338 B |
 | `islands/chunk-t9w8jnxh.js` | 2389 B | 1093 B |
 | `islands/chunk-wbnraxp5.js` | 2389 B | 1090 B |
@@ -32,18 +35,22 @@
 | `islands/code-block-DKWFvIOUEoTo.js` | 5679 B | 2578 B |
 | `islands/code-block-Uh9Llk9bsqVz.js` | 5679 B | 2578 B |
 | `islands/code-block-gvn4P87JWQab.js` | 5679 B | 2579 B |
+| `islands/code-block-kYFAkkmXDj8I.js` | 5679 B | 2579 B |
 | `islands/mobile-nav-button--ri_z_UOxrEL.js` | 2638 B | 1252 B |
 | `islands/mobile-nav-button-33NHtinYYQsT.js` | 2638 B | 1253 B |
+| `islands/mobile-nav-button-6hCpEw5b2MXt.js` | 2638 B | 1252 B |
 | `islands/mobile-nav-button-BZOkjDYbez7J.js` | 2638 B | 1252 B |
 | `islands/mobile-nav-button-cVMPJC2FV0iy.js` | 2638 B | 1252 B |
 | `islands/mobile-nav-button-vyzx4EDZMTgf.js` | 2638 B | 1255 B |
 | `islands/mobile-nav-drawer-7Wpwb3327o7o.js` | 4276 B | 2003 B |
 | `islands/mobile-nav-drawer-AqjYg_fPPW1s.js` | 4276 B | 2003 B |
+| `islands/mobile-nav-drawer-S_k-ylG-Xw9c.js` | 4276 B | 2003 B |
 | `islands/mobile-nav-drawer-UrhF95a0ofRk.js` | 4276 B | 2003 B |
 | `islands/mobile-nav-drawer-bfXsRngxX-zX.js` | 4276 B | 2004 B |
 | `islands/mobile-nav-drawer-fO6lCLo-QTty.js` | 4276 B | 2007 B |
 | `islands/page-nav--brP-Ixq9kiZ.js` | 4249 B | 1862 B |
 | `islands/page-nav-DvUQKgpWWgsr.js` | 4249 B | 1865 B |
+| `islands/page-nav-RroOQBASAHzD.js` | 4249 B | 1863 B |
 | `islands/page-nav-SadCMUJhvsDk.js` | 4249 B | 1863 B |
 | `islands/page-nav-ovdB2TbVBs2-.js` | 4249 B | 1863 B |
 | `islands/page-nav-vBSm7L4CecDe.js` | 4249 B | 1862 B |
@@ -51,17 +58,21 @@
 | `islands/reactivity-demo-50lRyJXLiRew.js` | 5424 B | 2333 B |
 | `islands/reactivity-demo-FPHVKpA2Fdm6.js` | 5424 B | 2332 B |
 | `islands/reactivity-demo-HWKLXbghyD4F.js` | 5424 B | 2332 B |
+| `islands/reactivity-demo-gHbqoAVIn0yG.js` | 5424 B | 2331 B |
 | `islands/reactivity-demo-pNKkwJ95f_dc.js` | 5424 B | 2331 B |
 | `islands/search-palette-19vssGXpQHhy.js` | 2663 B | 1264 B |
+| `islands/search-palette-ADygCKCna_Pi.js` | 2663 B | 1263 B |
 | `islands/search-palette-C6dGwyo0MIhB.js` | 2663 B | 1262 B |
 | `islands/search-palette-RqwLV-L6AUPi.js` | 2663 B | 1262 B |
 | `islands/search-palette-Ub3Ei8p1ofj3.js` | 2663 B | 1261 B |
 | `islands/search-palette-ml9WihVTVOof.js` | 2663 B | 1260 B |
 | `islands/search-trigger-L-JnWyVWmf9C.js` | 3398 B | 1622 B |
+| `islands/search-trigger-_gVgYn92P9I7.js` | 3398 B | 1625 B |
 | `islands/search-trigger-ckyMk-xm8ED6.js` | 3398 B | 1627 B |
 | `islands/search-trigger-mcMlzveQhOka.js` | 3398 B | 1623 B |
 | `islands/search-trigger-rCrT0SYhlogo.js` | 3398 B | 1624 B |
 | `islands/search-trigger-tkUp7zmGTqy-.js` | 3398 B | 1624 B |
+| `islands/sheet-combobox-demo--U3MFjU8HnaS.js` | 31180 B | 10092 B |
 | `islands/sheet-combobox-demo-FohxwATI4myT.js` | 30401 B | 9936 B |
 | `islands/sheet-combobox-demo-OSnQQ4mh219Y.js` | 31180 B | 10091 B |
 | `islands/sheet-combobox-demo-W3SgynfvHa5W.js` | 30401 B | 9937 B |
@@ -71,18 +82,21 @@
 | `islands/sheet-combobox-demo-no7RO97eR69t.js` | 30401 B | 9936 B |
 | `islands/theme-toggle--7ISToNFiUqX.js` | 4058 B | 1867 B |
 | `islands/theme-toggle-AWCPnjl4clbh.js` | 4058 B | 1867 B |
+| `islands/theme-toggle-EQdD_BEKRdbp.js` | 4058 B | 1867 B |
 | `islands/theme-toggle-RQ9ifznEVbaD.js` | 4058 B | 1867 B |
 | `islands/theme-toggle-dG5tFNmCvWLl.js` | 4058 B | 1867 B |
 | `islands/theme-toggle-eT4hQIpvEVy4.js` | 4058 B | 1868 B |
 | `islands/toc-94t-RdHoh0-l.js` | 4229 B | 2100 B |
 | `islands/toc-FbIgzXj6ioLT.js` | 4229 B | 2101 B |
+| `islands/toc-I1T71i6OFTEP.js` | 4229 B | 2100 B |
 | `islands/toc-VVSBPJmdH9aM.js` | 4229 B | 2100 B |
 | `islands/toc-VZiLaLcRdjmE.js` | 4229 B | 2100 B |
 | `islands/toc-YOhoow6Wdz2z.js` | 4229 B | 2100 B |
 | `islands/viewport-demo-NsXNJyETTd-f.js` | 3905 B | 1562 B |
 | `islands/viewport-demo-SWPsd2-8dnJj.js` | 3905 B | 1566 B |
+| `islands/viewport-demo-VsiegRBCcREw.js` | 3905 B | 1563 B |
 | `islands/viewport-demo-WOZpH9-P-iEB.js` | 3905 B | 1562 B |
 | `islands/viewport-demo-lb0BIt-b1jx6.js` | 3905 B | 1564 B |
 | `islands/viewport-demo-wsg7DO9uF1J6.js` | 3905 B | 1564 B |
-| **total (74)** | **668563 B** | **256047 B** |
+| **total (88)** | **790361 B** | **303217 B** |
 

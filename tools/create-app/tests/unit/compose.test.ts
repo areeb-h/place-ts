@@ -256,4 +256,24 @@ describe('applyPatch', () => {
     await applyPatch(target, '@@\n one\n\n+inserted\n two\n', 'feature:test')
     expect(readFileSync(target, 'utf8')).toBe('one\n\ninserted\ntwo\n')
   })
+
+  test('handles CRLF in target file (Windows checkout)', async () => {
+    // Simulate a Windows-side checkout with core.autocrlf=true — every
+    // line ends in \r\n. The patch text is LF (committed in repo). The
+    // applier normalizes for the match + preserves the output's
+    // original ending. Bug fixed in 0.8.5.
+    const target = join(workspace, 'file.txt')
+    writeFileSync(target, 'line one\r\nline two\r\nline three\r\n')
+    await applyPatch(target, '@@\n line one\n+inserted\n line two\n', 'feature:test')
+    expect(readFileSync(target, 'utf8')).toBe('line one\r\ninserted\r\nline two\r\nline three\r\n')
+  })
+
+  test('handles CRLF in patch text', async () => {
+    // Less common but possible — a patch file checked out with CRLF.
+    // Applier normalizes both sides.
+    const target = join(workspace, 'file.txt')
+    writeFileSync(target, 'a\nb\nc\n')
+    await applyPatch(target, '@@\r\n a\r\n+inserted\r\n b\r\n', 'feature:test')
+    expect(readFileSync(target, 'utf8')).toBe('a\ninserted\nb\nc\n')
+  })
 })

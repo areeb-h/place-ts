@@ -270,11 +270,21 @@ function applyUnifiedDiff(
   layerName: string,
   targetPath: string,
 ): string {
-  const origLines = original.split('\n')
+  // Normalize line endings before split. Windows users with
+  // `core.autocrlf=true` get template source files with CRLF — the
+  // patch text in the repo is LF. Without normalization, every patch
+  // hunk's context match fails because origLines end in `\r` while
+  // the patch context lines don't. Output reuses the original's
+  // detected ending so users on Windows still get CRLF on disk.
+  const usedCrlf = original.includes('\r\n')
+  const normOriginal = usedCrlf ? original.replace(/\r\n/g, '\n') : original
+  const normPatch = patchText.includes('\r\n') ? patchText.replace(/\r\n/g, '\n') : patchText
+
+  const origLines = normOriginal.split('\n')
   // Drop the trailing empty entry from `patchText.split('\n')` when
   // the patch ends with `\n`. Otherwise it would be treated as a
   // blank context line and over-eagerly match the next source line.
-  const rawPatchLines = patchText.split('\n')
+  const rawPatchLines = normPatch.split('\n')
   const patchLines =
     rawPatchLines.length > 0 && rawPatchLines[rawPatchLines.length - 1] === ''
       ? rawPatchLines.slice(0, -1)
@@ -370,7 +380,9 @@ function applyUnifiedDiff(
     out.push(origLines[cursor] as string)
     cursor++
   }
-  return out.join('\n')
+  // Restore the original's line-ending convention if we normalized
+  // away from CRLF above.
+  return usedCrlf ? out.join('\r\n') : out.join('\n')
 }
 
 // The "leading anchor" is the leading run of non-add lines — context
