@@ -5,7 +5,9 @@ import { Link, page } from '@place-ts/component'
 import { CodeBlock } from '@place-ts/design'
 import { Callout } from '../../components/callout.tsx'
 
-const SIG = `app(config: AppConfig).run()`
+const SIG = `app(config: AppConfig).start()    // env-aware: serves on bun, static-exports on PLACE_BUILD=dir
+app(config: AppConfig).run()      // always start the server (explicit)
+app(config: AppConfig).build({ outDir })  // always static-export (explicit)`
 
 const FULL = `import { app } from '@place-ts/component/server'
 import { pathRouter, RouterCap } from '@place-ts/routing'
@@ -22,7 +24,7 @@ export default app({
   security: 'standard',
   viewTransitions: true,
   caps: [[RouterCap, pathRouter]],
-}).run()`
+}).start()`
 
 const CAPS_PER_RUNTIME = `caps: [
   [RouterCap, pathRouter],                   // function form (client only)
@@ -55,9 +57,9 @@ const DISCOVER = `// discoverPages(dir) — async helper that imports every *.pa
 // page's page('/path', def) declaration stays the source of truth.
 import { app, discoverPages } from '@place-ts/component/server'
 
-export default app({
+export default await app({
   pages: await discoverPages('./src/pages'),
-}).run()`
+}).start()`
 
 const ROUTES = `// routes(prefix, pages, opts?) — a pure value transform: prefixes
 // every page's path and (optionally) applies a shared layout. Used
@@ -70,7 +72,7 @@ export default routes('/admin', [dashboard, users, settings], {
 })
 
 // app.ts — compose the groups into one app:
-app({ pages: [home, ...adminRoutes, ...postRoutes] }).run()`
+app({ pages: [home, ...adminRoutes, ...postRoutes] }).start()`
 
 export default page('/app', {
   // No `meta:` — auto-title from `<h1><code>app()</code></h1>`.
@@ -80,8 +82,12 @@ export default page('/app', {
         <code>app()</code>
       </h1>
       <p>
-        Declares the application. <code>app()</code> runs only on the server — <code>.run()</code>{' '}
-        installs server-side capabilities and starts <code>Bun.serve</code>. In the islands
+        Declares the application. <code>app()</code> runs only on the server. The recommended entry
+        point is <code>.start()</code> — env-aware: when <code>process.env.PLACE_BUILD</code> is set
+        it static-exports to that directory, otherwise it installs server-side capabilities and
+        starts <code>Bun.serve</code>. One file handles both <code>bun dev</code> and{' '}
+        <code>bun run build</code>. Use the explicit <code>.run()</code> or{' '}
+        <code>.build({'{ outDir }'})</code> entries when you need to force one path. In the islands
         hydration model each interactive island ships and mounts its own client bundle, so there is
         no client-side <code>app</code> entry.
       </p>
@@ -162,17 +168,30 @@ export default page('/app', {
       </h3>
       <p>
         Explicit port, or omit to read <code>process.env.PORT</code>, or fall back to 5174. The
-        client-side <code>.run()</code> ignores this.
+        server auto-walks to the next 9 ports on EADDRINUSE and logs the chosen fallback.
       </p>
 
-      <h2 id="run">
-        <code>.run()</code>
+      <h2 id="start">
+        <code>.start()</code>
       </h2>
       <p>
-        The app entry point. Installs server-side capabilities (the <code>server</code> factories
-        from <code>caps</code>), then starts <code>Bun.serve</code> and returns the{' '}
-        <code>Bun.Server</code> promise. <code>.serve()</code> is the same call, one level lower —
-        both run server-side only and throw if invoked in a browser.
+        The recommended entry point. Reads <code>process.env.PLACE_BUILD</code>:
+      </p>
+      <ul>
+        <li>
+          <strong>Set</strong> (e.g. <code>PLACE_BUILD=dist bun src/app.ts</code>) — static-exports
+          the site to that directory and exits. Same shape as <code>.build({'{ outDir }'})</code>.
+        </li>
+        <li>
+          <strong>Unset</strong> (e.g. <code>bun src/app.ts</code>) — installs server-side
+          capabilities and starts <code>Bun.serve</code>. Same shape as <code>.run()</code>.
+        </li>
+      </ul>
+      <p>
+        Use the explicit lower-level <code>.run()</code> / <code>.serve()</code> /{' '}
+        <code>.build({'{ outDir }'})</code> when you don't want env-driven dispatch.{' '}
+        <code>.serve()</code> is the same as <code>.run()</code> at one level lower. All four
+        entries run server-side only and throw if invoked in a browser.
       </p>
 
       <Callout kind="tip" title="The server entry — islands are the client entries">

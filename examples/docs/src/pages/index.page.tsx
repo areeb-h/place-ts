@@ -186,9 +186,11 @@ export default page('/', {
         </noscript>
         <TypingCode code={APP_SHAPE} filename="src/app.ts" />
         <p class="text-sm text-muted mt-4 max-w-2xl">
-          One config. One <code class={inlineCode}>.run()</code>. The framework handles
-          server/client dispatch, port discovery, cap installation, and bundling. No{' '}
-          <code class={inlineCode}>if (typeof window)</code> branch.
+          One config. One <code class={inlineCode}>.start()</code> — env-aware:{' '}
+          <code class={inlineCode}>PLACE_BUILD=dist</code> static-exports, anything else starts the
+          server. The framework handles port discovery (auto-walks on EADDRINUSE), cap installation,
+          island bundling, and pre-paint theme. No{' '}
+          <code class={inlineCode}>if (typeof window)</code> branch in your code.
         </p>
       </section>
 

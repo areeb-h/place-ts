@@ -338,7 +338,7 @@ import { styles as appStyles } from './styles.ts'
 app({
   pages: [...],
   styles: [designStyles, appStyles],
-}).run()`
+}).start()`
 
 export default page('/design', {
   // String shorthand — h1 says `@place-ts/design` but title reads better as

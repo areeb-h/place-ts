@@ -26,7 +26,7 @@ import { app } from '@place-ts/component/server'
 app({
   pages: [...],
   secret: process.env.PLACE_SECRET!,   // 32+ bytes, e.g. base64url(crypto.randomBytes(32))
-}).run()
+}).start()
 
 // The framework throws at app-config time if any criticalAction() is
 // registered without a SessionCap install. Critical actions REQUIRE

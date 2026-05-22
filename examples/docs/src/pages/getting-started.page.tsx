@@ -107,7 +107,7 @@ const INSTALL_CAP = `app({
       client: () => localStorageStore(),  // hydrates to real data
     }],
   ],
-}).run()`
+}).start()`
 
 export default page('/getting-started', {
   // No `meta:` — auto-title from `<h1>Getting started</h1>`.
@@ -147,6 +147,14 @@ export default page('/getting-started', {
         Want to dial back log noise? Set <code>PLACE_LOG_LEVEL=warn</code>. Want more? Set{' '}
         <code>PLACE_LOG_LEVEL=debug</code> — surfaces static-asset requests, per-route table, the
         view-classifier report.
+      </p>
+      <p>
+        The <code>theme-toggle</code> feature (default-on in every template) drops a working System
+        · Light · Dark picker into the header — it's a single <code>&lt;ThemeToggle /&gt;</code>{' '}
+        from <code>@place-ts/design</code>. Want to customize it? Tweak props (
+        <code>variant="cycle"</code>, custom labels/icons), drop one tier to <code>useTheme()</code>{' '}
+        for BYO UI, or replace it entirely with <code>setTheme('dark')</code> calls. See{' '}
+        <Link to="/recipes/theming">Theming &amp; dark mode</Link> for the four-tier ladder.
       </p>
 
       <h2>2. Add a page</h2>

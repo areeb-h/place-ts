@@ -28,7 +28,7 @@ const INSTALL = `app({
       client: () => localStorageNoteStore(),         // real persistence
     }],
   ],
-}).run()`
+}).start()`
 
 const USE = `const NotesList = component(() => {
   const store = NoteStoreCap.use()  // fully typed; throws if unwired

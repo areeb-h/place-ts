@@ -21,7 +21,7 @@ import post from './pages/post.page'
 app({
   pages: [home, post, archive],  // explicit array, in any order
   /* ... */
-}).run()`
+}).start()`
 
 const LINK = `import postPage from './pages/post.page'
 

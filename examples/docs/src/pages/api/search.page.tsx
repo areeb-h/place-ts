@@ -50,6 +50,35 @@ const results = searchable(
 // Render — recomputes when notes change or the query changes:
 <ul>{() => results().map((n) => <li>{n.title}</li>)}</ul>`
 
+const RANK = `// rank — sort matches by descending score (0.2.0).
+// Optional. When omitted, matches return in insertion order.
+//
+// The callback receives the item plus the already-tokenized query
+// (lowercased + whitespace-split — same tokens the filter used).
+// Return higher = more relevant. Pure: stay deterministic, otherwise
+// reactivity fires unpredictably.
+
+import { searchable } from '@place-ts/search'
+
+const filtered = searchable(items, {
+  fields: (n) => [n.title, n.content],
+  rank: (n, tokens) => {
+    const title = n.title.toLowerCase()
+    let score = 0
+    for (const t of tokens) {
+      if (title === t)               score += 100  // exact title match
+      else if (title.startsWith(t))  score +=  20  // title prefix
+      else if (title.includes(t))    score +=   5  // title substring
+      // body matches score 0 — only title wins ordering
+    }
+    return score
+  },
+})
+
+// Tie-break is the underlying .sort()'s stability (modern runtimes):
+// equal-scored items keep insertion order. Items that don't pass the
+// substring filter are never rank()'d — filter runs first.`
+
 export default page('/search', {
   meta: '@place-ts/search',
   view: () => (
@@ -67,8 +96,9 @@ export default page('/search', {
       <Callout kind="note" title="Search is a separate concern">
         Storage interfaces don't get a baked-in <code>search</code> method — that would lock every
         future store into re-implementing the same filter. <code>searchable()</code> stays a
-        standalone primitive that works over any reactive list. Ranking, fuzzy match, and inverted
-        indexes are deferred until a real workload demands them.
+        standalone primitive that works over any reactive list. Fuzzy match and inverted indexes are
+        deferred until a real workload demands them; ranking is opt-in via the <code>rank</code>{' '}
+        callback (0.2.0).
       </Callout>
 
       <h2 id="searchable">
@@ -99,6 +129,19 @@ export default page('/search', {
         — pass the collection's <code>all()</code> as the reactive items source.
       </p>
       <CodeBlock code={COLLECTION} />
+
+      <h2 id="rank">
+        Ranking — <code>rank(item, tokens)</code>
+      </h2>
+      <p>
+        Pass <code>rank</code> to sort matches by descending score. The callback receives the item
+        plus the already-tokenized query (lowercased + whitespace-split — the same tokens the filter
+        used); return a higher number for more-relevant items. Composable: write whatever scoring
+        fits your domain — exact-match boost, field-weight (title &gt; body), token-frequency,
+        position-in-field. The framework doesn't pick a default; ranking is opinionated and
+        domain-specific. Without <code>rank</code>, results return in insertion order (back-compat).
+      </p>
+      <CodeBlock code={RANK} />
 
       <h2 id="see-also">See also</h2>
       <ul>

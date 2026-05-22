@@ -9,7 +9,7 @@ import { Callout } from '../../components/callout.tsx'
 const PRESET = `app({
   pages: [...],
   security: 'standard',  // 'standard' | 'strict' | 'off' | { ...custom }
-}).run()`
+}).start()`
 
 const STANDARD = `// security: 'standard' enables:
 //   - Content-Security-Policy (strict, no inline scripts/styles)
@@ -83,7 +83,7 @@ app({
     preset: 'standard',
     sameOrigin: ['https://app.example.com', 'https://staging.example.com'],
   },
-}).run()`
+}).start()`
 
 const HIGH_ASSURANCE = `// criticalAction() — the high-assurance sibling of action(). Same
 // author shape; every request is verified against an HMAC envelope

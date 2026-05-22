@@ -73,15 +73,25 @@ import { tokens } from './theme.ts'
 app({
   pages: [...],
   theme: tokens,
-}).run()`
+}).start()`
 
 const EARLY_SCRIPT = `// You write nothing for no-flash theme persistence — when \`theme\`
 // is passed to app(), the framework injects themeEarlyScript()
 // into every page's <head> automatically. It runs BEFORE <body>
-// parses: reads the theme cookie, applies the matching theme-*
-// class (or none, for 'system'), mirrors the choice onto
-// <html data-place-theme="…">. Works on a live server AND on a
-// static export from app().build().
+// parses:
+//
+//   - reads the place-theme cookie
+//   - explicit mode (light/dark/...) → adds the theme-* class
+//   - 'system' or no cookie  → NO class on <html>; @media drives
+//   - mirrors the choice onto <html data-place-theme="…">
+//   - stashes { names, classes, cookieName } on window.__placeTheme
+//     so useTheme() and setTheme(name) work without importing tokens
+//
+// As of 0.10.1, SSR also ships no theme class for absent / 'system'
+// cookies — so the @media bindings drive from first paint. Zero
+// flicker on hard refresh, no class-swap window.
+//
+// Works on a live server AND on a static export from app().build().
 
 // Calling it by hand is only needed if you're not using app({theme}):
 import { themeEarlyScript } from '@place-ts/component'

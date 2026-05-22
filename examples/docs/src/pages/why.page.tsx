@@ -250,8 +250,9 @@ export default page('/why', {
       <h2 id="when-not-to">When not to pick place</h2>
       <ul>
         <li>
-          You already ship on Vercel's edge runtime and want native integration. place runs on Bun;
-          adapters for other runtimes are in the roadmap, not shipped.
+          You need Node-specific integrations. place runs on Bun; the first-party adapters ship for
+          Cloudflare Workers, Vercel Build Output, and Deno Deploy via{' '}
+          <code>createFetchHandler()</code>, but pure-Node compatibility is best-effort.
         </li>
         <li>
           You have a large React codebase with deep React-specific patterns. place uses a different

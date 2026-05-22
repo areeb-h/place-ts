@@ -49,6 +49,49 @@ const notes = collection<Note>(noteState)
 // Every add / update / remove now persists automatically — the
 // collection mutates the state, persistedState's watch saves it.`
 
+const TRASH = `// Soft delete (0.2.0). trash(key) marks an item as trashed without
+// removing it from the underlying array; restore(key) un-marks. The
+// reactive trash set is its own state cell, so all() / get() / cursor()
+// re-evaluate when an item goes in or out of trash.
+
+c.trash('a')             // mark 'a' as trashed (no-op if absent / already trashed)
+c.restore('a')           // un-mark
+c.trashedKeys()          // → readonly string[]  — reactive list of trashed keys
+
+// Default reads filter out trashed items:
+c.all()                  // → all non-trashed
+c.get('a')               // → null if 'a' is trashed
+c.cursor()               // → only non-trashed items
+
+// Opt-in: include trash in a one-off read (useful for "trash bin" UI).
+c.all({ includeTrash: true })          // → everything, including trashed
+c.get('a', { includeTrash: true })     // → item even if trashed`
+
+const CURSOR = `// Cursor-based pagination (0.2.0). Returns { items, next } where
+// 'next' is the key to pass back for the next page (or null if the
+// current page is the last). Stable under inserts: if items are added
+// AFTER your current page boundary, they appear on later cursor()
+// calls; if added BEFORE, they don't shift your existing pages.
+//
+// Cursor pagination is the right shape over offset-based for reactive
+// collections because the item set can change between page requests.
+// Stale 'after' keys (item deleted since the previous call) are
+// gracefully handled — the framework falls back to the position-based
+// equivalent so you don't get a 500 on a stale handle.
+
+const page1 = c.cursor({ limit: 20 })
+//  page1.items: readonly T[]    — at most 20 items
+//  page1.next:  string | null   — pass to load the next page
+
+const page2 = c.cursor({ after: page1.next ?? undefined, limit: 20 })
+const page3 = c.cursor({ after: page2.next ?? undefined, limit: 20 })
+
+// Reactive: cursor() re-evaluates when the underlying state changes,
+// so deletions, additions, and trash flips all flow through.
+
+// includeTrash: defaults to false (matches all() / get()).
+c.cursor({ limit: 50, includeTrash: true })`
+
 export default page('/data', {
   meta: '@place-ts/data',
   view: () => (
@@ -100,6 +143,31 @@ export default page('/data', {
         <code>persistedState</code> makes every mutation durable — no special integration.
       </p>
       <CodeBlock code={COMPOSE} />
+
+      <h2 id="trash">
+        Soft delete — <code>trash</code> / <code>restore</code> (0.2.0)
+      </h2>
+      <p>
+        <code>trash(key)</code> marks an item as trashed without removing it from the underlying
+        array; <code>restore(key)</code> un-marks it. The reactive trash set lives in its own state
+        cell, so <code>all()</code> / <code>get()</code> / <code>cursor()</code> re-evaluate when an
+        item flips in or out of trash. Default reads filter trashed items out; pass{' '}
+        <code>{`{ includeTrash: true }`}</code> for "trash bin" UI.
+      </p>
+      <CodeBlock code={TRASH} />
+
+      <h2 id="cursor">
+        Cursor-based pagination — <code>cursor()</code> (0.2.0)
+      </h2>
+      <p>
+        Returns <code>{`{ items, next }`}</code> where <code>next</code> is the key to pass back for
+        the following page (or <code>null</code> if the current page is the last). Stable under
+        inserts: items added <em>after</em> the current page boundary appear on later{' '}
+        <code>cursor()</code> calls; items added <em>before</em> don't shift your existing pages.
+        Reactive — re-evaluates when the underlying state changes. Stale <code>after</code> keys
+        (item deleted since the previous call) gracefully fall back to position-based equivalence.
+      </p>
+      <CodeBlock code={CURSOR} />
 
       <h2 id="see-also">See also</h2>
       <ul>
