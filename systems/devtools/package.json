@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/devtools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "In-app developer tools — a dev-only island that observes the reactive graph, islands, routing, and load performance. NOT a platform system; a curated dev package.",
   "keywords": [

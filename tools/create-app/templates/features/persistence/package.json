@@ -1,6 +1,6 @@
 {
   "name": "__APP_NAME__",
   "dependencies": {
-    "@place-ts/persistence": "^0.1.0"
+    "@place-ts/persistence": "^0.1.1"
   }
 }

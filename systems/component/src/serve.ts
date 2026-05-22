@@ -2671,8 +2671,21 @@ async function runDevSupervisor(): Promise<never> {
     },
   )
 
+  // Resolve the entry path + cwd ONCE up-front, then reuse across
+  // every respawn. Users reported `Module not found "<absolute path>"`
+  // crashes on the second restart in some setups — `Bun.main` returned
+  // a path that became invalid in the subprocess's resolver context.
+  // Capturing the absolute path + cwd explicitly removes that
+  // ambiguity (and lets the spawn use the same cwd as the supervisor
+  // even if the child happens to chdir before exit).
+  const supervisorCwd = process.cwd()
+  const { resolve: pathResolve, isAbsolute: pathIsAbsolute } =
+    require('node:path') as typeof import('node:path')
+  const entryPath = pathIsAbsolute(Bun.main) ? Bun.main : pathResolve(supervisorCwd, Bun.main)
+
   while (true) {
-    child = Bun.spawn(['bun', Bun.main], {
+    child = Bun.spawn(['bun', entryPath], {
+      cwd: supervisorCwd,
       env: { ...process.env, __PLACE_DEV_CHILD: '1' },
       // Inherit stdio so the child's banner/logs/errors flow to the
       // user's terminal as if it were running directly.

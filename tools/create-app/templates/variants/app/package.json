@@ -1,7 +1,7 @@
 {
   "name": "__APP_NAME__",
   "dependencies": {
-    "@place-ts/design": "^0.3.0",
+    "@place-ts/design": "^0.3.1",
     "@place-ts/reactivity": "^0.1.0"
   }
 }

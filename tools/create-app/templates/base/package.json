@@ -10,14 +10,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@place-ts/component": "^0.10.1",
-    "@place-ts/routing": "^0.1.0",
+    "@place-ts/component": "^0.10.2",
+    "@place-ts/routing": "^0.1.1",
     "@tailwindcss/node": "^4.2.4",
     "@tailwindcss/oxide": "^4.2.4",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
-    "@place-ts/devtools": "^0.1.0",
+    "@place-ts/devtools": "^0.1.1",
     "@types/bun": "latest"
   }
 }
