@@ -65,6 +65,15 @@ export const PLACE_AUTO_IMPORTS: AutoImportRegistry = {
   // them would silently shadow user code.
   Link: '@place-ts/component',
   Form: '@place-ts/component',
+  For: '@place-ts/component',
+  // ----- Input + URL bindings -----
+  // Two-way binding helpers — the framework's right answer to
+  // controlled inputs without ceremony. Auto-imported so apps don't
+  // have to discover them. `wire` is uncommon as a local name; the
+  // small false-positive risk is documented + remediable via explicit
+  // import.
+  wire: '@place-ts/component',
+  urlState: '@place-ts/component',
   // ----- Theme -----
   setTheme: '@place-ts/component',
   themeTokens: '@place-ts/component',

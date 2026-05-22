@@ -24,6 +24,7 @@ import type {
   cookie as _cookie,
   cookieState as _cookieState,
   derived as _derived,
+  For as _For,
   Form as _Form,
   Fragment as _Fragment,
   island as _island,
@@ -38,8 +39,10 @@ import type {
   tabsState as _tabsState,
   themeTokens as _themeTokens,
   untrack as _untrack,
+  urlState as _urlState,
   view as _view,
   watch as _watch,
+  wire as _wire,
 } from './index.ts'
 
 declare global {
@@ -75,4 +78,8 @@ declare global {
   // ----- JSX helpers (capitalized names; safe from local shadowing) -----
   const Link: typeof _Link
   const Form: typeof _Form
+  const For: typeof _For
+  // ----- Input + URL bindings -----
+  const wire: typeof _wire
+  const urlState: typeof _urlState
 }
