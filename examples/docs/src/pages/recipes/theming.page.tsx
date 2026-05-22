@@ -89,38 +89,62 @@ import { tokens } from './theme.ts'
 
 const earlyJs = themeEarlyScript(tokens)  // raw JS statement string`
 
-const SWITCH = `// theme-toggle.tsx — flip the theme. setTheme(tokens, name)
-// strips every theme-* class, adds the chosen one, mirrors it to
-// <html data-place-theme>, and writes the cookie — all in one tick.
+const SWITCH = `// theme-toggle.tsx — three-state segmented control (System / Light /
+// Dark). The canonical pattern, shipped in the create-app
+// \`theme-toggle\` feature pack. \`setTheme(tokens, name)\` strips every
+// theme-* class, adds the chosen one (or none for 'system'), mirrors
+// the choice onto <html data-place-theme>, and writes the cookie —
+// all in one tick.
 //
-// Signature: setTheme(tokens, theme, options?)
-//   - \`tokens\`: the theme()/themeTokens() result
-//   - \`theme\`: a mode name OR the special string 'system'
-//   - \`options?\`: { cookieName? }
-//
-// There is no \`activeTheme\` export — read the current choice off
-// <html data-place-theme> (the early script + setTheme keep it
-// current) or track your own state cell.
+// Initial state is read from <html data-place-theme>, which the
+// early-paint script sets pre-paint. On a fresh visit with no cookie,
+// the early script defaults to 'system' — no theme class on root, so
+// the stylesheet's @media (prefers-color-scheme) bindings drive
+// appearance from the OS preference with zero JS required.
 
 import { setTheme } from '@place-ts/component'
 import { tokens } from './theme.ts'
 
-export const ThemeToggle = component(() => {
-  const current = () =>
-    document.documentElement.dataset['placeTheme'] ?? tokens.default
+type Choice = 'system' | 'light' | 'dark'
+
+const CHOICES: ReadonlyArray<{ value: Choice; label: string; symbol: string }> = [
+  { value: 'system', label: 'System theme', symbol: '◑' },
+  { value: 'light',  label: 'Light theme',  symbol: '☀' },
+  { value: 'dark',   label: 'Dark theme',   symbol: '☾' },
+]
+
+const readInitial = (): Choice => {
+  if (typeof document === 'undefined') return 'system'
+  const v = document.documentElement.dataset['placeTheme']
+  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+}
+
+export default island(() => {
+  const choice = state<Choice>(readInitial())
+  const pick = (next: Choice) => {
+    choice.set(next)
+    setTheme(tokens, next)
+  }
   return (
-    <button
-      aria-label="Toggle theme"
-      onClick={() => setTheme(tokens, current() === 'dark' ? 'light' : 'dark')}
-    >
-      {() => (current() === 'dark' ? '☾' : '☀')}
-    </button>
+    <fieldset class="inline-flex items-center gap-0.5 rounded-md border border-border bg-card/60 p-0.5">
+      <legend class="sr-only">Theme</legend>
+      {CHOICES.map((c) => (
+        <button
+          type="button"
+          aria-label={c.label}
+          aria-pressed={() => (choice() === c.value ? 'true' : 'false')}
+          onClick={() => pick(c.value)}
+        >
+          <span aria-hidden="true">{c.symbol}</span>
+        </button>
+      ))}
+    </fieldset>
   )
 })
 
-// 'system' clears every theme class so the stylesheet's
-// prefers-color-scheme bindings drive appearance from the OS:
-<button onClick={() => setTheme(tokens, 'system')}>Match system</button>`
+// Or, for a minimal cycle-button: setTheme(tokens, next) where \`next\`
+// is whichever value you want. 'system' clears every theme class so
+// the stylesheet's prefers-color-scheme bindings take over.`
 
 const USE_IN_COMPONENTS = `// Use semantic Tailwind classes — they're bound to the CSS
 // variables the theme emits. Theme switching is invisible to
@@ -259,7 +283,20 @@ export default page('/theming', {
         class so the OS preference drives appearance). There is no <code>activeTheme</code> export —
         read the current choice off <code>&lt;html data-place-theme&gt;</code>.
       </p>
+      <p>
+        The canonical pattern is a three-state segmented control (System · Light · Dark). The
+        <code>create-app</code> scaffolder ships exactly this shape in its <code>theme-toggle</code>{' '}
+        feature pack — fresh scaffolds get a working toggle out of the box.
+      </p>
       <CodeBlock code={SWITCH} />
+
+      <Callout kind="note" title="System is the implicit default">
+        On a fresh visit (no <code>place-theme</code> cookie), the early-paint script applies the
+        literal value <code>'system'</code> — no theme class on <code>&lt;html&gt;</code>. The
+        stylesheet's <code>@media (prefers-color-scheme: …)</code> bindings then drive appearance
+        from the OS preference, with zero JS. Users only see your configured <code>default</code>{' '}
+        mode if they explicitly pick it from the toggle.
+      </Callout>
 
       <h2>6. Use in components</h2>
       <CodeBlock code={USE_IN_COMPONENTS} />

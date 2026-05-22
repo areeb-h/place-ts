@@ -7,10 +7,29 @@ import { CodeBlock } from '@place-ts/design'
 
 const INSTALL_BUN = `curl -fsSL https://bun.sh/install | bash`
 
-const SCAFFOLD = `bunx @place-ts/create-app my-app
+const SCAFFOLD = `# Interactive (recommended): pick template + features in the prompt
+bunx @place-ts/create-app my-app
+
+# Or skip prompts with flags:
+bunx @place-ts/create-app my-app --template content --with tests
+bunx @place-ts/create-app . --template app --with tests --with ci
+bunx @place-ts/create-app --list                    # show templates + features
+
+# After scaffold:
 cd my-app
-bun install
-bun run dev`
+bun dev                                              # port 5174 (auto-walks if busy)`
+
+const TEMPLATES = `Templates:
+  minimal     barebones — home + about pages, your design system
+  content     blog · docs · wiki — @place-ts/data posts + @place-ts/search palette
+  app         interactive SaaS — @place-ts/persistence + design system
+
+Features (combine freely with any template):
+  theme-toggle    System · Light · Dark segmented control (default ON)
+  tests           vitest + sample test
+  ci              GitHub Actions workflow
+  design-system   @place-ts/design imports
+  persistence     @place-ts/persistence localStorage adapter`
 
 const ADD_PAGE = `// src/pages/about.page.tsx
 import { page } from '@place-ts/component'
@@ -106,12 +125,28 @@ export default page('/getting-started', {
       <h2>1. Install</h2>
       <p>place runs on Bun. If you don't have it yet:</p>
       <CodeBlock code={INSTALL_BUN} lang="bash" />
-      <p>Then scaffold a fresh app:</p>
+      <p>
+        Then scaffold a fresh app. The scaffolder is interactive by default — pick a template
+        (minimal / content / app), then check the features you want — but every choice is also
+        exposed as a flag so CI and one-liners work cleanly.
+      </p>
       <CodeBlock code={SCAFFOLD} lang="bash" />
       <p>
-        The dev server starts on <code>localhost:5174</code> with hot-reload, source-map error
-        overlay, and auto-Tailwind. No <code>vite.config.ts</code>, no <code>next.config.js</code>,
-        no <code>tsup</code>.
+        Templates and features are composable: layer any feature on any template. The picker shows
+        each template's default-on features as pre-checked so most users press enter through it.
+      </p>
+      <CodeBlock code={TEMPLATES} lang="text" />
+      <p>
+        After scaffolding, <code>bun dev</code> starts the server on <code>localhost:5174</code>{' '}
+        with hot-reload, source-map error overlay, and auto-Tailwind. The framework auto-walks ports
+        if 5174 is busy — no setup, no config files. <code>bun run build</code> pre-renders the app
+        to <code>dist/</code> as a static site with hashed assets and a Cloudflare-shape{' '}
+        <code>_headers</code> file ready to deploy.
+      </p>
+      <p>
+        Want to dial back log noise? Set <code>PLACE_LOG_LEVEL=warn</code>. Want more? Set{' '}
+        <code>PLACE_LOG_LEVEL=debug</code> — surfaces static-asset requests, per-route table, the
+        view-classifier report.
       </p>
 
       <h2>2. Add a page</h2>

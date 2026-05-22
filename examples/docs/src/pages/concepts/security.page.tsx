@@ -249,6 +249,129 @@ export default page('/security', {
         for the full surface; ADR 0055 has the threat model + standards mapping.
       </p>
 
+      <h2>Compared to other frameworks</h2>
+      <p>
+        Honest table — what place ships out of the box vs Next.js, SvelteKit, Astro, and Remix. The
+        comparison is "default behaviour" (what you get with a fresh scaffold) not "what's possible
+        with a third-party library and some glue."
+      </p>
+      <div class="not-prose overflow-x-auto">
+        <table class="w-full text-sm font-mono text-fg border border-border">
+          <thead class="bg-card text-left text-muted">
+            <tr>
+              <th class="px-3 py-2 font-medium border-b border-border">Feature</th>
+              <th class="px-3 py-2 font-medium border-b border-border">place</th>
+              <th class="px-3 py-2 font-medium border-b border-border">Next.js</th>
+              <th class="px-3 py-2 font-medium border-b border-border">SvelteKit</th>
+              <th class="px-3 py-2 font-medium border-b border-border">Astro</th>
+              <th class="px-3 py-2 font-medium border-b border-border">Remix</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">CSP out of the box</td>
+              <td class="px-3 py-2 text-accent">strict, per-request nonce</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">built-in (nonce)</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">CSRF auto-enabled</td>
+              <td class="px-3 py-2 text-accent">same-origin always; tokens opt-in</td>
+              <td class="px-3 py-2 text-muted">SameSite + manual</td>
+              <td class="px-3 py-2 text-muted">
+                <code>csurf</code> pkg
+              </td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">session-based</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Prototype-pollution guard</td>
+              <td class="px-3 py-2 text-accent">action boundary</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Body-size limit on mutations</td>
+              <td class="px-3 py-2 text-accent">1 MB (standard) / 256 kB (strict)</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Permissions-Policy (deny-all)</td>
+              <td class="px-3 py-2 text-accent">17 features blocked</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+              <td class="px-3 py-2 text-muted">manual</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Secure cookie defaults</td>
+              <td class="px-3 py-2 text-accent">HttpOnly · Secure · Lax</td>
+              <td class="px-3 py-2 text-muted">partial</td>
+              <td class="px-3 py-2 text-muted">partial</td>
+              <td class="px-3 py-2 text-muted">partial</td>
+              <td class="px-3 py-2 text-accent">HttpOnly · Secure · Lax</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">HMAC-signed action envelopes</td>
+              <td class="px-3 py-2 text-accent">
+                <code>criticalAction()</code>
+              </td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Macaroon bearer tokens</td>
+              <td class="px-3 py-2 text-accent">yes, attenuating caveats</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Append-only audit log (Phase 4)</td>
+              <td class="px-3 py-2 text-accent">tamper-evident, hash-chained</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+            </tr>
+            <tr class="border-b border-border/60">
+              <td class="px-3 py-2">Rate limiting (in-memory)</td>
+              <td class="px-3 py-2 text-accent">primitive ships</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+            </tr>
+            <tr>
+              <td class="px-3 py-2">IP-based bot detection / DDoS</td>
+              <td class="px-3 py-2 text-muted">no — deploy layer</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+              <td class="px-3 py-2 text-muted">no</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <Callout kind="note" title="Honest scope: what's NOT in the framework">
+        place doesn't try to be a bot-mitigation product. There's no per-IP rate limiting, no
+        Cloudflare-grade DDoS layer, no managed secret rotation, no SQL injection wrapper (delegated
+        to <code>bun:sqlite</code>'s <code>.prepare()</code>). Those are deployment / vendor
+        responsibilities; the framework provides honest primitives (signed tokens, audit log,
+        rate-limit token bucket, capability scopes) that compose with whatever you put in front.
+      </Callout>
+
       <h2>Related</h2>
       <ul>
         <li>
