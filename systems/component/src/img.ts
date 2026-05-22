@@ -460,23 +460,107 @@ export interface ImageBackend {
 }
 
 /**
- * Stub backend that throws on first use with a "install sharp" message.
- * Ship this as the named-export `sharpBackend` so apps can write
- * `optimizer: contentHashedOptimizer(sharpBackend())` and discover at
- * startup that they need to add the dep — better than a runtime 500.
+ * sharp-backed image resize. Pair with `contentHashedOptimizer` for
+ * the production setup:
  *
- * Real sharp wiring is deferred (see roadmap: image optimizer backend).
- * The interface above ships now so consumers can wire their own.
+ *   import { sharpBackend, contentHashedOptimizer, imageRoute } from
+ *     '@place-ts/component'
+ *   const optimizer = contentHashedOptimizer(sharpBackend(), { cache })
+ *   const route = imageRoute({ optimizer, cache })
+ *
+ * **Optional peer dep**. `sharp` is NOT pre-installed by the framework
+ * — apps that use image optimization add it themselves
+ * (`bun add sharp`). The lazy import below throws a clear actionable
+ * error if the dep is missing instead of an opaque module-not-found.
+ *
+ * **Format support**: webp, avif, jpeg, png. AVIF encode is ~5-10x
+ * slower than WebP — fine for build-time pre-warming, expensive for
+ * request-time generation. Per-request AVIF is gated behind the
+ * `<picture>` `<source type="image/avif">` fallback in markup, so
+ * browsers that prefer it negotiate; others get webp.
+ *
+ * **Quality defaults**: 75. Override per request via `opts.quality`.
+ * Applies to lossy formats (webp/avif/jpeg); ignored for png.
+ *
+ * **Width-only resize**: sharp's `resize({ width })` preserves aspect
+ * ratio. Height is computed from the source's aspect; the markup's
+ * `width`/`height` props are then accurate for the rendered variant.
+ *
+ * **Bun + Node**: sharp ships with native libvips bindings for both;
+ * the lazy import resolves to the runtime's native binary.
  */
-export function sharpBackend(): ImageBackend {
-  return {
-    async resize() {
-      throw new Error(
-        'sharpBackend(): the sharp-backed image resize implementation has not yet shipped. ' +
-          'Track the roadmap entry "Image optimizer backend (sharp)" or supply your own ' +
-          'ImageBackend ({ resize(input, opts) }) and pass it through ' +
-          'contentHashedOptimizer().',
+export function sharpBackend(opts: { defaultQuality?: number } = {}): ImageBackend {
+  const defaultQuality = opts.defaultQuality ?? 75
+  // biome-ignore lint/suspicious/noExplicitAny: sharp's typed default-export shape
+  let sharpModulePromise: Promise<any> | null = null
+  const loadSharp = (): Promise<unknown> => {
+    if (sharpModulePromise === null) {
+      // Dynamic specifier kept opaque to TS — `sharp` is an optional
+      // peer dep, so the type-checker shouldn't fail when the package
+      // isn't installed at this repo. The import resolves at runtime
+      // when an app that DOES have sharp invokes the backend.
+      const sharpSpecifier = 'sharp'
+      sharpModulePromise = import(sharpSpecifier).then(
+        // biome-ignore lint/suspicious/noExplicitAny: sharp's runtime shape — types resolve in consumer apps
+        (mod: any) => mod.default ?? mod,
+        (err) => {
+          throw new Error(
+            "sharpBackend(): can't load 'sharp'. Install it as a dependency: " +
+              "`bun add sharp` (or `npm install sharp`). It's a native module that " +
+              'ships libvips bindings for the resize/encode work.\n' +
+              `Underlying import error: ${(err as Error).message}`,
+          )
+        },
       )
+    }
+    return sharpModulePromise
+  }
+  return {
+    async resize(input, resizeOpts) {
+      // biome-ignore lint/suspicious/noExplicitAny: sharp's typed shape
+      const sharp = (await loadSharp()) as any
+      // sharp() accepts Uint8Array directly. Width-only resize
+      // preserves aspect ratio. `withoutEnlargement` so a small
+      // source isn't upscaled (a 200px source for `width: 800` stays
+      // 200px — the browser scales down via the rendered <img>'s
+      // CSS sizing, no quality loss from blurry upscaling).
+      const pipeline = sharp(input).resize({
+        width: resizeOpts.width,
+        withoutEnlargement: true,
+      })
+      const quality = resizeOpts.quality ?? defaultQuality
+      let outBuffer: Buffer
+      switch (resizeOpts.format) {
+        case 'webp':
+          outBuffer = await pipeline.webp({ quality }).toBuffer()
+          break
+        case 'avif':
+          outBuffer = await pipeline.avif({ quality }).toBuffer()
+          break
+        case 'jpeg':
+          // mozjpeg encoder when available — significantly smaller
+          // than the default jpeg encoder at the same quality. sharp
+          // builds with mozjpeg on Linux + macOS; gracefully falls
+          // back if not present.
+          outBuffer = await pipeline.jpeg({ quality, mozjpeg: true }).toBuffer()
+          break
+        case 'png':
+          // PNG is lossless; quality maps to compression effort
+          // (0=fastest/largest, 9=slowest/smallest). 75 → 7-ish.
+          outBuffer = await pipeline
+            .png({ compressionLevel: Math.min(9, Math.max(0, Math.round(quality / 11))) })
+            .toBuffer()
+          break
+        case 'original':
+          // Defensive: contentHashedOptimizer handles 'original' by
+          // skipping the resize entirely, so this branch shouldn't
+          // fire. Pass through unchanged just in case.
+          outBuffer = await pipeline.toBuffer()
+          break
+      }
+      // Convert Node Buffer → Uint8Array view. Both reference the
+      // same underlying memory; no copy.
+      return new Uint8Array(outBuffer.buffer, outBuffer.byteOffset, outBuffer.byteLength)
     },
   }
 }

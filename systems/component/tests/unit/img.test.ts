@@ -364,11 +364,22 @@ describe('ImageBackend + contentHashedOptimizer — resize-only contract with co
   })
 })
 
-describe('sharpBackend — interface stub', () => {
-  test('throws a clear "install sharp" error on first use', async () => {
+describe('sharpBackend — real impl (0.9.0)', () => {
+  test('throws a clear "install sharp" error when the dep is missing', async () => {
+    // The framework declares `sharp` as an optional peer dep. When
+    // it's not installed (e.g. in this monorepo's test environment),
+    // sharpBackend() should fail fast with an actionable message that
+    // points at `bun add sharp` — not an opaque module-not-found.
     const backend = sharpBackend()
     await expect(backend.resize(new Uint8Array(), { width: 400, format: 'webp' })).rejects.toThrow(
-      /sharpBackend\(\): the sharp-backed image resize implementation has not yet shipped/,
+      /sharpBackend\(\): can't load 'sharp'/,
+    )
+  })
+
+  test('error message includes the install command', async () => {
+    const backend = sharpBackend()
+    await expect(backend.resize(new Uint8Array(), { width: 400, format: 'webp' })).rejects.toThrow(
+      /bun add sharp/,
     )
   })
 })
