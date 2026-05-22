@@ -171,4 +171,135 @@ describe('collection — keyed CRUD over a State<T[]>', () => {
     expect(c.get('acme:two')?.title).toBe('B')
     expect(c.get('acme:three')).toBeNull()
   })
+
+  // ===== 0.8.0 — soft delete (trash / restore) =====
+
+  test('trash hides the item from all() and get() by default', () => {
+    const s = state<Item[]>([
+      { id: 'a', name: 'first', count: 1 },
+      { id: 'b', name: 'second', count: 2 },
+    ])
+    const c = collection<Item>(s)
+    c.trash('a')
+    expect(c.get('a')).toBeNull()
+    expect(c.all()).toHaveLength(1)
+    expect(c.all()[0]?.id).toBe('b')
+    // Pass-through option re-includes the trashed item.
+    expect(c.get('a', { includeTrash: true })?.name).toBe('first')
+    expect(c.all({ includeTrash: true })).toHaveLength(2)
+  })
+
+  test('restore brings the item back', () => {
+    const s = state<Item[]>([{ id: 'a', name: 'first', count: 1 }])
+    const c = collection<Item>(s)
+    c.trash('a')
+    expect(c.get('a')).toBeNull()
+    c.restore('a')
+    expect(c.get('a')?.name).toBe('first')
+    expect(c.trashedKeys()).toEqual([])
+  })
+
+  test('trash + restore are idempotent', () => {
+    const s = state<Item[]>([{ id: 'a', name: 'first', count: 1 }])
+    const c = collection<Item>(s)
+    c.trash('a')
+    c.trash('a') // no-op
+    expect(c.trashedKeys()).toEqual(['a'])
+    c.restore('a')
+    c.restore('a') // no-op
+    expect(c.trashedKeys()).toEqual([])
+  })
+
+  test('remove() cleans up the trash entry too', () => {
+    const s = state<Item[]>([{ id: 'a', name: 'first', count: 1 }])
+    const c = collection<Item>(s)
+    c.trash('a')
+    expect(c.trashedKeys()).toEqual(['a'])
+    c.remove('a')
+    // Item gone, trash bookkeeping also gone.
+    expect(c.trashedKeys()).toEqual([])
+  })
+
+  test('trash() is reactive — watch fires on trash/restore', () => {
+    const s = state<Item[]>([{ id: 'a', name: 'first', count: 1 }])
+    const c = collection<Item>(s)
+    let renders = 0
+    const dispose = watch(() => {
+      void c.all() // subscribe
+      renders++
+    })
+    expect(renders).toBe(1)
+    c.trash('a')
+    expect(renders).toBe(2)
+    c.restore('a')
+    expect(renders).toBe(3)
+    dispose()
+  })
+
+  // ===== 0.8.0 — cursor pagination =====
+
+  test('cursor returns up to `limit` items from the start', () => {
+    const s = state<Item[]>([])
+    const c = collection<Item>(s)
+    for (let i = 0; i < 10; i++) {
+      c.add({ id: `id${i}`, name: `n${i}`, count: i })
+    }
+    const page = c.cursor({ limit: 3 })
+    expect(page.items.map((it) => it.id)).toEqual(['id0', 'id1', 'id2'])
+    expect(page.next).toBe('id2')
+  })
+
+  test('cursor advances via the `after` key', () => {
+    const s = state<Item[]>([])
+    const c = collection<Item>(s)
+    for (let i = 0; i < 5; i++) {
+      c.add({ id: `id${i}`, name: `n${i}`, count: i })
+    }
+    const p1 = c.cursor({ limit: 2 })
+    expect(p1.items.map((it) => it.id)).toEqual(['id0', 'id1'])
+    expect(p1.next).toBe('id1')
+    const p2 = c.cursor({ after: p1.next ?? undefined, limit: 2 })
+    expect(p2.items.map((it) => it.id)).toEqual(['id2', 'id3'])
+    expect(p2.next).toBe('id3')
+    const p3 = c.cursor({ after: p2.next ?? undefined, limit: 2 })
+    expect(p3.items.map((it) => it.id)).toEqual(['id4'])
+    expect(p3.next).toBeNull() // last page
+  })
+
+  test('cursor with stale `after` returns empty page', () => {
+    const s = state<Item[]>([{ id: 'a', name: 'A', count: 1 }])
+    const c = collection<Item>(s)
+    const page = c.cursor({ after: 'never-existed', limit: 5 })
+    expect(page.items).toEqual([])
+    expect(page.next).toBeNull()
+  })
+
+  test('cursor respects sortBy ordering', () => {
+    const s = state<Item[]>([])
+    const c = collection<Item>(s, { sortBy: (a, b) => a.count - b.count })
+    c.add({ id: 'big', name: 'B', count: 100 })
+    c.add({ id: 'small', name: 'S', count: 1 })
+    c.add({ id: 'med', name: 'M', count: 50 })
+    const page = c.cursor({ limit: 2 })
+    expect(page.items.map((it) => it.id)).toEqual(['small', 'med'])
+  })
+
+  test('cursor skips trashed items', () => {
+    const s = state<Item[]>([])
+    const c = collection<Item>(s)
+    for (let i = 0; i < 5; i++) {
+      c.add({ id: `id${i}`, name: `n${i}`, count: i })
+    }
+    c.trash('id1')
+    c.trash('id3')
+    const page = c.cursor({ limit: 10 })
+    expect(page.items.map((it) => it.id)).toEqual(['id0', 'id2', 'id4'])
+  })
+
+  test('cursor throws on invalid limit', () => {
+    const s = state<Item[]>([])
+    const c = collection<Item>(s)
+    expect(() => c.cursor({ limit: 0 })).toThrow(/limit must be >= 1/)
+    expect(() => c.cursor({ limit: -3 })).toThrow(/limit must be >= 1/)
+  })
 })

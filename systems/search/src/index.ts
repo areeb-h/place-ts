@@ -26,6 +26,44 @@ export interface SearchableOptions<T> {
   fields: (item: T) => readonly string[]
   /** When true, exact case must match. Default false. */
   caseSensitive?: boolean
+  /**
+   * Score function (0.2.0). When provided, matching results are sorted
+   * by descending score before being returned. The first argument is
+   * the item; the second is the tokenized query (lowercased + split on
+   * whitespace, the same tokens the filter used). Higher = more
+   * relevant; ties keep insertion order (`.sort` is stable in modern
+   * runtimes).
+   *
+   * **Composable**: write whatever scoring fits — exact-match boost,
+   * field-weight (title > body), token-frequency, position-in-field.
+   * The framework doesn't pick a default; ranking is opinionated and
+   * domain-specific.
+   *
+   * **Reactivity**: rank runs once per (item, query) pair per query
+   * evaluation. Stay pure — random / time-based scores would cause
+   * watchers to fire unpredictably.
+   *
+   * When omitted, results return in insertion order (pre-0.2.0
+   * behavior, fully back-compat).
+   *
+   * ```ts
+   * searchable(items, {
+   *   fields: (n) => [n.title, n.content],
+   *   rank: (n, tokens) => {
+   *     const title = n.title.toLowerCase()
+   *     // Title matches outrank content matches; exact-match outranks substring.
+   *     let score = 0
+   *     for (const tok of tokens) {
+   *       if (title === tok) score += 100
+   *       else if (title.startsWith(tok)) score += 20
+   *       else if (title.includes(tok)) score += 5
+   *     }
+   *     return score
+   *   },
+   * })
+   * ```
+   */
+  rank?: (item: T, tokens: readonly string[]) => number
 }
 
 /**
@@ -93,13 +131,23 @@ export function searchable<T>(
     return computed
   }
 
+  const rank = options.rank
+
   return (query) => () => {
     const tokens = norm(query()).split(/\s+/).filter(Boolean)
     const all = items()
     if (tokens.length === 0) return all
-    return all.filter((item) => {
+    const matched = all.filter((item) => {
       const haystacks = haystacksFor(item)
       return tokens.every((tok) => haystacks.some((h) => h.includes(tok)))
     })
+    if (rank === undefined) return matched
+    // Score each matching item once, then sort by descending score.
+    // Pairing first means each item's `rank()` runs exactly once even
+    // for many ties (vs. calling rank inside the comparator, which
+    // would call it O(n log n) times).
+    const scored = matched.map((item) => ({ item, score: rank(item, tokens) }))
+    scored.sort((a, b) => b.score - a.score)
+    return scored.map((s) => s.item)
   }
 }
