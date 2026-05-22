@@ -1,0 +1,6 @@
+{
+  "name": "__APP_NAME__",
+  "dependencies": {
+    "@place-ts/design": "^0.2.1"
+  }
+}

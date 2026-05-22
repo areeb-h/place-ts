@@ -12,13 +12,6 @@
 
 @import "tailwindcss";
 
-/* The design library's base — adds the cascade-layer scaffold, the
- * native open/close transitions for Dialog/Sheet/Combobox, the
- * `.place-code` syntax-token colours, the `.prose` typography
- * defaults, scrollbar-gutter stability, and more. Optional but
- * recommended for new apps. */
-@import "@place-ts/design/base.css";
-
 ::selection {
   background-color: var(--color-accent);
   color: var(--color-accent-fg);

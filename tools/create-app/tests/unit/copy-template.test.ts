@@ -1,56 +1,152 @@
 // @vitest-environment node
+//
+// Template-variant integration test. Scaffolds each (variant × default-
+// features) combination into a tmpdir and asserts the result is
+// internally consistent: package.json parses, key files exist, every
+// patched file remains valid TS shape (best-effort — full typecheck
+// happens in `bun run typecheck` on the smoke scaffold).
+//
+// The legacy `copyTemplate` unit (file-by-file substitution + recursion)
+// is now exercised end-to-end via `composeScaffold` against the real
+// template tree. The lower-level invariants live in compose.test.ts.
 
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { copyTemplate } from '../../src/cli.ts'
 
-describe('copyTemplate — recursive copy + name substitution', () => {
-  let templateDir: string
-  let targetDir: string
+import { DEFAULT_FEATURES, VARIANTS, type Variant } from '../../src/args.ts'
+import { composeScaffold } from '../../src/scaffold.ts'
 
-  beforeEach(() => {
-    templateDir = mkdtempSync(join(tmpdir(), 'place-tpl-'))
-    targetDir = mkdtempSync(join(tmpdir(), 'place-out-'))
+const here = dirname(fileURLToPath(import.meta.url))
+const templatesRoot = resolve(here, '..', '..', 'templates')
+
+let workspace: string
+
+beforeEach(() => {
+  workspace = mkdtempSync(join(tmpdir(), 'place-template-test-'))
+})
+
+afterEach(() => {
+  rmSync(workspace, { recursive: true, force: true })
+})
+
+describe('template variants — every combo composes cleanly', () => {
+  for (const v of VARIANTS) {
+    test(`variant '${v}' with its default features`, async () => {
+      const target = join(workspace, v)
+      const result = await composeScaffold({
+        templatesRoot,
+        target,
+        appName: 'test-app',
+        variant: v,
+        features: [...DEFAULT_FEATURES[v as Variant]],
+      })
+      // Sanity: at least package.json + src/app.ts exist.
+      expect(result.filesWritten).toContain('package.json')
+      expect(existsSync(join(target, 'src', 'app.ts'))).toBe(true)
+      // Parse package.json — every layer's contribution must produce
+      // valid JSON.
+      const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+      expect(pkg.name).toBe('test-app')
+      expect(pkg.dependencies).toBeTruthy()
+      expect(pkg.dependencies['@place-ts/component']).toBeTruthy()
+      // The component dep range must be a non-empty string.
+      expect(typeof pkg.dependencies['@place-ts/component']).toBe('string')
+      // .gitignore must land (it's a base dotfile that's renamed from _gitignore).
+      expect(existsSync(join(target, '.gitignore'))).toBe(true)
+    })
+  }
+})
+
+describe('content variant — posts files exist', () => {
+  test('home + slug pages, posts collection', async () => {
+    const target = join(workspace, 'content')
+    await composeScaffold({
+      templatesRoot,
+      target,
+      appName: 'blog',
+      variant: 'content',
+      features: [...DEFAULT_FEATURES.content],
+    })
+    expect(existsSync(join(target, 'src', 'pages', 'home.page.tsx'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'pages', 'posts', '[slug].page.tsx'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'posts.ts'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'islands', 'search-palette.tsx'))).toBe(true)
+    const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+    expect(pkg.dependencies['@place-ts/data']).toBeTruthy()
+    expect(pkg.dependencies['@place-ts/search']).toBeTruthy()
   })
+})
 
-  afterEach(() => {
-    rmSync(templateDir, { recursive: true, force: true })
-    rmSync(targetDir, { recursive: true, force: true })
+describe('app variant — dashboard + islands exist', () => {
+  test('dashboard page + counter + preferences islands', async () => {
+    const target = join(workspace, 'app')
+    await composeScaffold({
+      templatesRoot,
+      target,
+      appName: 'saas',
+      variant: 'app',
+      features: [...DEFAULT_FEATURES.app],
+    })
+    expect(existsSync(join(target, 'src', 'pages', 'dashboard.page.tsx'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'islands', 'counter.tsx'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'islands', 'preferences.tsx'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'state', 'preferences.ts'))).toBe(true) // from persistence feature
+    const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+    expect(pkg.dependencies['@place-ts/persistence']).toBeTruthy()
+    expect(pkg.dependencies['@place-ts/design']).toBeTruthy()
   })
+})
 
-  test('substitutes __APP_NAME__ in file contents', async () => {
-    writeFileSync(join(templateDir, 'package.json'), JSON.stringify({ name: '__APP_NAME__' }))
-    await copyTemplate(templateDir, targetDir, 'my-app')
-    const result = JSON.parse(readFileSync(join(targetDir, 'package.json'), 'utf-8'))
-    expect(result.name).toBe('my-app')
+describe('theme-toggle feature — light tokens patched + island shipped', () => {
+  test('theme.ts gains light mode + island file exists', async () => {
+    const target = join(workspace, 'mt')
+    await composeScaffold({
+      templatesRoot,
+      target,
+      appName: 'x',
+      variant: 'minimal',
+      features: ['theme-toggle'],
+    })
+    expect(existsSync(join(target, 'src', 'islands', 'theme-toggle.tsx'))).toBe(true)
+    const theme = readFileSync(join(target, 'src', 'theme.ts'), 'utf8')
+    expect(theme).toMatch(/light:\s*\{/)
+    const layout = readFileSync(join(target, 'src', 'layouts', 'main.layout.tsx'), 'utf8')
+    expect(layout).toContain('<ThemeToggle />')
+    expect(layout).toContain('import ThemeToggle')
   })
+})
 
-  test('substitutes every occurrence (replaceAll)', async () => {
-    writeFileSync(join(templateDir, 'README.md'), '__APP_NAME__ is great. Welcome to __APP_NAME__.')
-    await copyTemplate(templateDir, targetDir, 'fooApp')
-    const out = readFileSync(join(targetDir, 'README.md'), 'utf-8')
-    expect(out).toBe('fooApp is great. Welcome to fooApp.')
+describe('tests feature — vitest config + sample test', () => {
+  test('opt-in test feature lands its files', async () => {
+    const target = join(workspace, 'with-tests')
+    await composeScaffold({
+      templatesRoot,
+      target,
+      appName: 'x',
+      variant: 'minimal',
+      features: ['tests'],
+    })
+    expect(existsSync(join(target, 'vitest.config.ts'))).toBe(true)
+    expect(existsSync(join(target, 'src', 'smoke.test.ts'))).toBe(true)
+    const pkg = JSON.parse(readFileSync(join(target, 'package.json'), 'utf8'))
+    expect(pkg.scripts.test).toMatch(/vitest/)
+    expect(pkg.devDependencies.vitest).toBeTruthy()
   })
+})
 
-  test('recursively copies nested directories', async () => {
-    await mkdir(join(templateDir, 'src', 'pages'), { recursive: true })
-    writeFileSync(join(templateDir, 'src', 'server.tsx'), 'export {}\n')
-    writeFileSync(
-      join(templateDir, 'src', 'pages', 'home.tsx'),
-      'export const home = "__APP_NAME__"\n',
-    )
-    await copyTemplate(templateDir, targetDir, 'foo')
-    const home = readFileSync(join(targetDir, 'src', 'pages', 'home.tsx'), 'utf-8')
-    expect(home).toContain('"foo"')
-    expect(readdirSync(join(targetDir, 'src')).sort()).toEqual(['pages', 'server.tsx'])
-  })
-
-  test('files without __APP_NAME__ pass through unchanged', async () => {
-    writeFileSync(join(templateDir, 'plain.txt'), 'no substitution here')
-    await copyTemplate(templateDir, targetDir, 'foo')
-    expect(readFileSync(join(targetDir, 'plain.txt'), 'utf-8')).toBe('no substitution here')
+describe('ci feature — GitHub Actions workflow', () => {
+  test('renames _github → .github', async () => {
+    const target = join(workspace, 'with-ci')
+    await composeScaffold({
+      templatesRoot,
+      target,
+      appName: 'x',
+      variant: 'minimal',
+      features: ['ci'],
+    })
+    expect(existsSync(join(target, '.github', 'workflows', 'ci.yml'))).toBe(true)
   })
 })

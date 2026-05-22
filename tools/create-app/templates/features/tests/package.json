@@ -1,0 +1,11 @@
+{
+  "name": "__APP_NAME__",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "latest",
+    "happy-dom": "latest"
+  }
+}

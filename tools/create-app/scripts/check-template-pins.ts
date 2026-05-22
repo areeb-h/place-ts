@@ -1,67 +1,99 @@
 #!/usr/bin/env bun
-// Guard against template-version drift. The minimal template pins each
-// `@place-ts/*` dep with a caret range. Every time we bump a system's
-// version, that pin can fall behind — and the failure only surfaces
-// downstream (a user's `bunx @place-ts/create-app .` install). We
-// already shipped that bug once.
+// Guard against template-version drift. Every template layer's
+// package.json pins `@place-ts/*` deps with a caret range; if a
+// system's version bumps without the layer being updated, users hit
+// `error: No version matching "^X.Y.Z" found for specifier ...` at
+// scaffold-install time. We already shipped that bug once.
 //
-// This script walks every `@place-ts/*` dependency in the minimal
-// template's package.json and asserts the caret range still satisfies
-// the actual current version of that system. Fails CI on drift.
+// This script walks every `@place-ts/*` dependency in EVERY layer of
+// `templates/` (base + each variant + each feature) and asserts the
+// caret range still matches the corresponding system's MAJOR.MINOR.
+// Fails CI on any drift, naming every offending layer + key.
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 interface PkgJson {
-  version: string
+  version?: string
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
+  peerDependencies?: Record<string, string>
 }
 
 const REPO = join(import.meta.dir, '..', '..', '..')
-const TEMPLATE = join(REPO, 'tools', 'create-app', 'templates', 'minimal', 'package.json')
+const TEMPLATES = join(REPO, 'tools', 'create-app', 'templates')
 
-const template = JSON.parse(readFileSync(TEMPLATE, 'utf-8')) as PkgJson
-const allDeps = { ...(template.dependencies ?? {}), ...(template.devDependencies ?? {}) }
+const layerPackageJsons: { layer: string; path: string }[] = []
+
+const collectLayerPkgs = (root: string, label: string): void => {
+  const pkg = join(root, 'package.json')
+  if (existsSync(pkg)) layerPackageJsons.push({ layer: label, path: pkg })
+}
+
+// base
+collectLayerPkgs(join(TEMPLATES, 'base'), 'base')
+
+// variants
+const variantsDir = join(TEMPLATES, 'variants')
+if (existsSync(variantsDir)) {
+  for (const name of readdirSync(variantsDir)) {
+    const dir = join(variantsDir, name)
+    if (statSync(dir).isDirectory()) collectLayerPkgs(dir, `variant:${name}`)
+  }
+}
+
+// features
+const featuresDir = join(TEMPLATES, 'features')
+if (existsSync(featuresDir)) {
+  for (const name of readdirSync(featuresDir)) {
+    const dir = join(featuresDir, name)
+    if (statSync(dir).isDirectory()) collectLayerPkgs(dir, `feature:${name}`)
+  }
+}
 
 const drifts: string[] = []
-for (const [name, range] of Object.entries(allDeps)) {
-  if (!name.startsWith('@place-ts/')) continue
-  const sysName = name.slice('@place-ts/'.length)
-  const sysPkgPath = join(REPO, 'systems', sysName, 'package.json')
-  let sysPkg: PkgJson
-  try {
-    sysPkg = JSON.parse(readFileSync(sysPkgPath, 'utf-8')) as PkgJson
-  } catch {
-    drifts.push(`${name} in template, but no systems/${sysName}/package.json exists`)
-    continue
+let checkedRanges = 0
+
+for (const { layer, path } of layerPackageJsons) {
+  const pkg = JSON.parse(readFileSync(path, 'utf-8')) as PkgJson
+  const deps = {
+    ...(pkg.dependencies ?? {}),
+    ...(pkg.devDependencies ?? {}),
+    ...(pkg.peerDependencies ?? {}),
   }
-  // Caret range: `^X.Y.Z` satisfies any version >=X.Y.Z and <X+1.0.0
-  // (or for 0.x, <0.Y+1.0). The drift we care about is when the
-  // template's caret range no longer matches the system's MINOR. We
-  // check exact MAJOR.MINOR equality — patch differences are fine
-  // (template can ship before a patch bump; users get the patch on
-  // install).
-  const cleanRange = range.replace(/^\^/, '')
-  const [tplMaj, tplMin] = cleanRange.split('.')
-  const [sysMaj, sysMin] = sysPkg.version.split('.')
-  if (tplMaj !== sysMaj || tplMin !== sysMin) {
-    drifts.push(
-      `${name}: template pins '${range}' but actual version is '${sysPkg.version}' — minor/major mismatch`,
-    )
+  for (const [name, range] of Object.entries(deps)) {
+    if (!name.startsWith('@place-ts/')) continue
+    const sysName = name.slice('@place-ts/'.length)
+    const sysPkgPath = join(REPO, 'systems', sysName, 'package.json')
+    let sysPkg: PkgJson
+    try {
+      sysPkg = JSON.parse(readFileSync(sysPkgPath, 'utf-8')) as PkgJson
+    } catch {
+      drifts.push(`[${layer}] ${name} pinned, but no systems/${sysName}/package.json exists`)
+      continue
+    }
+    checkedRanges++
+    const cleanRange = range.replace(/^\^/, '')
+    const [tplMaj, tplMin] = cleanRange.split('.')
+    const sysVersion = sysPkg.version ?? ''
+    const [sysMaj, sysMin] = sysVersion.split('.')
+    if (tplMaj !== sysMaj || tplMin !== sysMin) {
+      drifts.push(
+        `[${layer}] ${name}: pins '${range}' but actual version is '${sysVersion}' — minor/major mismatch`,
+      )
+    }
   }
 }
 
 if (drifts.length > 0) {
-  console.error('TEMPLATE VERSION DRIFT — fix template package.json before publishing:')
+  console.error('TEMPLATE VERSION DRIFT — fix template package.json files before publishing:')
   for (const d of drifts) console.error(`  - ${d}`)
   console.error(
-    "\nThe minimal template ships with caret ranges that must satisfy each system's current version.",
+    "\nEvery layer's package.json must pin '@place-ts/*' caret ranges to the system's current MAJOR.MINOR.",
   )
-  console.error(`Edit ${TEMPLATE} to bump the failing pins.`)
   process.exit(1)
 }
 
 console.log(
-  `template-version-pins OK — ${Object.keys(allDeps).filter((d) => d.startsWith('@place-ts/')).length} @place-ts/* deps satisfy current versions`,
+  `template-version-pins OK — ${checkedRanges} pins across ${layerPackageJsons.length} layers match current versions`,
 )

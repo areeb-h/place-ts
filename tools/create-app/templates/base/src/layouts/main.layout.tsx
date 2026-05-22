@@ -18,8 +18,6 @@ export const mainLayout = layout({
     titleTemplate: '%s · __APP_NAME__',
     description: 'A place-ts app.',
   },
-  // Document-shell classes are top-level peers of `meta:` — they emit on
-  // `<html>` and `<body>`, not as `<meta>` / `<link>` tags.
   htmlClass: 'h-full',
   bodyClass: 'h-full bg-bg text-fg font-sans antialiased',
   view: ({ children }) => (
@@ -38,12 +36,6 @@ export const mainLayout = layout({
               class="px-3 py-1.5 rounded-md text-muted hover:text-fg hover:bg-card/60 no-underline transition-colors"
             >
               Home
-            </Link>
-            <Link
-              to="/about"
-              class="px-3 py-1.5 rounded-md text-muted hover:text-fg hover:bg-card/60 no-underline transition-colors"
-            >
-              About
             </Link>
           </nav>
         </div>

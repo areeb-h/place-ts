@@ -36,7 +36,16 @@ export default defineConfig({
   resolve: { alias },
   test: {
     include: ['systems/**/tests/**/*.test.ts', 'tests/**/*.test.ts', 'tools/**/tests/**/*.test.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/benchmark/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/benchmark/**',
+      // create-app's template tree contains sample test files (e.g.
+      // `features/tests/src/smoke.test.ts`) shipped to scaffolded apps —
+      // not tests of the place-ts workspace. The path matches our
+      // `**/tests/**/*.test.ts` include by accident; exclude it here.
+      'tools/create-app/templates/**',
+    ],
     // Some publishable packages (e.g. @place-ts/devtools) have no test
     // files of their own. Their `prepublishOnly` hook runs `vitest run`,
     // which by default exits 1 if no files match — failing publish.

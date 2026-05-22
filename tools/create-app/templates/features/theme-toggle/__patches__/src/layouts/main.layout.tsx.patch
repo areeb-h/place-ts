@@ -1,0 +1,9 @@
+@@
+ import { layout } from '@place-ts/component'
++import ThemeToggle from '../islands/theme-toggle.tsx'
+
+ export const mainLayout = layout({
+@@
+-          </nav>
++            <ThemeToggle />
++          </nav>

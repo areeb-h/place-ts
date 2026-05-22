@@ -1,18 +1,12 @@
-// Counter island. Default-exporting `island(view)` (or just `view(fn)`)
-// marks this file as a client island — the framework auto-discovers it
-// because `app({ islandsDir: './src/islands' })` is set in `app.ts`.
+// Counter island. `island(view)` marks the file as a client island —
+// the framework auto-discovers it because `app({ islandsDir })` is
+// set in `app.ts`.
 //
-// Auto-imported via the @place-ts/component preload plugin (bunfig.toml):
-//   `island`, `view`, `state` — no manual imports needed.
-//
-// `island(...)` wraps the component so the framework can:
-//   1. emit a marker in SSR HTML
-//   2. ship the component as its own client bundle
-//   3. hydrate it after first paint with the props that were SSR'd
+// Auto-imported (no manual imports needed): `island`, `state`.
 //
 // `state(0)` is the framework's reactive primitive: `count()` reads,
 // `count.set(n)` writes, and any JSX expression that calls `count()`
-// re-renders automatically when the state changes.
+// re-renders automatically.
 
 export default island(() => {
   const count = state(0)

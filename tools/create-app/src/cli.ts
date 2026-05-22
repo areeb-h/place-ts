@@ -1,25 +1,34 @@
 #!/usr/bin/env bun
-// `bunx @place-ts/create-app <name>` — minimal-viable scaffolder.
+// `bunx @place-ts/create-app <name>` — the place-ts scaffolder.
 //
-// Design (per research-img-vt-cli.md gap 3):
-//   - Inline templates (templates/ directory in this package), not
-//     degit-style fetch — hermetic, version-locked, offline-capable.
-//   - TTY detection: prompts only when stdin is a real TTY; non-TTY
-//     contexts (CI, IDE terminals piping stdin) require all answers
-//     as flags.
-//   - One template ('minimal') initially; --template hook reserved for
-//     future commonplace/sandbox templates.
-//   - Refuses to overwrite a non-empty target. Match `npm create vite`
-//     UX — no clever overwrite logic.
-//   - No `upgrade`/`migrate` subcommand. Per the stability covenant,
-//     migration tooling lives in a separate package if it's ever needed.
+// Layered template architecture (see scaffold.ts): base → variant
+// (minimal | content | app) → features (theme-toggle, tests, ci,
+// design-system, persistence). Inline templates (no degit-style
+// fetch) keep the scaffolder hermetic, version-locked, offline-capable.
+//
+// CLI surface lives in args.ts (parseArgs + promptForMissing + flag
+// types). Interactive prompts live in prompt.ts. The composition
+// algorithm lives in scaffold.ts. This file orchestrates them and
+// emits the user-facing status.
 
-import { existsSync, readdirSync, statSync } from 'node:fs'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { existsSync, readdirSync } from 'node:fs'
+import { mkdir } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { type CreateAppArgs, parseArgs, promptForMissing, USAGE } from './args.ts'
+import {
+  type CreateAppArgs,
+  DEFAULT_FEATURES,
+  FEATURES,
+  parseArgs,
+  promptForMissing,
+  resolveFeatures,
+  USAGE,
+  VARIANTS,
+  type Variant,
+} from './args.ts'
+import { composeScaffold, enumerateTemplateOutputs } from './scaffold.ts'
+import { bold, cyan, dim, gray, green, magenta, red, symbols } from './style.ts'
 
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   let args: CreateAppArgs
@@ -35,26 +44,47 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
     return 0
   }
 
-  // TTY-aware prompts. Skipped when --yes or non-interactive.
-  const filled = await promptForMissing(args)
+  if (args.list) {
+    process.stdout.write(formatListing())
+    return 0
+  }
 
+  let filled: CreateAppArgs
+  try {
+    filled = await promptForMissing(args)
+  } catch (err) {
+    const msg = (err as Error).message
+    if (msg === 'cancelled') {
+      process.stderr.write(`\n${red(symbols.err)}  cancelled\n`)
+      return 130
+    }
+    process.stderr.write(`${red(symbols.err)}  ${msg}\n`)
+    return 1
+  }
+
+  const variant = filled.variant as Variant
+  const features = resolveFeatures(variant, filled.withFeatures, filled.withoutFeatures)
   const targetPath = resolve(filled.targetDir)
-  // **Current-directory mode (0.9.1).** When `filled.targetDir === '.'`,
-  // the user asked to scaffold INTO their cwd. The pre-existing
-  // "non-empty target" check would always fail (cwd has at least
-  // `.git`, hidden files, etc.). Instead, enumerate which template
-  // files would CONFLICT with existing files and refuse the install
-  // only when there's an actual collision. Empty dir / no-collision
-  // cases proceed silently.
   const intoCurrentDir = filled.targetDir === '.'
+
+  const here = dirname(fileURLToPath(import.meta.url))
+  const templatesRoot = resolve(here, '..', 'templates')
+
   if (existsSync(targetPath)) {
     if (intoCurrentDir) {
-      const conflicts = listTemplateConflicts(targetPath, filled.template)
+      const outputs = enumerateTemplateOutputs({
+        templatesRoot,
+        target: targetPath,
+        appName: filled.name,
+        variant,
+        features,
+      })
+      const conflicts = outputs.filter((rel) => existsSync(resolve(targetPath, rel)))
       if (conflicts.length > 0) {
         process.stderr.write(
-          `error: scaffolding into '.' would overwrite ${conflicts.length} existing file(s):\n` +
-            conflicts.map((c) => `  - ${c}`).join('\n') +
-            `\nMove or remove the conflicting files, or scaffold into a fresh directory.\n`,
+          `${red(symbols.err)}  scaffolding into '.' would overwrite ${conflicts.length} existing file(s):\n` +
+            conflicts.map((c) => `     - ${c}`).join('\n') +
+            `\n\nMove or remove the conflicting files, or scaffold into a fresh directory.\n`,
         )
         return 1
       }
@@ -62,7 +92,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
       const entries = readdirSync(targetPath)
       if (entries.length > 0) {
         process.stderr.write(
-          `error: target directory '${filled.targetDir}' is not empty (${entries.length} entries). ` +
+          `${red(symbols.err)}  target directory '${filled.targetDir}' is not empty (${entries.length} entries). ` +
             'Pick a different name or remove the existing directory.\n',
         )
         return 1
@@ -72,110 +102,94 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
 
   await mkdir(targetPath, { recursive: true })
 
-  const here = dirname(fileURLToPath(import.meta.url))
-  const templatePath = resolve(here, '..', 'templates', filled.template)
-  if (!existsSync(templatePath)) {
-    process.stderr.write(`error: template '${filled.template}' not found at ${templatePath}\n`)
-    return 1
-  }
+  // ◆  Scaffolding <name> (<variant> + <features>)
+  const featList = features.length > 0 ? ` + ${features.join(' + ')}` : ''
+  process.stdout.write(
+    `\n${magenta(symbols.done)}  ${bold(`Scaffolding ${filled.name}`)} ${dim(`(${variant}${featList})`)}\n\n`,
+  )
 
-  await copyTemplate(templatePath, targetPath, filled.name)
+  const result = await composeScaffold({
+    templatesRoot,
+    target: targetPath,
+    appName: filled.name,
+    variant,
+    features,
+  })
 
   process.stdout.write(
-    intoCurrentDir
-      ? `\n  ✓ scaffolded ${filled.name} into ${targetPath}\n`
-      : `\n  ✓ created ${filled.name} at ${targetPath}\n`,
+    `   ${green(symbols.ok)} ${result.filesWritten.length} files written` +
+      (result.patchesApplied.length > 0
+        ? dim(`, ${result.patchesApplied.length} patches applied`)
+        : '') +
+      `\n`,
   )
 
   if (!filled.skipInstall) {
-    process.stdout.write('  → installing dependencies (bun install)…\n')
+    process.stdout.write(`   ${dim('› installing dependencies (bun install)…')}\n`)
+    const t0 = Date.now()
     const proc = Bun.spawn(['bun', 'install'], {
       cwd: targetPath,
-      stdout: 'inherit',
-      stderr: 'inherit',
+      stdout: 'pipe',
+      stderr: 'pipe',
     })
     const code = await proc.exited
     if (code !== 0) {
+      const stderr = await new Response(proc.stderr).text()
       process.stderr.write(
-        '\nerror: bun install failed. Skip installation with --no-install and run it manually.\n',
+        `\n${red(symbols.err)}  bun install failed (exit ${code}):\n${stderr}\n` +
+          dim(`Skip install with --no-install and run it manually.\n`),
       )
       return code
     }
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1)
+    process.stdout.write(`   ${green(symbols.ok)} bun install ${dim(`(${elapsed}s)`)}\n`)
   }
 
-  process.stdout.write(
-    intoCurrentDir
-      ? `\nDone. Next steps:\n\n  bun dev\n\nDocs: https://github.com/areeb-h/place-ts\n`
-      : `\nDone. Next steps:\n\n  cd ${filled.name}\n  bun dev\n\nDocs: https://github.com/areeb-h/place-ts\n`,
-  )
-  return 0
-}
-
-/**
- * Recursively copy template files into the target. Substitutes
- * `__APP_NAME__` in file contents (e.g. package.json's "name") with
- * the project name. No mustache, no full template engine — one token
- * suffices for the minimum viable case. Exported for tests.
- */
-export async function copyTemplate(
-  templatePath: string,
-  targetPath: string,
-  appName: string,
-): Promise<void> {
-  const entries = readdirSync(templatePath, { withFileTypes: true })
-  for (const e of entries) {
-    const srcPath = join(templatePath, e.name)
-    const destPath = join(targetPath, e.name)
-    if (e.isDirectory()) {
-      await mkdir(destPath, { recursive: true })
-      await copyTemplate(srcPath, destPath, appName)
-      continue
-    }
-    if (e.isFile()) {
-      const stat = statSync(srcPath)
-      // Skip extreme-size files defensively; templates shouldn't have
-      // multi-MB files.
-      if (stat.size > 1_000_000) continue
-      const text = await readFile(srcPath, 'utf-8')
-      const replaced = text.replaceAll('__APP_NAME__', appName)
-      // npm pack drops files starting with `.` (npm convention for
-      // dotfile noise). Templates that need to ship a dotfile (e.g.
-      // `.gitignore`) are stored with a `_` prefix and renamed here.
-      const finalName = e.name.startsWith('_') ? `.${e.name.slice(1)}` : e.name
-      const finalDest = join(targetPath, finalName)
-      await writeFile(finalDest, replaced)
-    }
-  }
-}
-
-/**
- * Walk the template tree and report every relative path that already
- * exists in the target. Used by the `.`-into-current-dir path to give
- * the user a precise conflict list instead of just "directory not
- * empty". Returns paths relative to `targetPath`.
- */
-function listTemplateConflicts(targetPath: string, template: string): string[] {
-  const here = dirname(fileURLToPath(import.meta.url))
-  const templatePath = resolve(here, '..', 'templates', template)
-  if (!existsSync(templatePath)) return []
-  const conflicts: string[] = []
-  const walk = (src: string, rel: string): void => {
-    const entries = readdirSync(src, { withFileTypes: true })
-    for (const e of entries) {
-      // Apply the same `_gitignore` → `.gitignore` rename the copy
-      // step uses, so the conflict check sees the actual destination.
-      const destName = e.name.startsWith('_') ? `.${e.name.slice(1)}` : e.name
-      const relPath = rel === '' ? destName : `${rel}/${destName}`
-      const destAbs = join(targetPath, relPath)
-      if (e.isDirectory()) {
-        walk(join(src, e.name), relPath)
-      } else if (e.isFile() && existsSync(destAbs)) {
-        conflicts.push(relPath)
+  if (!filled.skipGit) {
+    const gitDir = resolve(targetPath, '.git')
+    if (existsSync(gitDir)) {
+      process.stdout.write(`   ${dim('› git: already initialized — skipped')}\n`)
+    } else {
+      const proc = Bun.spawn(['git', 'init'], {
+        cwd: targetPath,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      })
+      const code = await proc.exited
+      if (code === 0) {
+        process.stdout.write(`   ${green(symbols.ok)} git init\n`)
+      } else {
+        // Non-fatal — `git` may not be installed in some containers.
+        process.stdout.write(`   ${dim('› git init unavailable — skipped')}\n`)
       }
     }
   }
-  walk(templatePath, '')
-  return conflicts
+
+  // Final next-steps block.
+  process.stdout.write(`\n${green(symbols.ok)}  ${bold('Done')} — open with:\n\n`)
+  if (!intoCurrentDir) {
+    process.stdout.write(`   ${cyan(`cd ${filled.name}`)}\n`)
+  }
+  process.stdout.write(`   ${cyan('bun dev')}\n\n`)
+  process.stdout.write(`   ${dim('Docs   ')}${gray('https://github.com/areeb-h/place-ts')}\n\n`)
+  return 0
+}
+
+function formatListing(): string {
+  const lines: string[] = []
+  lines.push('')
+  lines.push(`${bold('Templates')}`)
+  for (const v of VARIANTS) {
+    const defaults = DEFAULT_FEATURES[v]
+    lines.push(`  ${magenta(v.padEnd(12))} ${dim(`defaults: ${defaults.join(', ') || '(none)'}`)}`)
+  }
+  lines.push('')
+  lines.push(`${bold('Features')}`)
+  for (const f of FEATURES) {
+    lines.push(`  ${cyan(f.padEnd(16))}`)
+  }
+  lines.push('')
+  return lines.join('\n')
 }
 
 // Run if invoked directly (Bun's bin entry).

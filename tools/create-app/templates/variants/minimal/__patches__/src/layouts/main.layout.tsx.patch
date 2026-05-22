@@ -1,0 +1,14 @@
+@@
+             <Link
+               to="/"
+               class="px-3 py-1.5 rounded-md text-muted hover:text-fg hover:bg-card/60 no-underline transition-colors"
+             >
+               Home
+             </Link>
++            <Link
++              to="/about"
++              class="px-3 py-1.5 rounded-md text-muted hover:text-fg hover:bg-card/60 no-underline transition-colors"
++            >
++              About
++            </Link>
+           </nav>
