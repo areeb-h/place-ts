@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/create-app",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "type": "module",
   "description": "Scaffolder — `bunx @place-ts/create-app <name>` creates a new place-ts project from a starter template.",
   "keywords": [

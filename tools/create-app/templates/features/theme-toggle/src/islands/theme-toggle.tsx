@@ -1,41 +1,66 @@
-// Theme toggle island. Reads the framework's `theme()` cookie + sets
-// it on click; the next page render uses the new mode. Because the
-// framework injects an early-paint script that reads the cookie
-// BEFORE first paint, hard refreshes show the user's preferred
-// theme with no flash.
+// Theme toggle island — segmented control for system / light / dark.
 //
-// Auto-imported: `island`, `state`. The framework exposes
-// `document.cookie` reads from the client, so this island runs in
-// the browser only.
+// The framework handles the heavy lifting:
+//   - `setTheme(tokens, choice)` strips every theme-* class on <html>,
+//     adds the new one (or none for 'system'), sets `data-place-theme`,
+//     and persists the choice as a long-lived cookie.
+//   - The framework's `themeEarlyScript()` runs before paint on every
+//     page (including hard refresh + static export) — it reads the
+//     cookie and applies the class with zero flash.
+//   - When the cookie is 'system' or unset, no theme class is on root,
+//     so the stylesheet's `@media (prefers-color-scheme: …)` bindings
+//     drive appearance from the OS preference.
+//
+// Initial state comes from `<html data-place-theme="…">`, which the
+// early script sets pre-paint. On the server (where there's no
+// document), default to 'system'.
+//
+// Auto-imported: `island`, `state`. The island ships ~1kB of client JS.
 
-const COOKIE = 'place-theme'
-const readCookie = (): 'dark' | 'light' => {
-  if (typeof document === 'undefined') return 'dark'
-  const m = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=([^;]+)`))
-  return (m?.[1] as 'dark' | 'light') ?? 'dark'
+import { setTheme } from '@place-ts/component'
+import { tokens } from '../theme.ts'
+
+type Choice = 'system' | 'light' | 'dark'
+
+const CHOICES: ReadonlyArray<{ value: Choice; label: string; symbol: string }> = [
+  { value: 'system', label: 'System theme', symbol: '◑' },
+  { value: 'light', label: 'Light theme', symbol: '☀' },
+  { value: 'dark', label: 'Dark theme', symbol: '☾' },
+]
+
+const readInitialChoice = (): Choice => {
+  if (typeof document === 'undefined') return 'system'
+  const v = document.documentElement.dataset['placeTheme']
+  if (v === 'light' || v === 'dark' || v === 'system') return v
+  return 'system'
 }
 
 export default island(() => {
-  const mode = state<'dark' | 'light'>(readCookie())
+  const choice = state<Choice>(readInitialChoice())
 
-  const toggle = (): void => {
-    const next = mode() === 'dark' ? 'light' : 'dark'
-    mode.set(next)
-    // biome-ignore lint/suspicious/noDocumentCookie: sample template — direct cookie matches framework's early-paint reader
-    document.cookie = `${COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`
-    // Apply immediately — the framework keys the body on `<theme>` class.
-    document.documentElement.classList.remove('dark', 'light')
-    document.documentElement.classList.add(next)
+  const pick = (next: Choice): void => {
+    choice.set(next)
+    setTheme(tokens, next)
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label="Toggle theme"
-      class="rounded-md border border-border bg-card px-3 py-1.5 text-sm text-fg hover:bg-bg transition-colors"
-    >
-      {() => (mode() === 'dark' ? '☾ dark' : '☀ light')}
-    </button>
+    <fieldset class="inline-flex items-center gap-0.5 rounded-md border border-border bg-card/60 p-0.5">
+      <legend class="sr-only">Theme</legend>
+      {CHOICES.map((c) => (
+        <button
+          type="button"
+          aria-label={c.label}
+          aria-pressed={() => (choice() === c.value ? 'true' : 'false')}
+          onClick={() => pick(c.value)}
+          class={() =>
+            choice() === c.value
+              ? 'rounded px-2 py-1 text-sm font-medium bg-bg text-fg shadow-sm'
+              : 'rounded px-2 py-1 text-sm text-muted hover:text-fg transition-colors'
+          }
+        >
+          <span aria-hidden="true">{c.symbol}</span>
+        </button>
+      ))}
+    </fieldset>
   )
 })
