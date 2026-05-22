@@ -198,6 +198,19 @@ export interface AppConfig extends Omit<ServeOptions, 'routes' | 'port'> {
  * on the server.
  */
 export interface App {
+  /**
+   * Env-aware entry point (0.9.1) — checks `PLACE_BUILD` and dispatches:
+   *   - `PLACE_BUILD` set → `.build({ outDir: process.env.PLACE_BUILD })`.
+   *   - Unset → `.run()`.
+   *
+   * This collapses the template's `buildOutDir` ternary into a single
+   * line: `export default await app({...}).start()`.
+   *
+   * For explicit control, use `.serve()` / `.run()` / `.build()`
+   * directly. `start()` is sugar for the common `bun src/app.ts` + `bun
+   * run build` dual usage.
+   */
+  start(): Promise<Bun.Server<unknown> | undefined>
   /** Start Bun.serve with the derived routes. Server-side only. */
   serve(): Promise<Bun.Server<unknown>>
   /**
@@ -426,13 +439,13 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
   // lets the same code path compile to dead-code on `target: 'browser'`
   // (Bun.build replaces `typeof process` with `'undefined'`).
   //
-  // **Misconfig diagnostics (0.5.1).** Silently defaulting on an
-  // unparseable `PORT` env var was a known footgun — a typo in a
-  // deployment env var would land the app on 5174 with no signal.
-  // We now warn loudly on:
-  //   - `PORT` set but unparseable (NaN, negative, > 65535).
-  //   - No `PORT` but a port-like env var (`APP_PORT`, `SERVER_PORT`,
-  //     etc.) is set — likely the user meant `PORT`.
+  // **Misconfig diagnostics (0.5.1).** A `PORT` env var that's set but
+  // unparseable used to silently fall back to 5174 — that's a real
+  // deployment footgun, so we warn. The previous version also tried to
+  // suggest "did you mean PORT?" when other port-named env vars
+  // existed; in practice that fired on environment-injected vars
+  // (Claude Code's CLAUDE_CODE_SSE_PORT, CI runner vars, etc.) so it
+  // produced spam instead of help. Dropped in 0.9.1.
   const resolvePort = (): number => {
     if (typeof config.port === 'number') return config.port
     if (typeof process !== 'undefined') {
@@ -444,18 +457,6 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
         console.warn(
           `app(): env var PORT='${raw}' is not a valid port number (expected 1-65535). Falling back to 5174.`,
         )
-      } else {
-        // No PORT set — check for likely-typo env vars that contain
-        // "port" so a misnamed env var doesn't silently get ignored.
-        const portLikeVars = Object.keys(process.env ?? {}).filter(
-          (k) => k !== 'PORT' && /port/i.test(k) && /^\d+$/.test(String(process.env?.[k] ?? '')),
-        )
-        if (portLikeVars.length > 0) {
-          // biome-ignore lint/suspicious/noConsole: explicit misconfig warning
-          console.warn(
-            `app(): no PORT env var set, but found port-like vars: ${portLikeVars.join(', ')}. Did you mean PORT? Falling back to 5174.`,
-          )
-        }
       }
     }
     return 5174
@@ -599,8 +600,25 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
     }
     return patched
   }
-  return {
+  const appObj: App = {
     routes,
+    /**
+     * Env-aware dispatch (0.9.1). Collapses the template's old
+     * `buildOutDir` ternary into a single call. The branching logic:
+     *   - `PLACE_BUILD` env var set → static export to that dir.
+     *   - Unset → start the dev/prod server.
+     * Apps that want explicit control still use `.serve()` / `.build()`
+     * directly; `start()` is the convenience entry for the common
+     * "one file, two modes" pattern.
+     */
+    async start(): Promise<Bun.Server<unknown> | undefined> {
+      const outDir = typeof process !== 'undefined' ? process.env['PLACE_BUILD'] : undefined
+      if (outDir !== undefined && outDir.length > 0) {
+        await appObj.build({ outDir })
+        return
+      }
+      return appObj.run()
+    },
     async serve(): Promise<Bun.Server<unknown>> {
       if (typeof window !== 'undefined') {
         throw new Error(
@@ -643,6 +661,7 @@ export function app(arg1: AppConfig | readonly AnyPage[], arg2: AppOptions = {})
       await serve({ ...opts, staticExport: { outDir: buildOptions.outDir } })
     },
   }
+  return appObj
 }
 
 /**

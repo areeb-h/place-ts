@@ -39,15 +39,34 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   const filled = await promptForMissing(args)
 
   const targetPath = resolve(filled.targetDir)
-
+  // **Current-directory mode (0.9.1).** When `filled.targetDir === '.'`,
+  // the user asked to scaffold INTO their cwd. The pre-existing
+  // "non-empty target" check would always fail (cwd has at least
+  // `.git`, hidden files, etc.). Instead, enumerate which template
+  // files would CONFLICT with existing files and refuse the install
+  // only when there's an actual collision. Empty dir / no-collision
+  // cases proceed silently.
+  const intoCurrentDir = filled.targetDir === '.'
   if (existsSync(targetPath)) {
-    const entries = readdirSync(targetPath)
-    if (entries.length > 0) {
-      process.stderr.write(
-        `error: target directory '${filled.targetDir}' is not empty (${entries.length} entries). ` +
-          'Pick a different name or remove the existing directory.\n',
-      )
-      return 1
+    if (intoCurrentDir) {
+      const conflicts = listTemplateConflicts(targetPath, filled.template)
+      if (conflicts.length > 0) {
+        process.stderr.write(
+          `error: scaffolding into '.' would overwrite ${conflicts.length} existing file(s):\n` +
+            conflicts.map((c) => `  - ${c}`).join('\n') +
+            `\nMove or remove the conflicting files, or scaffold into a fresh directory.\n`,
+        )
+        return 1
+      }
+    } else {
+      const entries = readdirSync(targetPath)
+      if (entries.length > 0) {
+        process.stderr.write(
+          `error: target directory '${filled.targetDir}' is not empty (${entries.length} entries). ` +
+            'Pick a different name or remove the existing directory.\n',
+        )
+        return 1
+      }
     }
   }
 
@@ -62,7 +81,11 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
 
   await copyTemplate(templatePath, targetPath, filled.name)
 
-  process.stdout.write(`\n  ✓ created ${filled.name} at ${targetPath}\n`)
+  process.stdout.write(
+    intoCurrentDir
+      ? `\n  ✓ scaffolded ${filled.name} into ${targetPath}\n`
+      : `\n  ✓ created ${filled.name} at ${targetPath}\n`,
+  )
 
   if (!filled.skipInstall) {
     process.stdout.write('  → installing dependencies (bun install)…\n')
@@ -81,7 +104,9 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
   }
 
   process.stdout.write(
-    `\nDone. Next steps:\n\n  cd ${filled.name}\n  bun dev\n\nDocs: https://github.com/areeb-h/place-ts\n`,
+    intoCurrentDir
+      ? `\nDone. Next steps:\n\n  bun dev\n\nDocs: https://github.com/areeb-h/place-ts\n`
+      : `\nDone. Next steps:\n\n  cd ${filled.name}\n  bun dev\n\nDocs: https://github.com/areeb-h/place-ts\n`,
   )
   return 0
 }
@@ -121,6 +146,36 @@ export async function copyTemplate(
       await writeFile(finalDest, replaced)
     }
   }
+}
+
+/**
+ * Walk the template tree and report every relative path that already
+ * exists in the target. Used by the `.`-into-current-dir path to give
+ * the user a precise conflict list instead of just "directory not
+ * empty". Returns paths relative to `targetPath`.
+ */
+function listTemplateConflicts(targetPath: string, template: string): string[] {
+  const here = dirname(fileURLToPath(import.meta.url))
+  const templatePath = resolve(here, '..', 'templates', template)
+  if (!existsSync(templatePath)) return []
+  const conflicts: string[] = []
+  const walk = (src: string, rel: string): void => {
+    const entries = readdirSync(src, { withFileTypes: true })
+    for (const e of entries) {
+      // Apply the same `_gitignore` → `.gitignore` rename the copy
+      // step uses, so the conflict check sees the actual destination.
+      const destName = e.name.startsWith('_') ? `.${e.name.slice(1)}` : e.name
+      const relPath = rel === '' ? destName : `${rel}/${destName}`
+      const destAbs = join(targetPath, relPath)
+      if (e.isDirectory()) {
+        walk(join(src, e.name), relPath)
+      } else if (e.isFile() && existsSync(destAbs)) {
+        conflicts.push(relPath)
+      }
+    }
+  }
+  walk(templatePath, '')
+  return conflicts
 }
 
 // Run if invoked directly (Bun's bin entry).

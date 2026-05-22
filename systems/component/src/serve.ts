@@ -2491,9 +2491,52 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // is too narrow.
   // biome-ignore lint/suspicious/noExplicitAny: Bun.serve fetch-return-type narrowing
   const fetchCast = fetch as any
-  const server = wsHandler
-    ? Bun.serve({ port, fetch: fetchCast, websocket: wsHandler })
-    : Bun.serve({ port, fetch: fetchCast })
+  // **Port walk on EADDRINUSE (0.9.1).** If the requested port is
+  // already bound (common during dev: a prior `bun dev` left a
+  // zombie, or another process took the slot), walk up to PORT+9
+  // looking for a free one instead of crashing. Vite + Next behave
+  // this way; matches the "save and refresh" expectation. Loud:
+  // prints the actual port to stderr so the user notices.
+  const tryServe = (
+    candidatePort: number,
+  ): Bun.Server<unknown> | { code: 'EADDRINUSE' } | { code: 'OTHER'; err: unknown } => {
+    try {
+      return wsHandler
+        ? Bun.serve({ port: candidatePort, fetch: fetchCast, websocket: wsHandler })
+        : Bun.serve({ port: candidatePort, fetch: fetchCast })
+    } catch (err) {
+      const code = (err as { code?: string } | null)?.code
+      if (code === 'EADDRINUSE') return { code: 'EADDRINUSE' }
+      return { code: 'OTHER', err }
+    }
+  }
+  let server: Bun.Server<unknown> | null = null
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidate = port + attempt
+    const result = tryServe(candidate)
+    if (result instanceof Object && 'stop' in result) {
+      server = result as Bun.Server<unknown>
+      if (attempt > 0) {
+        // biome-ignore lint/suspicious/noConsole: dev-only diagnostic
+        console.error(
+          `[place] port ${port} in use — using ${candidate} instead. ` +
+            `Set PORT (or app({ port })) to pin a specific port.`,
+        )
+      }
+      break
+    }
+    if ('code' in result && result.code === 'OTHER') {
+      throw (result as { err: unknown }).err
+    }
+    // EADDRINUSE: try next port.
+  }
+  if (server === null) {
+    throw new Error(
+      `serve: ports ${port}-${port + 9} are all in use. ` +
+        "Stop the conflicting processes (e.g. a previous `bun dev` that didn't exit) " +
+        'or pass `app({ port })` / `PORT=…` to pick a different range.',
+    )
+  }
   if (wantsBanner) {
     process.stdout.write(
       formatStartupBanner({

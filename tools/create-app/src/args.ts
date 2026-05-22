@@ -110,6 +110,11 @@ export function validateName(name: string): string | null {
  * Currently the only required arg is `name`; everything else has a
  * default. When the user passes `--yes` or stdin isn't a TTY, we
  * require the name on the command line — no interactive prompt.
+ *
+ * **Current-directory mode (0.9.1)**: `<name> = '.'` scaffolds into
+ * the current working directory and uses the directory's basename as
+ * the package name. Matches `npm create vite@latest .` UX. The empty
+ * non-empty target-dir check still applies (refuse to overwrite).
  */
 export async function promptForMissing(args: CreateAppArgs): Promise<CreateAppArgs> {
   const out = { ...args }
@@ -123,6 +128,23 @@ export async function promptForMissing(args: CreateAppArgs): Promise<CreateAppAr
       )
     }
     out.name = await prompt('Project name: ')
+  }
+
+  // `.` is a special name meaning "scaffold here". Derive the package
+  // name from the cwd's basename and set the target dir to '.'. The
+  // package name still must validate; if the cwd's basename has
+  // unfriendly characters, slugify it.
+  if (out.name === '.') {
+    const cwd = typeof process !== 'undefined' ? process.cwd() : '.'
+    const baseRaw = cwd.split(/[/\\]/).pop() ?? 'place-app'
+    // Apply the same npm-style normalization as validateName expects.
+    const slug = baseRaw
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '-')
+      .replace(/^[._]+/, '')
+      .replace(/-+$/g, '')
+    out.name = slug.length > 0 ? slug : 'place-app'
+    out.targetDir = '.'
   }
 
   const nameError = validateName(out.name)
