@@ -1190,9 +1190,22 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           `package.json. Underlying error: ${msg}`,
       )
     }
-    // Default content: the project working directory. Apps that keep
-    // source elsewhere pass an explicit `tailwind.content` glob.
-    const defaultContent = `${process.cwd()}/**/*.{tsx,jsx,ts,js,html}`
+    // Default content: the project working directory PLUS every
+    // installed `@place-ts/*` package's `src/`. Tailwind v4's scanner
+    // ignores `node_modules` by default, which silently broke utility
+    // classes used by design-system components (e.g. `bg-card/60` on
+    // `<ThemeToggle>`) — the class string lands in the SSR'd HTML but
+    // no matching rule is generated, so the element renders unstyled.
+    // Apps that keep source elsewhere pass an explicit
+    // `tailwind.content` glob; we still concat the platform-package
+    // globs onto it so the user never has to know.
+    const cwd = process.cwd()
+    const platformContent = [
+      `${cwd}/node_modules/@place-ts/component/src/**/*.{tsx,jsx,ts,js}`,
+      `${cwd}/node_modules/@place-ts/design/src/**/*.{tsx,jsx,ts,js}`,
+      `${cwd}/node_modules/@place-ts/devtools/src/**/*.{tsx,jsx,ts,js}`,
+    ]
+    const userContent = tw.content ?? [`${cwd}/**/*.{tsx,jsx,ts,js,html}`]
     // `base` accepts the bare CSS string or a `themeTokens()` result
     // (object with `.base`) directly — the latter saves the
     // `base: tokens.base` boilerplate.
@@ -1200,7 +1213,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       tw.base && typeof tw.base === 'object' ? tw.base.base : (tw.base as string | undefined)
     const tailwindStart = performance.now()
     const result = await tailwind({
-      content: tw.content ?? [defaultContent],
+      content: [...userContent, ...platformContent],
       ...(baseCss ? { base: baseCss } : {}),
     })
     timings.tailwindMs = performance.now() - tailwindStart
