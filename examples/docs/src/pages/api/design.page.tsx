@@ -200,6 +200,33 @@ const open = state(false)
 // (Chrome 129+, Safari 18.2+, Firefox 131+). Older browsers get
 // instant open/close — graceful degradation, no polyfill.`
 
+const THEME_TOGGLE_EX = `import { ThemeToggle } from '@place-ts/design'
+
+// Defaults: segmented control with System · Light · Dark
+<ThemeToggle />
+
+// Cycle: single button advancing system → light → dark → system
+<ThemeToggle variant="cycle" />`
+
+const THEME_TOGGLE_PROPS = `<ThemeToggle
+  variant="segmented"                       // 'segmented' (default) | 'cycle'
+  size="md"                                 // 'sm' | 'md' (default) | 'lg'
+  includeSystem={true}                      // (default) include 'system' option
+  modes={['light', 'dark']}                 // restrict to specific modes (default: from window.__placeTheme)
+  labels={{
+    system: 'Auto',
+    light:  'Day',
+    dark:   'Night',
+  }}                                        // override per-mode aria-label / cycle text
+  icons={{
+    system: <DesktopIcon />,                // any JSX View
+    light:  <SunIcon />,
+    dark:   <MoonIcon />,
+  }}
+  class="ml-auto"                           // additive Tailwind via cls()
+  aria-label="Theme"                        // group label (default: 'Theme')
+/>`
+
 const MENU_EX = `import { Menu, Button } from '@place-ts/design'
 
 const MENU_ID = 'post-actions'
@@ -480,6 +507,29 @@ export default page('/design', {
         <code>::details-content</code> on modern browsers; older browsers get instant open / close.
       </p>
       <CodeBlock code={DISCLOSURE_EX} />
+
+      <h2>
+        <code>ThemeToggle</code>
+      </h2>
+      <p>
+        Drop-in segmented or cycle control for the framework's theme system. A thin wrapper over
+        <code>useTheme()</code> from <code>@place-ts/component</code> — reads the
+        <code>place-theme</code> cookie via the framework's early-paint stash, dispatches
+        cross-island sync events, and accepts a small but complete prop surface for presentation
+        tweaks. Drop one tier (use <code>useTheme()</code> directly) for full BYO-UI.
+      </p>
+      <CodeBlock code={THEME_TOGGLE_EX} />
+
+      <p>Prop surface — everything below is optional:</p>
+      <CodeBlock code={THEME_TOGGLE_PROPS} />
+
+      <p>
+        Live (the toggle in the header of this docs site uses this component). The 'segmented'
+        variant renders three buttons (System · Light · Dark); 'cycle' renders one button advancing
+        through the modes. Customization beyond the prop surface drops one tier to{' '}
+        <code>useTheme()</code> — see the <Link to="/recipes/theming">Theming &amp; dark mode</Link>{' '}
+        recipe for the four-tier customization ladder.
+      </p>
 
       <h2>
         <code>CodeBlock</code>

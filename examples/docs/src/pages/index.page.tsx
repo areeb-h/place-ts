@@ -10,17 +10,17 @@ import { Badge, Card, CodeBlock } from '@place-ts/design'
 import { TypingCode } from '../components/typing-code.tsx'
 import { button, inlineCode, sectionLabel } from '../design-system.ts'
 
-const APP_SHAPE = `import { app } from '@place-ts/component/server'
+const APP_SHAPE = `import { app, discoverPages } from '@place-ts/component/server'
 import { pathRouter } from '@place-ts/routing'
-import home from './pages/home.page'
-import about from './pages/about.page'
-import { rootLayout } from './layouts/root.layout'
+import { mainLayout } from './layouts/main.layout'
+import { tokens } from './theme'
 
-export default app({
-  pages: [home, about],
-  layout: rootLayout,
+export default await app({
+  pages: await discoverPages('./src/pages'),
+  layout: mainLayout,
+  theme: tokens,
   router: pathRouter,
-}).run()`
+}).start()`
 
 interface Feature {
   readonly title: string
@@ -52,13 +52,22 @@ const FEATURES: readonly Feature[] = [
     body: 'Co-located on:{} dict per page. Auto-typed callers; the path is visible; no Babel pass, no encrypted action IDs. Schema-agnostic — bring your own validator.',
   },
   {
-    title: 'Motion as state',
-    body: '@place-ts/reactivity/motion — animate() returns a Derived<number>. Springs, tweens, sequences. SSR resolves to rest. No <motion.div> factory, no two-runtime split, no 34KB floor.',
+    title: 'Theme system, four-tier DX',
+    body: '<ThemeToggle /> drops in one tag for defaults; useTheme() is the headless primitive for BYO UI; setTheme(name) is the escape hatch. SSR ships no theme class when undecided — OS preference drives via @media, zero blip on hard refresh.',
     tag: 'new',
   },
   {
-    title: 'Design system, native-first',
-    body: '@place-ts/design — Button, Field, Dialog, Toast, Tooltip, Menu, Avatar, Badge, Card. Built on <dialog>, the Popover API, :user-invalid. Curated package, not a 10th system.',
+    title: 'Scaffolder that respects you',
+    body: '`bunx @place-ts/create-app` — three curated templates (minimal · content · app) + five composable feature packs (theme, tests, CI, design, persistence). Interactive picker with sensible defaults; every choice exposed as a flag for CI.',
+    tag: 'new',
+  },
+  {
+    title: 'Production deploy adapters',
+    body: 'createFetchHandler() → Web-standard Request/Response. First-class adapters for Cloudflare Workers, Vercel Build Output, Deno Deploy. Static export emits a CSP-ready _headers file.',
+  },
+  {
+    title: 'Server logs that scan',
+    body: 'PLACE_LOG_LEVEL env var · scoped [hmr] / [isr] prefixes · terminal-rendered error frames with source-mapped file:line · static-asset noise suppressed at default level. Compact startup banner with Local + Network URLs.',
     tag: 'new',
   },
   {
@@ -66,8 +75,12 @@ const FEATURES: readonly Feature[] = [
     body: 'No inline scripts, no inline styles (style:* directives use setProperty). Content-Security-Policy ships sane defaults; CSRF, same-origin, body-limit, prototype-pollution guards all on.',
   },
   {
+    title: 'Motion as state',
+    body: '@place-ts/reactivity/motion — animate() returns a Derived<number>. Springs, tweens, sequences. SSR resolves to rest. No <motion.div> factory, no two-runtime split, no 34KB floor.',
+  },
+  {
     title: 'One CLI, zero config',
-    body: 'Bun.serve + Bun.build out of the box. Tailwind v4 inline. View Transitions opt-in. Content-hashed prod bundles. Source-map-aware dev overlay.',
+    body: 'Bun.serve + Bun.build out of the box. Tailwind v4 inline. Auto port-walk on EADDRINUSE. Content-hashed prod bundles. Source-map-aware dev overlay.',
     tag: 'bun',
   },
 ]
@@ -80,11 +93,12 @@ interface System {
 const SYSTEMS: readonly System[] = [
   {
     name: 'reactivity',
-    summary: 'state · watch · batch · resource · history',
+    summary: 'state · watch · batch · resource · history · motion (spring · tween · sequence)',
   },
   {
     name: 'component',
-    summary: 'page · layout · app · island · Tabs · Show · suspense · Form · virtualList',
+    summary:
+      'page · layout · app · island · Tabs · Show · suspense · Form · virtualList · useTheme · setTheme · adapters',
   },
   {
     name: 'capability',
@@ -96,7 +110,7 @@ const SYSTEMS: readonly System[] = [
   },
   {
     name: 'data',
-    summary: 'collection() — keyed CRUD over State<T[]>',
+    summary: 'collection() — keyed CRUD over State<T[]> · trash/restore · cursor pagination',
   },
   {
     name: 'persistence',
@@ -104,15 +118,17 @@ const SYSTEMS: readonly System[] = [
   },
   {
     name: 'search',
-    summary: 'searchable() · reactive substring + token match',
+    summary: 'searchable() · reactive substring + token match · rank()-based ordering',
   },
   {
     name: 'security',
-    summary: 'CSP-strict · auto-CSRF · same-origin · body-limit',
+    summary:
+      'CSP-strict · auto-CSRF · same-origin · body-limit · criticalAction() · macaroons · audit log',
   },
   {
     name: 'design',
-    summary: 'theme() · themeTokens() · typed CSS-variable theming',
+    summary:
+      'Button · Field · Dialog · Sheet · Combobox · Toast · Tooltip · Menu · ThemeToggle · Prose · CodeBlock',
   },
 ]
 
@@ -125,7 +141,7 @@ export default page('/', {
       <section class="mb-20">
         <Badge intent="accent" class="mb-6 font-mono">
           <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-          v0.11 · static export + first public deploy
+          v0.12 · DX overhaul — templates, logs, theme system
         </Badge>
         <h1 class="text-5xl sm:text-6xl font-semibold tracking-tight text-fg mb-5 leading-[1.05]">
           One platform.

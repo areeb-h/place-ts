@@ -125,10 +125,10 @@ const ROADMAP: readonly Milestone[] = [
   {
     version: 'v0.11',
     title: 'Static export + first public deploy',
-    status: 'now',
+    status: 'done',
     highlights: [
       'app().build() — islands-aware static export (ADR 0051)',
-      'live on Cloudflare Pages — 100/100/100/100 Lighthouse',
+      'live on Cloudflare Pages with auto-emitted _headers (strict CSP)',
       'hover-prefetch SPA navigation — instant, auth-safe',
       'framework-owned theme persistence (no flash), strict static CSP',
       'first public git repository with a layered commit history',
@@ -136,22 +136,36 @@ const ROADMAP: readonly Milestone[] = [
   },
   {
     version: 'v0.12',
-    title: 'Migrations + adapters',
+    title: 'DX overhaul',
+    status: 'done',
+    highlights: [
+      'scaffolder: 3 templates (minimal · content · app) + 5 composable feature packs (theme · tests · ci · design · persistence), interactive picker, --with / --without flags',
+      'create-app architecture: base + overlay layers, unified-diff patches between layers, JSON-merged package.json across stacks',
+      'server logs: PLACE_LOG_LEVEL · log.scope(...) · terminal error frames (source-mapped) · compact 3-section startup banner · build banner for static export',
+      'theme DX: useTheme() headless hook · setTheme(name) no-tokens overload · <ThemeToggle/> in @place-ts/design (segmented + cycle variants) · SSR-blip eliminated by null-class on absent/system cookie',
+      'production deploy adapters: createFetchHandler · Cloudflare Workers · Vercel Build Output · Deno Deploy',
+      'data: trash/restore + cursor pagination · search: rank-based ordering · image optimization via sharpBackend()',
+      'EADDRINUSE port-walk · bunx create-app . into current dir · template-version-pin CI guard across every layer',
+    ],
+  },
+  {
+    version: 'v0.13',
+    title: 'Migrations + benchmarks',
     status: 'next',
     highlights: [
       'migration guides from Next, Remix, TanStack Start',
-      'Cloudflare Workers + Vercel adapters',
-      'create-app templates: blog, dashboard, e-commerce',
+      'published benchmark suite vs Next / Remix / TanStack — honest numbers, no marketing math',
+      'examples gallery with live previews',
     ],
   },
   {
     version: 'v1.0',
-    title: 'Stability + benchmarks',
+    title: 'Stability + freeze',
     status: 'later',
     highlights: [
       'API freeze + semver commitment',
-      'published benchmark suite vs Next / Remix / TanStack',
-      'examples gallery with live previews',
+      'L1 thaw runtime + effect-inference (ADR 0027 — research project)',
+      'Phase 4-6 reactivity (deep work, separate ADR each)',
     ],
   },
 ]
