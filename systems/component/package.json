@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/component",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "description": "Component system — rendering layer on top of @place-ts/reactivity. JSX-shape via TS automatic runtime (per ADR 0002).",
   "keywords": [
@@ -45,7 +45,10 @@
     "./preload": "./src/preload.ts",
     "./auto-imports": "./src/auto-imports.d.ts",
     "./auto-import-plugin": "./src/auto-import-plugin.ts",
-    "./adapters/node": "./src/adapters/node.ts"
+    "./adapters/node": "./src/adapters/node.ts",
+    "./adapters/cloudflare": "./src/adapters/cloudflare.ts",
+    "./adapters/vercel": "./src/adapters/vercel.ts",
+    "./adapters/deno": "./src/adapters/deno.ts"
   },
   "files": [
     "src",

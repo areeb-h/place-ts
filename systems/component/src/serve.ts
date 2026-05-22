@@ -2893,6 +2893,53 @@ function makeAdapterStubServer(): Bun.Server<unknown> {
 //
 // The throwing stub is a few bytes; the function body it replaces was
 // ~21 KB gzipped per the v0.3 bundle breakdown.
+/**
+ * Build the framework's request dispatcher as a standalone Web fetch
+ * handler — no Bun.serve, no port binding. Returns `(req: Request) =>
+ * Promise<Response>` that runs the full pipeline (routing, layouts,
+ * caps, render, security headers, etc.).
+ *
+ * The primary use case is deploying to platforms that own the request
+ * lifecycle themselves (Cloudflare Workers, Vercel Edge, Deno Deploy,
+ * any custom adapter). Those platforms typically expect a Web fetch
+ * handler they invoke per request — `createFetchHandler` is that
+ * handler, fully wired.
+ *
+ * Implementation detail: composes with the existing `Adapter` API by
+ * passing a synthetic adapter that captures `builder.dispatch` into a
+ * closure. So this is build-cost-equivalent to `serve()` — same
+ * Tailwind compile, same island bundling, same startup work — minus
+ * the Bun.serve listen step.
+ *
+ *   // cloudflare worker entry:
+ *   import { createFetchHandler } from '@place-ts/component/server'
+ *   const handler = await createFetchHandler({ routes: {…} })
+ *   export default { fetch: (req) => handler(req) }
+ *
+ * For local dev / Bun-native hosting, use `serve()` directly.
+ */
+export async function createFetchHandler(
+  options: ServeOptions,
+): Promise<(req: Request) => Promise<Response>> {
+  let captured: ((req: Request) => Promise<Response>) | null = null
+  await serve({
+    ...options,
+    adapter: {
+      name: 'fetch-handler',
+      adapt(builder) {
+        captured = (req) => builder.dispatch(req)
+      },
+    },
+  })
+  if (!captured) {
+    throw new Error(
+      'createFetchHandler: builder.dispatch was not captured. ' +
+        'This indicates an internal framework error — please open an issue.',
+    )
+  }
+  return captured
+}
+
 export const serve: (options: ServeOptions) => Promise<Bun.Server<unknown>> =
   // The ternary's condition is constant-folded at build time: with the
   // `__PLACE_BROWSER__: 'true'` define injected by Bun.build for the

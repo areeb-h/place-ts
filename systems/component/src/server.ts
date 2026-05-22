@@ -121,6 +121,7 @@ export {
 export {
   type Adapter,
   type Builder,
+  createFetchHandler,
   resolveTailwindFromTheme,
   type ServeOptions,
   type ServeRoutes,
