@@ -19,6 +19,7 @@
     "test:conformance": "vitest run tests/conformance",
     "test:ui": "vitest --ui",
     "docs": "bun --filter '@place-ts/docs' dev",
+    "build:docs": "bun --filter '@place-ts/docs' build",
     "bench": "vitest bench --run",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

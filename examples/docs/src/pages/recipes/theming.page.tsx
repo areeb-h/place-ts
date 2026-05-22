@@ -89,62 +89,77 @@ import { tokens } from './theme.ts'
 
 const earlyJs = themeEarlyScript(tokens)  // raw JS statement string`
 
-const SWITCH = `// theme-toggle.tsx — three-state segmented control (System / Light /
-// Dark). The canonical pattern, shipped in the create-app
-// \`theme-toggle\` feature pack. \`setTheme(tokens, name)\` strips every
-// theme-* class, adds the chosen one (or none for 'system'), mirrors
-// the choice onto <html data-place-theme>, and writes the cookie —
-// all in one tick.
+const TIER_1 = `// Tier 1 — defaults. Drop one tag in your layout.
+import { ThemeToggle } from '@place-ts/design'
+
+// Renders a segmented control: System · Light · Dark.
+// Persists choice in the place-theme cookie. Survives hard refresh
+// with zero flash (the framework's early-paint script). Multi-instance
+// sync built-in — two <ThemeToggle/>s on the same page stay aligned.
+
+<ThemeToggle />`
+
+const TIER_2 = `// Tier 2 — same component, tweak presentation via props.
+import { ThemeToggle } from '@place-ts/design'
+
+<ThemeToggle
+  variant="cycle"                       // 'segmented' (default) | 'cycle'
+  size="sm"                             // 'sm' | 'md' (default) | 'lg'
+  includeSystem={false}                 // hide the system option
+  modes={['light', 'dark', 'sepia']}    // restrict / override mode list
+  labels={{
+    system: 'Auto',
+    light:  'Day',
+    dark:   'Night',
+  }}
+  icons={{
+    system: <DesktopIcon />,            // any JSX View
+    light:  <SunIcon />,
+    dark:   <MoonIcon />,
+  }}
+  class="ml-auto"                       // additive Tailwind (cls()-merged)
+  aria-label="Theme"
+/>`
+
+const TIER_3 = `// Tier 3 — bring your own UI. The headless hook from the framework
+// returns reactive state + actions; you render whatever you want.
 //
-// Initial state is read from <html data-place-theme>, which the
-// early-paint script sets pre-paint. On a fresh visit with no cookie,
-// the early script defaults to 'system' — no theme class on root, so
-// the stylesheet's @media (prefers-color-scheme) bindings drive
-// appearance from the OS preference with zero JS required.
+//   theme.current()  reactive getter — 'system' | one of theme.modes
+//   theme.set(name)  swaps class + persists cookie + fires sync event
+//   theme.modes      configured mode names from app({ theme })
+//   theme.isSystem() shorthand for theme.current() === 'system'
 
-import { setTheme } from '@place-ts/component'
-import { tokens } from './theme.ts'
-
-type Choice = 'system' | 'light' | 'dark'
-
-const CHOICES: ReadonlyArray<{ value: Choice; label: string; symbol: string }> = [
-  { value: 'system', label: 'System theme', symbol: '◑' },
-  { value: 'light',  label: 'Light theme',  symbol: '☀' },
-  { value: 'dark',   label: 'Dark theme',   symbol: '☾' },
-]
-
-const readInitial = (): Choice => {
-  if (typeof document === 'undefined') return 'system'
-  const v = document.documentElement.dataset['placeTheme']
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
-}
+import { useTheme } from '@place-ts/component'
 
 export default island(() => {
-  const choice = state<Choice>(readInitial())
-  const pick = (next: Choice) => {
-    choice.set(next)
-    setTheme(tokens, next)
-  }
+  const theme = useTheme()
   return (
-    <fieldset class="inline-flex items-center gap-0.5 rounded-md border border-border bg-card/60 p-0.5">
-      <legend class="sr-only">Theme</legend>
-      {CHOICES.map((c) => (
-        <button
-          type="button"
-          aria-label={c.label}
-          aria-pressed={() => (choice() === c.value ? 'true' : 'false')}
-          onClick={() => pick(c.value)}
-        >
-          <span aria-hidden="true">{c.symbol}</span>
-        </button>
-      ))}
-    </fieldset>
+    <select
+      value={() => theme.current()}
+      onChange={(e) => theme.set((e.currentTarget as HTMLSelectElement).value)}
+    >
+      <option value="system">System</option>
+      {theme.modes.map((m) => <option value={m}>{m}</option>)}
+    </select>
   )
 })
 
-// Or, for a minimal cycle-button: setTheme(tokens, next) where \`next\`
-// is whichever value you want. 'system' clears every theme class so
-// the stylesheet's prefers-color-scheme bindings take over.`
+// Multiple useTheme() consumers on the same page stay in sync — set()
+// dispatches a 'place:theme-changed' CustomEvent on window, and every
+// other useTheme() handle bumps its reactive cell automatically.`
+
+const TIER_4 = `// Tier 4 — escape hatch. Direct setTheme() call. No reactive state.
+// Useful in handlers far from JSX, in onboarding flows, in form
+// submit callbacks. The string-only overload reads theme info from
+// the framework's window stash — no tokens import needed.
+import { setTheme } from '@place-ts/component'
+
+<button onClick={() => setTheme('dark')}>Force dark</button>
+<button onClick={() => setTheme('system')}>Match OS</button>
+
+// Original tokens-explicit form still works:
+import { tokens } from './theme.ts'
+setTheme(tokens, 'dark')`
 
 const USE_IN_COMPONENTS = `// Use semantic Tailwind classes — they're bound to the CSS
 // variables the theme emits. Theme switching is invisible to
@@ -274,28 +289,54 @@ export default page('/theming', {
       </p>
       <CodeBlock code={EARLY_SCRIPT} />
 
-      <h2>5. Switch themes</h2>
+      <h2>5. Switch themes — four customization tiers</h2>
       <p>
-        <code>setTheme(tokens, theme, options?)</code> flips the active theme: it strips every{' '}
-        <code>theme-*</code> class, adds the chosen one, mirrors the choice onto{' '}
-        <code>&lt;html data-place-theme&gt;</code>, and writes the cookie. The <code>theme</code>{' '}
-        argument accepts a mode name or the special string <code>'system'</code> (which clears every
-        class so the OS preference drives appearance). There is no <code>activeTheme</code> export —
-        read the current choice off <code>&lt;html data-place-theme&gt;</code>.
+        place ships four tiers for theme switching, each one line of code longer than the last. Pick
+        your tier. Each one drops one layer of abstraction in exchange for one more line of code.
+        There is no opinionated middle ground we force on you.
       </p>
+
+      <h3>Tier 1 — defaults</h3>
       <p>
-        The canonical pattern is a three-state segmented control (System · Light · Dark). The
-        <code>create-app</code> scaffolder ships exactly this shape in its <code>theme-toggle</code>{' '}
-        feature pack — fresh scaffolds get a working toggle out of the box.
+        Drop <code>&lt;ThemeToggle /&gt;</code> from <code>@place-ts/design</code> in your layout
+        and you're done. A segmented control with System · Light · Dark, theme-token-aware, with
+        cookie persistence and zero-flash hard-refresh.
       </p>
-      <CodeBlock code={SWITCH} />
+      <CodeBlock code={TIER_1} />
+
+      <h3>Tier 2 — tweak presentation via props</h3>
+      <p>
+        Same component, more knobs. Switch to a single-button cycle, hide the system option, supply
+        a custom mode list, override per-mode labels and icons, attach additive Tailwind classes.
+      </p>
+      <CodeBlock code={TIER_2} />
+
+      <h3>Tier 3 — bring your own UI</h3>
+      <p>
+        The headless primitive — <code>useTheme()</code> from <code>@place-ts/component</code> —
+        returns the reactive current choice + a setter + the configured mode list. Build any UI you
+        want. This is the answer when the design-system styled <code>&lt;ThemeToggle&gt;</code>{' '}
+        doesn't fit. No need to import the app's <code>tokens</code> object — the framework's
+        early-paint script stashes everything <code>setTheme</code> / <code>useTheme</code> need on
+        <code>window.__placeTheme</code>.
+      </p>
+      <CodeBlock code={TIER_3} />
+
+      <h3>Tier 4 — escape hatch</h3>
+      <p>
+        Direct <code>setTheme(name)</code> call. No reactive state, no component. Useful for one-off
+        toggle buttons buried in onboarding flows or form-submit handlers.
+      </p>
+      <CodeBlock code={TIER_4} />
 
       <Callout kind="note" title="System is the implicit default">
-        On a fresh visit (no <code>place-theme</code> cookie), the early-paint script applies the
-        literal value <code>'system'</code> — no theme class on <code>&lt;html&gt;</code>. The
-        stylesheet's <code>@media (prefers-color-scheme: …)</code> bindings then drive appearance
-        from the OS preference, with zero JS. Users only see your configured <code>default</code>{' '}
-        mode if they explicitly pick it from the toggle.
+        On a fresh visit (no <code>place-theme</code> cookie), the framework SSRs <em>no</em> theme
+        class on <code>&lt;html&gt;</code>. The stylesheet's{' '}
+        <code>@media (prefers-color-scheme: …)</code> bindings then drive appearance from the OS
+        preference, with zero JS and zero flash. Users only see your configured <code>default</code>{' '}
+        mode if they explicitly pick it from the toggle. This is the 0.10.1 SSR blip fix — earlier
+        versions sent the default class and the early-paint script had to swap it out, producing a
+        visible flicker when the OS preference differed from the configured default.
       </Callout>
 
       <h2>6. Use in components</h2>

@@ -76,6 +76,12 @@ export {
 export { Copy, type CopyProps } from './Copy.tsx'
 export { Prose, type ProseProps } from './Prose.tsx'
 export {
+  ThemeToggle,
+  type ThemeToggleProps,
+  type ThemeToggleSize,
+  type ThemeToggleVariant,
+} from './ThemeToggle.tsx'
+export {
   Disclosure,
   type DisclosureIntent,
   type DisclosurePart,

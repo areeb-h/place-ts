@@ -681,8 +681,10 @@ export {
   type ColorMode,
   type ColorModeMap,
   DEFAULT_THEME_COOKIE,
+  type PlaceThemeWindowStash,
   readThemeFromRequest,
   setTheme,
+  type ThemeApi,
   type ThemeMap,
   type ThemeOptions,
   type ThemeTokens,
@@ -694,6 +696,7 @@ export {
   themeCookieHeader,
   themeEarlyScript,
   themeTokens,
+  useTheme,
 } from './theme.ts'
 // Viewport reactivity primitive (ADR 0034). One inline runtime, one
 // reactive accessor namespace; consumers subscribe instead of each

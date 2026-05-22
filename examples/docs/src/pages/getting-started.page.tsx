@@ -25,7 +25,7 @@ const TEMPLATES = `Templates:
   app         interactive SaaS — @place-ts/persistence + design system
 
 Features (combine freely with any template):
-  theme-toggle    System · Light · Dark segmented control (default ON)
+  theme-toggle    <ThemeToggle/> (System · Light · Dark) — default ON
   tests           vitest + sample test
   ci              GitHub Actions workflow
   design-system   @place-ts/design imports

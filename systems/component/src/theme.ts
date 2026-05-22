@@ -46,6 +46,8 @@
 //   serve({ tailwind: { base: tokens.base, content: [...] }, ... })
 //   page({ htmlClass: tokens.htmlClass('dark'), bodyClass: 'bg-bg text-fg', view: () => ... })
 
+import { state } from '@place-ts/reactivity'
+
 /**
  * Per-theme tokens. Keys are CSS custom property names (must start with
  * `--`); values are CSS expressions (`oklch(...)`, `#fff`, `1rem`, etc).
@@ -688,18 +690,32 @@ export const DEFAULT_THEME_COOKIE = 'place-theme'
 /**
  * Read the user's chosen theme from a Request's `Cookie` header.
  *
- * The signature takes the bare `{ default, names }` slice of
- * `ThemeTokens` (rather than the full object) so TypeScript's
- * function-parameter contravariance doesn't reject narrowed
- * `htmlClass` callbacks at the call site.
+ * Returns `null` when the cookie is absent, set to `'system'`, or set
+ * to an unknown / tampered value — meaning "no theme class on root."
+ * The caller (serve.ts) emits an empty `htmlClass` prefix in that case,
+ * so the stylesheet's `@media (prefers-color-scheme: …)` bindings drive
+ * appearance from the OS preference with zero JS at first paint. This
+ * eliminates the flash-of-default-theme blip on hard refresh (0.10.1).
+ *
+ * Returns a mode name only when the cookie is explicitly set to a
+ * known mode — in that case the framework SSRs the matching theme-X
+ * class and the @media bindings stay out of the way.
+ *
+ * The signature takes the bare `{ names }` slice of `ThemeTokens`
+ * (rather than the full object) so TypeScript's function-parameter
+ * contravariance doesn't reject narrowed `htmlClass` callbacks at the
+ * call site. The `default` field is no longer consulted by this
+ * function — it stays on `ThemeTokens` for use by `themeTokens()`
+ * (where it determines which mode's tokens land in the `@theme {…}`
+ * block).
  */
 export function readThemeFromRequest<TName extends string>(
   req: Request,
-  tokens: { default: TName; names: ReadonlyArray<TName> },
+  tokens: { names: ReadonlyArray<TName> },
   cookieName = DEFAULT_THEME_COOKIE,
-): TName {
+): TName | null {
   const cookie = req.headers.get('cookie')
-  if (!cookie) return tokens.default
+  if (!cookie) return null
   // Parse a single cookie value — minimal parser, no quoted-value or
   // path/domain attrs (those are response-side only).
   for (const part of cookie.split(';')) {
@@ -709,13 +725,14 @@ export function readThemeFromRequest<TName extends string>(
     if (k !== cookieName) continue
     const v = decodeURIComponent(part.slice(eq + 1).trim())
     // Validate against the known theme set so a stale or tampered
-    // cookie can't inject an arbitrary class.
+    // cookie can't inject an arbitrary class. 'system' is intentionally
+    // NOT in `tokens.names` — it means "no class," handled by null.
     if ((tokens.names as readonly string[]).includes(v)) {
       return v as TName
     }
-    return tokens.default
+    return null
   }
-  return tokens.default
+  return null
 }
 
 /**
@@ -742,46 +759,196 @@ export function themeCookieHeader(
 }
 
 /**
+ * Runtime theme info stashed on `window` by `themeEarlyScript()` —
+ * synchronously, before any island boots. This is what lets the
+ * `setTheme(name)` overload (no tokens arg) + `useTheme()` work
+ * without forcing every island to import the user's tokens object.
+ *
+ * **Public-ish surface (0.10.1)**: framework consumers and design-
+ * system components read from this. User code SHOULD prefer
+ * `setTheme(name)` / `useTheme()` over reading this directly.
+ */
+export interface PlaceThemeWindowStash {
+  /** Configured mode names from app({ theme }). e.g. ['dark','light']. */
+  readonly names: readonly string[]
+  /** Pre-computed html classes per mode name (parallel array). */
+  readonly classes: readonly string[]
+  /** Cookie name used by setTheme + the early-paint reader. */
+  readonly cookieName: string
+}
+
+declare global {
+  interface Window {
+    /** Set by the framework's theme early-paint script (0.10.1+). */
+    __placeTheme?: PlaceThemeWindowStash
+  }
+}
+
+/**
  * Browser-only: set the theme cookie + apply the class to `<html>`.
- * The full client-side toggle in one call. Pass the result of
- * `themeTokens()` so it knows the class-name shape.
+ * The full client-side toggle in one call.
+ *
+ * Two call shapes:
+ *
+ * 1. **String only** (0.10.1+): `setTheme('dark')`. Reads theme info
+ *    from `window.__placeTheme`, stashed by the framework's early-paint
+ *    script. This is the recommended shape for island code — no need
+ *    to import the app's tokens object. Throws if no theme is
+ *    configured on the app (the stash is absent).
+ *
+ * 2. **Explicit tokens** (back-compat): `setTheme(tokens, 'dark')`.
+ *    Pass the `themeTokens()` result directly. Useful for code that
+ *    runs before the early script (rare) or for explicitly testable
+ *    paths.
  *
  *   import { setTheme } from '@place-ts/component'
- *   <button onClick={() => setTheme(myTokens, 'dark')}>Dark</button>
+ *   <button onClick={() => setTheme('dark')}>Dark</button>
  *
  * The special value `'system'` clears every theme class so the
  * stylesheet's `@media (prefers-color-scheme: …)` bindings drive
  * appearance from the OS preference. The cookie stores `'system'`
  * verbatim; `themeEarlyScript()` re-applies it before paint on the
  * next load.
+ *
+ * Both shapes also dispatch a `'place:theme-changed'` CustomEvent on
+ * window so other `useTheme()` consumers in the same page can sync
+ * their reactive state without reading the DOM.
  */
+export function setTheme(theme: string, options?: { cookieName?: string }): void
 export function setTheme<Themes extends Readonly<Record<string, ThemeMap>>>(
   tokens: ThemeTokens<Themes>,
   theme: keyof Themes | 'system',
   options?: { cookieName?: string },
+): void
+export function setTheme(
+  // biome-ignore lint/suspicious/noExplicitAny: implementation signature accepts both overload shapes
+  arg1: any,
+  // biome-ignore lint/suspicious/noExplicitAny: implementation signature accepts both overload shapes
+  arg2?: any,
+  arg3?: { cookieName?: string },
 ): void {
   if (typeof document === 'undefined') return
-  const html = document.documentElement
-  // Strip every theme- class first.
-  const all = tokens.names.map((n) => tokens.htmlClass(n))
-  for (const c of all) html.classList.remove(c)
-  // 'system' → no class (the @media bindings take over). A named
-  // theme → add its class.
-  if (theme !== 'system') {
-    html.classList.add(tokens.htmlClass(theme))
+
+  // Normalize the two call shapes into a uniform `{ names, classes,
+  // cookieName, theme }` quad. The string-only path reads the window
+  // stash; the tokens-explicit path uses the passed object directly.
+  let names: readonly string[]
+  let classes: readonly string[]
+  let cookieName: string
+  let theme: string
+  if (typeof arg1 === 'string') {
+    const stash = typeof window !== 'undefined' ? window.__placeTheme : undefined
+    if (!stash) {
+      throw new Error(
+        'setTheme(name): no theme registered on window.__placeTheme. ' +
+          'Either pass tokens explicitly (`setTheme(tokens, name)`) or configure ' +
+          '`app({ theme: tokens })` so the framework injects the early-paint stash.',
+      )
+    }
+    names = stash.names
+    classes = stash.classes
+    cookieName = (arg2 as { cookieName?: string } | undefined)?.cookieName ?? stash.cookieName
+    theme = arg1
+  } else {
+    const tokens = arg1 as ThemeTokens<Readonly<Record<string, ThemeMap>>>
+    names = tokens.names
+    classes = tokens.names.map((n: string) => tokens.htmlClass(n))
+    cookieName = arg3?.cookieName ?? DEFAULT_THEME_COOKIE
+    theme = String(arg2)
   }
-  // Mirror the choice onto a data attribute so a theme picker can
-  // drive its pressed state from CSS — no SSR/hydration mismatch,
-  // no blip. `themeEarlyScript()` sets the same attribute pre-paint.
-  html.dataset['placeTheme'] = String(theme)
-  // Persist via cookie so the next request / early script picks the
-  // same choice. We deliberately set `document.cookie` (not the
-  // Cookie Store API, which is Chromium-only) — it works everywhere
-  // and is synchronous, which matches the no-flash toggle UX.
+
+  const html = document.documentElement
+  for (const c of classes) html.classList.remove(c)
+  // 'system' (or any unknown value) → no class. Named theme → add it.
+  if (theme !== 'system') {
+    const idx = names.indexOf(theme)
+    if (idx >= 0) html.classList.add(classes[idx] as string)
+  }
+  html.dataset['placeTheme'] = theme
   // biome-ignore lint/suspicious/noDocumentCookie: synchronous cross-browser cookie write — Cookie Store API not universally available
-  document.cookie =
-    `${options?.cookieName ?? DEFAULT_THEME_COOKIE}=${encodeURIComponent(String(theme))}; ` +
-    `Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`
+  document.cookie = `${cookieName}=${encodeURIComponent(theme)}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`
+
+  // Cross-island sync. `useTheme()` listens for this event so multiple
+  // toggles / readers on the same page stay aligned without polling.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('place:theme-changed', { detail: theme }))
+  }
+}
+
+/**
+ * Reactive handle to the current theme + a setter. The headless
+ * primitive for custom theme toggles — `@place-ts/design`'s
+ * `<ThemeToggle>` is a thin styled wrapper over this.
+ *
+ *   const theme = useTheme()
+ *   <button onClick={() => theme.set('dark')}>
+ *     Currently {theme.current}
+ *   </button>
+ *
+ * **Reactivity**: `current()` is a State getter; it updates when
+ * `theme.set(...)` is called from THIS handle, AND when ANY other
+ * `setTheme` call fires (cross-island, same-tab). Multi-instance sync
+ * goes through a `'place:theme-changed'` CustomEvent on window.
+ *
+ * **Initial state**: read once from `<html data-place-theme="…">`,
+ * which the framework's early-paint script set pre-paint. If no
+ * `theme` is configured on `app()`, `current()` returns `'system'`
+ * and `modes` is empty.
+ *
+ * **Server-side**: returns a frozen handle; `current()` is `'system'`,
+ * `set()` is a no-op. Islands run client-side, so this only matters
+ * if a layout (server-rendered) tries to call `useTheme()` — which
+ * it shouldn't.
+ */
+export interface ThemeApi {
+  /** Reactive current choice — `'system'` | one of the configured mode names. */
+  current(): string
+  /** Set the active theme; persists cookie, swaps class, fires sync event. */
+  set(theme: string): void
+  /** Configured mode names from `app({ theme: tokens })`. */
+  readonly modes: readonly string[]
+  /** Convenience: `current() === 'system'`. */
+  isSystem(): boolean
+}
+
+export function useTheme(): ThemeApi {
+  // Server-side: frozen no-op handle. Layouts shouldn't call useTheme
+  // (it's an island primitive), but if they do we don't want to throw.
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    return Object.freeze({
+      current: () => 'system',
+      set: () => {},
+      modes: [] as readonly string[],
+      isSystem: () => true,
+    })
+  }
+
+  const initial = document.documentElement.dataset['placeTheme'] ?? 'system'
+  const cur = state<string>(initial)
+  const stash = window.__placeTheme
+
+  // Sync to OTHER islands' setTheme calls. The setTheme function above
+  // dispatches `place:theme-changed` after every write; we receive it
+  // here and keep the local state cell aligned. Same-tab only —
+  // cross-tab sync via BroadcastChannel is deferred.
+  window.addEventListener('place:theme-changed', (e) => {
+    const detail = (e as CustomEvent<string>).detail
+    if (typeof detail === 'string' && detail !== cur()) cur.set(detail)
+  })
+
+  return {
+    current: () => cur(),
+    set(next: string): void {
+      // setTheme writes the cookie + class + dispatches the sync event;
+      // the listener above bounces the state cell. We also write
+      // synchronously here so JSX reading cur() in the same tick sees
+      // the new value without waiting for the event loop.
+      cur.set(next)
+      setTheme(next)
+    },
+    modes: stash?.names ?? [],
+    isSystem: () => cur() === 'system',
+  }
 }
 
 /**
@@ -809,6 +976,15 @@ export function themeEarlyScript(
   const applyChecks = tokens.names
     .map((n, i) => `if(v===${JSON.stringify(n)})r.classList.add(${JSON.stringify(classes[i])});`)
     .join('')
+  // **Window stash (0.10.1)**: writes `window.__placeTheme` BEFORE any
+  // island boots so `setTheme(name)` and `useTheme()` can look up
+  // theme info without the caller importing the tokens object. The
+  // stash is plain JSON — minimal cost, large DX win for islands.
+  const stash =
+    `window.__placeTheme={` +
+    `names:[${tokens.names.map((n) => JSON.stringify(n)).join(',')}],` +
+    `classes:[${removeArgs}],` +
+    `cookieName:${JSON.stringify(cookieName)}};`
   return (
     '(function(){try{' +
     `var m=document.cookie.match(/(?:^|; )${cookieName}=([^;]+)/);` +
@@ -817,6 +993,7 @@ export function themeEarlyScript(
     `r.classList.remove(${removeArgs});` +
     applyChecks +
     'r.dataset.placeTheme=v;' +
+    stash +
     '}catch(e){}})()'
   )
 }

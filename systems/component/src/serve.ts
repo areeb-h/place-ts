@@ -2009,10 +2009,7 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     // both ISR and non-ISR paths. Cheap (one cookie-string scan).
     const activeTheme =
       options.theme !== undefined
-        ? readThemeFromRequest(
-            req,
-            options.theme as { default: string; names: ReadonlyArray<string> },
-          )
+        ? readThemeFromRequest(req, options.theme as { names: ReadonlyArray<string> })
         : null
     const htmlClassPrefix =
       options.theme !== undefined && activeTheme !== null

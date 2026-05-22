@@ -186,9 +186,20 @@ describe('cookie helpers — server-side theme persistence', () => {
     },
   })
 
-  test('readThemeFromRequest: returns default when no cookie', () => {
+  test('readThemeFromRequest: returns null when no cookie (system / no class on root)', () => {
+    // 0.10.1 — was `tokens.default`; now `null` so the SSR doesn't ship a
+    // class that the early-paint script would then have to strip (the
+    // class-flip blip the user reported). Null → caller emits no
+    // htmlClass prefix → `@media (prefers-color-scheme)` drives.
     const req = new Request('http://x/')
-    expect(readThemeFromRequest(req, tokens)).toBe('light')
+    expect(readThemeFromRequest(req, tokens)).toBeNull()
+  })
+
+  test('readThemeFromRequest: returns null when cookie is `system` explicitly', () => {
+    const req = new Request('http://x/', {
+      headers: { cookie: 'place-theme=system' },
+    })
+    expect(readThemeFromRequest(req, tokens)).toBeNull()
   })
 
   test('readThemeFromRequest: returns user choice when cookie matches a theme', () => {
@@ -198,11 +209,13 @@ describe('cookie helpers — server-side theme persistence', () => {
     expect(readThemeFromRequest(req, tokens)).toBe('dark')
   })
 
-  test('readThemeFromRequest: ignores unknown theme names (tamper-resistant)', () => {
+  test('readThemeFromRequest: returns null on unknown theme names (tamper-resistant)', () => {
+    // 0.10.1 — was `tokens.default`; now `null` for the same reason as
+    // the no-cookie case: refuse to ship a class the script then strips.
     const req = new Request('http://x/', {
       headers: { cookie: 'place-theme=evil-class' },
     })
-    expect(readThemeFromRequest(req, tokens)).toBe('light')
+    expect(readThemeFromRequest(req, tokens)).toBeNull()
   })
 
   test('readThemeFromRequest: parses cookie among multiple', () => {
@@ -652,5 +665,36 @@ describe('theme() — high-DX theme helper', () => {
     })
     expect(t.base).toContain('--color-success: #0a0;')
     expect(t.base).toContain('--color-warning: #fa0;')
+  })
+})
+
+// =============================================================
+// 0.10.1 — themeEarlyScript stash assertion (node env is fine
+// since we only inspect the emitted JS string, not DOM).
+// =============================================================
+
+describe('themeEarlyScript — writes window.__placeTheme stash (0.10.1)', () => {
+  test('emitted script body includes a window.__placeTheme assignment with names/classes/cookieName', async () => {
+    const { themeEarlyScript } = await import('../../src/theme.ts')
+    const out = themeEarlyScript(
+      {
+        names: ['dark', 'light'] as const,
+        htmlClass: (n: string) => `theme-${n}`,
+      },
+      'place-theme',
+    )
+    expect(out).toContain('window.__placeTheme=')
+    expect(out).toMatch(/names:\["dark","light"\]/)
+    expect(out).toMatch(/classes:\["theme-dark","theme-light"\]/)
+    expect(out).toContain('cookieName:"place-theme"')
+  })
+
+  test('custom cookieName flows into the stash', async () => {
+    const { themeEarlyScript } = await import('../../src/theme.ts')
+    const out = themeEarlyScript(
+      { names: ['a', 'b'] as const, htmlClass: (n: string) => `theme-${n}` },
+      'app-theme',
+    )
+    expect(out).toContain('cookieName:"app-theme"')
   })
 })
