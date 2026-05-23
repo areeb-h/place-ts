@@ -80,7 +80,7 @@ const local = {
   '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
   '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.10.6.tgz',
   '@place-ts/data':       'file:$REPO/systems/data/place-ts-data-0.2.1.tgz',
-  '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.3.1.tgz',
+  '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.3.2.tgz',
   '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.1.tgz',
   '@place-ts/persistence':'file:$REPO/systems/persistence/place-ts-persistence-0.1.1.tgz',
   '@place-ts/reactivity': 'file:$REPO/systems/reactivity/place-ts-reactivity-0.1.0.tgz',
@@ -175,6 +175,49 @@ if ! grep -q 'aria-label="System theme"' "$DIST/index.html"; then
   exit 1
 fi
 echo "      ✓ ThemeToggle rendered into static HTML"
+
+# 0.10.6 — verify the toggle SSRs with ALL THREE buttons (System +
+# Light + Dark). Pre-0.10.6 the static export's useTheme() returned
+# modes=[] (no per-request cap install in the static path), so the
+# segmented control SSRed with only the system button and visibly
+# grew from 1 → 3 buttons on hydration. That's the blip in the
+# header on hard refresh of a deployed static site.
+TOGGLE_BUTTONS=$(grep -oE 'aria-label="(System|Light|Dark) theme"' "$DIST/index.html" | sort -u | wc -l)
+if [[ $TOGGLE_BUTTONS -lt 3 ]]; then
+  echo "      ❌ ThemeToggle SSRs $TOGGLE_BUTTONS button(s); expected 3 (System + Light + Dark)"
+  echo "      (the per-render cap install in static export isn't reaching useTheme — toggle will blip)"
+  grep -oE 'aria-label="[^"]*"' "$DIST/index.html" | head -5
+  exit 1
+fi
+echo "      ✓ ThemeToggle SSRs all 3 buttons (no button-count blip on hydration)"
+
+# Each segmented button must carry the data-place-theme-mode attribute
+# AND the CSS rule that drives the visual pressed style from
+# `<html data-place-theme>` must be in the inlined CSS. Together these
+# guarantee the correct button looks pressed from FIRST paint on a
+# hard refresh of the deployed static site — even though SSR has no
+# cookie context, the early-paint script's data-place-theme=<mode>
+# on <html> drives the visual state via CSS specificity.
+for m in system light dark; do
+  if ! grep -q "data-place-theme-mode=\"$m\"" "$DIST/index.html"; then
+    echo "      ❌ ThemeToggle button for '$m' missing data-place-theme-mode attribute"
+    exit 1
+  fi
+done
+echo "      ✓ All 3 toggle buttons carry data-place-theme-mode"
+
+if ! grep -q 'data-place-theme-mode' "$DIST/index.html"; then
+  echo "      ❌ inlined CSS missing the [data-place-theme-mode] selector"
+  exit 1
+fi
+# Verify the selector chain html[data-place-theme=X] is present in
+# inlined CSS — that's the rule that drives the pressed style.
+if ! grep -qE 'data-place-theme="(dark|light|system)"' "$DIST/index.html"; then
+  echo "      ❌ inlined CSS missing the html[data-place-theme=...] rule"
+  echo "      (the design-system base.css CSS-driven pressed-state rule isn't shipping)"
+  exit 1
+fi
+echo "      ✓ CSS-driven pressed-state rule shipped in inlined CSS"
 
 # Verify no theme-* class is on <html> (we changed this in 0.10.1 — SSR
 # ships no theme class so @media drives appearance from first paint).

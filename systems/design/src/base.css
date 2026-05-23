@@ -411,3 +411,34 @@ html {
 }
 
 } /* end @layer place.components */
+
+/* ============================================================
+ * <ThemeToggle> pressed-state — driven by `<html data-place-theme>`
+ * ============================================================
+ *
+ * The toggle's visual "pressed" highlight is owned by these CSS
+ * rules, not by the JS-set `aria-pressed`. Why: on a STATIC export
+ * the server has no per-request cookie (it ran at build time), so
+ * SSR'd `aria-pressed` always reflects the 'system' default. The
+ * early-paint script reads the cookie BEFORE first paint and sets
+ * `data-place-theme="<mode>"` on `<html>`. Tying the visible pressed
+ * style to that attribute means the correct button looks pressed
+ * from the FIRST paint, even on static deployments — no header blip
+ * on hard refresh.
+ *
+ * `aria-pressed` is still updated reactively by `useTheme()` for
+ * screen-reader correctness; this rule just handles the visual
+ * styling in a way that doesn't rely on a per-request SSR context.
+ *
+ * Specificity (two attribute selectors + ancestor) wins over the
+ * `text-muted` Tailwind utility the recipe applies to unpressed
+ * buttons.
+ */
+html[data-place-theme="system"] [data-place-theme-mode="system"],
+html[data-place-theme="light"]  [data-place-theme-mode="light"],
+html[data-place-theme="dark"]   [data-place-theme-mode="dark"] {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-weight: 500;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}

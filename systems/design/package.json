@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/design",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "description": "Component library — opinionated primitives built on @place-ts/component + @place-ts/reactivity. NOT a 10th platform system; see ADR 0016.",
   "keywords": [

@@ -1,7 +1,7 @@
 {
   "name": "__APP_NAME__",
   "dependencies": {
-    "@place-ts/design": "^0.3.1",
+    "@place-ts/design": "^0.3.2",
     "@place-ts/data": "^0.2.1",
     "@place-ts/search": "^0.2.0"
   }

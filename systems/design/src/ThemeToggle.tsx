@@ -169,14 +169,22 @@ export const ThemeToggle = (props: ThemeToggleProps): View => {
     )
   }
 
-  // Segmented control — one button per option, with reactive
-  // aria-pressed + recipe-driven highlight on the active one.
+  // Segmented control — one button per option. The pressed VISUAL
+  // style is driven by a CSS rule in `@place-ts/design/base.css` that
+  // reads `<html data-place-theme="X">` (set by the early-paint script
+  // BEFORE first paint) and matches the button with the same
+  // `data-place-theme-mode="X"`. This means the correct button looks
+  // pressed from first paint even on static exports where SSR has no
+  // cookie context. `aria-pressed` stays reactive for screen-reader
+  // correctness — it'll be momentarily wrong on static (until JS
+  // hydrates) but the VISUAL state is right immediately.
   return (
     <fieldset class={wrapperClass}>
       <legend class="sr-only">{props['aria-label'] ?? 'Theme'}</legend>
       {allOptions.map((mode) => (
         <button
           type="button"
+          data-place-theme-mode={mode}
           aria-label={labelFor(mode)}
           aria-pressed={() => (theme.current() === mode ? 'true' : 'false')}
           onClick={() => theme.set(mode)}

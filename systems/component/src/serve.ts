@@ -2496,6 +2496,21 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         (page.path !== undefined ? routeToBundle.get(page.path) : undefined) ??
         splitterDefaultBundleUrl ??
         null
+      // Install the SSR theme cap for this render too — the static-
+      // export path doesn't go through `dispatch()`, so without this
+      // the ThemeToggle island SSRs with the legacy fallback
+      // ({active: 'system', names: []}) and the segmented control
+      // visibly grows from 1 → 3 buttons during hydration on the
+      // deployed static site. The dispose is intentionally not stacked
+      // — we re-install for every render in the build loop, which
+      // pushes onto the same module-level cap stack. The static build
+      // is a one-shot process; no concurrent renders, no leak.
+      if (options.theme !== undefined) {
+        _installActiveThemeForSsr({
+          active: 'system',
+          names: (options.theme as { names: ReadonlyArray<string> }).names,
+        })
+      }
       // No `scriptNonce` and no `enableHmr` — a static document carries
       // no per-request nonce (the strict CSP is delivered via `_headers`
       // — T19-B) and is a production artefact.
