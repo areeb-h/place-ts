@@ -17,7 +17,7 @@
 
 import type { Derived } from '../index.ts'
 import { derived, untrack } from '../index.ts'
-import { clock } from './clock.ts'
+import { _retainClock, clock } from './clock.ts'
 
 export interface DelayOptions {
   /** Override the clock (test only). */
@@ -44,17 +44,38 @@ export function delay<T>(source: () => T, ms: number, opts: DelayOptions = {}): 
   let emitted = untrack(source)
   let pending: T = emitted
   let deadline: number | null = null
+  // Clock retainer — held while waiting for a deadline, released once
+  // the delay window has elapsed (deadline === null). Keeps the rAF
+  // loop idle when no delays are pending (0.2.0).
+  let _retain: (() => void) | null = null
+  const _release = (): void => {
+    if (_retain !== null) {
+      _retain()
+      _retain = null
+    }
+  }
 
   return derived(() => {
     const next = source()
-    const t = tickClock()
     if (next !== pending) {
+      // Subscribe to clock + retain only when there's something to wait for.
+      const t = tickClock()
       pending = next
       deadline = t + ms
+      if (_retain === null) _retain = _retainClock()
+      return emitted
     }
-    if (deadline !== null && t >= deadline) {
-      emitted = pending
-      deadline = null
+    // No source change — only subscribe to clock if we're still waiting.
+    if (deadline !== null) {
+      const t = tickClock()
+      if (t >= deadline) {
+        emitted = pending
+        deadline = null
+        _release()
+      }
+    } else {
+      // Settled — make sure we're not retaining.
+      _release()
     }
     return emitted
   })

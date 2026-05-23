@@ -23,7 +23,7 @@
 
 import type { Derived } from '../index.ts'
 import { derived, untrack } from '../index.ts'
-import { clock } from './clock.ts'
+import { _retainClock, clock } from './clock.ts'
 import {
   isAtRest,
   resolveSpring,
@@ -77,19 +77,45 @@ export function animateImpl(
   let value = untrack(target) // start at target — no jump on first read
   let velocity = 0
   let lastT: number | null = null
+  // Clock retainer — non-null while the spring is in motion, null
+  // while at rest. Retain on first integration step; release the
+  // moment `isAtRest` fires. Keeps the global rAF loop idle when
+  // no springs are actively moving (0.2.0 lazy-clock).
+  let _retain: (() => void) | null = null
+  const _release = (): void => {
+    if (_retain !== null) {
+      _retain()
+      _retain = null
+    }
+  }
 
   return derived(() => {
-    const t = tickClock()
     const goal = target()
+    // Fast path: already at rest at the current goal. Don't read the
+    // clock (so this derived drops its clock subscription), don't
+    // retain. The spring is idle; the rAF loop has no reason to fire
+    // for our sake.
+    if (lastT !== null && goal === value && velocity === 0) {
+      _release()
+      return value
+    }
     // First evaluation: snap to target, record clock baseline. No
-    // animation work yet. The next clock tick will kick off the
-    // spring (only if `goal` differs from `value`).
+    // animation work yet — and crucially, we DON'T retain here. If we
+    // did, the first read of a never-animating value would start the
+    // rAF loop for one frame, defeating the lazy-start guarantee.
+    // We still need to subscribe to the clock (to receive subsequent
+    // ticks if the target changes), so we read tickClock() but skip
+    // the retain.
     if (lastT === null) {
-      lastT = t
+      lastT = tickClock()
       value = goal
       velocity = 0
       return value
     }
+    // Active path: spring is moving. Read clock to subscribe + tick on
+    // each frame; retain the rAF loop.
+    const t = tickClock()
+    if (_retain === null) _retain = _retainClock()
     const dt = t - lastT
     lastT = t
     // No time elapsed (e.g. SSR where clock is frozen at 0): the
@@ -101,9 +127,6 @@ export function animateImpl(
       // current value. The browser will tick next frame.
       return value
     }
-    // Already at rest at the goal — short-circuit. Avoids drift from
-    // accumulated floating-point error after the spring settles.
-    if (goal === value && velocity === 0) return value
     // Step the spring. Clamp dt to one frame max — prevents long
     // pauses (tab backgrounded) from making the spring fly past target.
     const dtClamped = Math.min(dt, 32)
@@ -115,6 +138,7 @@ export function animateImpl(
       // sub-precision residue) and skip the spring math.
       value = goal
       velocity = 0
+      _release()
     }
     return value
   })

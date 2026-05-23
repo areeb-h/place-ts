@@ -13,7 +13,7 @@
 
 import type { Derived } from '../index.ts'
 import { derived, untrack } from '../index.ts'
-import { clock } from './clock.ts'
+import { _retainClock, clock } from './clock.ts'
 import { type EasingFn, type EasingPreset, resolveEasing } from './easing.ts'
 
 export interface TweenOptions {
@@ -51,16 +51,34 @@ export function tweenImpl(target: () => number, opts: TweenOptions | number): De
   let endV = startV
   let startT: number | null = null
   let currentV = startV
+  // Clock retainer — held while the tween is interpolating, released
+  // once `elapsed >= duration` (settled). Keeps the global rAF loop
+  // idle when no tweens are in progress (0.2.0 lazy-clock).
+  let _retain: (() => void) | null = null
+  const _release = (): void => {
+    if (_retain !== null) {
+      _retain()
+      _retain = null
+    }
+  }
 
   return derived(() => {
-    const t = tickClock()
     const goal = target()
+    // Fast path: settled at the current goal. Don't read clock (drops
+    // the subscription) and don't retain. The tween is idle.
+    if (startT !== null && goal === endV && currentV === endV) {
+      _release()
+      return currentV
+    }
+    const t = tickClock()
+    if (_retain === null) _retain = _retainClock()
     if (startT === null) {
       // First evaluation: no animation yet, sit at the goal.
       startT = t
       startV = goal
       endV = goal
       currentV = goal
+      _release() // settled immediately at first read
       return currentV
     }
     if (goal !== endV) {
@@ -71,6 +89,7 @@ export function tweenImpl(target: () => number, opts: TweenOptions | number): De
     }
     if (duration === 0) {
       currentV = endV
+      _release()
       return currentV
     }
     const elapsed = t - startT
@@ -80,6 +99,7 @@ export function tweenImpl(target: () => number, opts: TweenOptions | number): De
     }
     if (elapsed >= duration) {
       currentV = endV
+      _release()
       return currentV
     }
     const k = easing(elapsed / duration)

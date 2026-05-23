@@ -10,7 +10,7 @@
 
 import type { Derived } from '../index.ts'
 import { derived } from '../index.ts'
-import { clock } from './clock.ts'
+import { _retainClock, clock } from './clock.ts'
 import { type EasingFn, resolveEasing } from './easing.ts'
 
 export interface Keyframe {
@@ -61,15 +61,37 @@ export function sequence(
   }
   const tickClock = opts.clock ?? clock
   let baseT: number | null = null
+  // Clock retainer — held while we're between first and last keyframe,
+  // released once the timeline finishes (t >= last.at). Keeps the
+  // global rAF loop idle when no sequences are mid-play (0.2.0).
+  let _retain: (() => void) | null = null
+  const _release = (): void => {
+    if (_retain !== null) {
+      _retain()
+      _retain = null
+    }
+  }
 
   return derived(() => {
     const now = tickClock()
     if (baseT === null) baseT = now
     const t = now - baseT
     const first = keyframes[0] as Keyframe
-    if (t <= first.at) return first.value
+    if (t <= first.at) {
+      // Before the timeline starts: not animating yet. The clock IS
+      // subscribed so we re-eval when t crosses first.at; retain so
+      // the rAF runs for that.
+      if (_retain === null) _retain = _retainClock()
+      return first.value
+    }
     const last = keyframes[keyframes.length - 1] as Keyframe
-    if (t >= last.at) return last.value
+    if (t >= last.at) {
+      // After the timeline ends — settled. Release.
+      _release()
+      return last.value
+    }
+    // Mid-timeline — actively interpolating.
+    if (_retain === null) _retain = _retainClock()
     // Linear scan: animations rarely have >10 keyframes; bisection is
     // overkill. Find the segment (prev, next) such that prev.at < t < next.at.
     for (let i = 1; i < keyframes.length; i++) {

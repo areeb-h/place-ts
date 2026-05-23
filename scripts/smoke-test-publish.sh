@@ -96,7 +96,7 @@ const local = {
   '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.3.3.tgz',
   '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.1.tgz',
   '@place-ts/persistence':'file:$REPO/systems/persistence/place-ts-persistence-0.1.1.tgz',
-  '@place-ts/reactivity': 'file:$REPO/systems/reactivity/place-ts-reactivity-0.1.0.tgz',
+  '@place-ts/reactivity': 'file:$REPO/systems/reactivity/place-ts-reactivity-0.1.1.tgz',
   '@place-ts/routing':    'file:$REPO/systems/routing/place-ts-routing-0.1.1.tgz',
   '@place-ts/search':     'file:$REPO/systems/search/place-ts-search-0.2.0.tgz',
   '@place-ts/security':   'file:$REPO/systems/security/place-ts-security-0.1.1.tgz',

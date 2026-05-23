@@ -74,4 +74,11 @@ export {
 
 // Test-only helpers — internal underscore prefix; callers should not
 // rely on these in production code.
-export { _setClockForTest, _advanceClockForTest } from './clock.ts'
+export {
+  _advanceClockForTest,
+  _isTickingForTest,
+  _resetClockForTest,
+  _retainClock,
+  _retainCountForTest,
+  _setClockForTest,
+} from './clock.ts'
