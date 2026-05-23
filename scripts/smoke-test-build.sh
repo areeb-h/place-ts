@@ -78,7 +78,7 @@ const p = '$SCRATCH/package.json'
 const pkg = JSON.parse(readFileSync(p, 'utf8'))
 const local = {
   '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
-  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.10.4.tgz',
+  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.10.6.tgz',
   '@place-ts/data':       'file:$REPO/systems/data/place-ts-data-0.2.1.tgz',
   '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.3.1.tgz',
   '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.1.tgz',
@@ -187,5 +187,37 @@ if echo "$HTML_TAG" | grep -qE 'class="[^"]*\btheme-(dark|light)\b'; then
   exit 1
 fi
 echo "      ✓ static <html> ships no theme class (0.10.1 blip fix intact)"
+
+# Active-link state in nav. The home page should emit aria-current="page"
+# on the Home Link (which points at /), and the About page should emit
+# it on the About Link. Both ship in SSR via the server-side RouterCap
+# install (render-page.ts) — the user-visible "active link is bold + has
+# a pill" effect depends on this attribute being on the right anchor.
+if ! grep -oE '<a[^>]*aria-current="page"[^>]*>Home<' "$DIST/index.html" >/dev/null; then
+  if ! grep -oE '<a[^>]*>Home</a>' "$DIST/index.html" | grep -q 'aria-current="page"'; then
+    echo "      ❌ index.html: Home Link missing aria-current=\"page\" — active nav state broken on SSR"
+    grep -oE '<a[^>]*data-place-link[^>]*>[^<]*</a>' "$DIST/index.html" | head -3
+    exit 1
+  fi
+fi
+echo "      ✓ home page emits aria-current on Home link"
+
+if ! grep -oE '<a[^>]*aria-current="page"[^>]*>About<' "$DIST/about/index.html" >/dev/null; then
+  if ! grep -oE '<a[^>]*>About</a>' "$DIST/about/index.html" | grep -q 'aria-current="page"'; then
+    echo "      ❌ about/index.html: About Link missing aria-current=\"page\" on the about page"
+    grep -oE '<a[^>]*data-place-link[^>]*>[^<]*</a>' "$DIST/about/index.html" | head -3
+    exit 1
+  fi
+fi
+echo "      ✓ about page emits aria-current on About link"
+
+# The base styles ship an [aria-current="page"] rule. The inlined CSS
+# in the page should compile it through Tailwind's pipeline. Look for
+# the selector pattern in the inlined CSS.
+if ! grep -q 'aria-current="page"' "$DIST/index.html"; then
+  echo "      ❌ index.html does not include the [aria-current=\"page\"] CSS rule"
+  exit 1
+fi
+echo "      ✓ active-link CSS rule present in inlined CSS"
 
 trap on_success EXIT

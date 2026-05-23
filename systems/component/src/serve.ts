@@ -59,7 +59,7 @@ import { type AnyLayout, type AnyPage, isPage, type Page } from './page.ts'
 // runtime functions, so the serve cycles stay benign.
 import { renderPage } from './render-page.ts'
 import type { RouteHandler } from './server-router.ts'
-import { readThemeFromRequest, themeEarlyScript } from './theme.ts'
+import { _installActiveThemeForSsr, readThemeFromRequest, themeEarlyScript } from './theme.ts'
 
 export type { ClientCapInstall }
 
@@ -636,6 +636,13 @@ export interface ServeOptions {
    * Default: `true`.
    */
   prefetch?: boolean
+  /** Hover-intent delay (ms) before pointerover fires a prefetch.
+   *  Default `65`. */
+  prefetchHoverDelayMs?: number
+  /** LRU cap on cached prefetch entries per session. Default `24`. */
+  prefetchMax?: number
+  /** TTL (ms) for a cached prefetch entry. Default `30_000`. */
+  prefetchTtlMs?: number
   /**
    * Trailing-slash policy for internal `<Link>` hrefs.
    *
@@ -1844,6 +1851,16 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),
         ...(options.transformBody ? { transformBody: options.transformBody } : {}),
         ...(devtoolsRegistered ? { emitDevtoolsMarker: true } : {}),
+        ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
+        ...(typeof options.prefetchHoverDelayMs === 'number'
+          ? { spaNavPrefetchHoverDelayMs: options.prefetchHoverDelayMs }
+          : {}),
+        ...(typeof options.prefetchMax === 'number'
+          ? { spaNavPrefetchMax: options.prefetchMax }
+          : {}),
+        ...(typeof options.prefetchTtlMs === 'number'
+          ? { spaNavPrefetchTtlMs: options.prefetchTtlMs }
+          : {}),
       })
       const inlineHashHeader = res.headers.get(INLINE_STYLE_HASHES_HEADER)
       const inlineStyleAttrHashes = inlineHashHeader
@@ -2028,6 +2045,20 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       options.theme !== undefined && activeTheme !== null
         ? options.theme.htmlClass(activeTheme as never)
         : ''
+    // Publish the resolved theme + configured mode names into the
+    // per-request capability scope so SSR's `useTheme()` returns the
+    // same shape the client will compute post-hydration. Same channel
+    // the framework already uses for cookie() / RouterCap on SSR;
+    // closes the header-blip when a non-`system` cookie is set on
+    // hard refresh. The install lives in the ALS scope opened by
+    // `runWithCapabilityScope` above and unwinds automatically when
+    // the request finishes — no explicit disposer call needed.
+    if (options.theme !== undefined) {
+      _installActiveThemeForSsr({
+        active: activeTheme ?? 'system',
+        names: (options.theme as { names: ReadonlyArray<string> }).names,
+      })
+    }
 
     for (const r of compiled) {
       // HEAD falls through to GET (Express, Bun.serve, the HTTP spec).
@@ -2153,6 +2184,15 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
           ...(Object.keys(spaNavThemeClassMap).length > 0 ? { spaNavThemeClassMap } : {}),
           ...(effectiveEarlyHead.length > 0 ? { extraEarlyHead: effectiveEarlyHead } : {}),
           ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
+          ...(typeof options.prefetchHoverDelayMs === 'number'
+            ? { spaNavPrefetchHoverDelayMs: options.prefetchHoverDelayMs }
+            : {}),
+          ...(typeof options.prefetchMax === 'number'
+            ? { spaNavPrefetchMax: options.prefetchMax }
+            : {}),
+          ...(typeof options.prefetchTtlMs === 'number'
+            ? { spaNavPrefetchTtlMs: options.prefetchTtlMs }
+            : {}),
           ...(isProduction ? {} : { enableHmr: true }),
           ...(integrityForRender ? { scriptIntegrity: integrityForRender } : {}),
           scriptNonce: nonce,
@@ -2465,6 +2505,15 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
         ...(options.viewTransitions === true ? { spaNavViewTransitions: true } : {}),
         ...(Object.keys(spaNavThemeClassMap).length > 0 ? { spaNavThemeClassMap } : {}),
         ...(options.prefetch === false ? { spaNavPrefetch: false } : {}),
+        ...(typeof options.prefetchHoverDelayMs === 'number'
+          ? { spaNavPrefetchHoverDelayMs: options.prefetchHoverDelayMs }
+          : {}),
+        ...(typeof options.prefetchMax === 'number'
+          ? { spaNavPrefetchMax: options.prefetchMax }
+          : {}),
+        ...(typeof options.prefetchTtlMs === 'number'
+          ? { spaNavPrefetchTtlMs: options.prefetchTtlMs }
+          : {}),
         ...(Object.keys(scriptIntegrity).length > 0 ? { scriptIntegrity } : {}),
         ...(staticHtmlClass ? { htmlClassPrefix: staticHtmlClass } : {}),
         ...(serveLevelLayouts.length > 0 ? { extraLayouts: serveLevelLayouts } : {}),

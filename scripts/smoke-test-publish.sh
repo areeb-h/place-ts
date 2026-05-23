@@ -65,7 +65,13 @@ echo "[2/6] $STEP at $SCRATCH"
 # local tarballs (the registry doesn't have these versions yet — that's
 # the point of the smoke test).
 mkdir -p "$PARENT"
-(cd "$PARENT" && bun "$REPO/tools/create-app/src/cli.ts" "$APP_NAME" --yes --no-install >/dev/null 2>&1)
+# Scaffold WITH theme-toggle + design-system so this smoke also covers
+# the 0.10.6 SSR-side blip fix: when a `place-theme=dark` cookie is
+# sent, the SSR'd toggle should already have aria-pressed="true" on
+# the Dark button (not on System). The cookie-curl check at the end
+# of this script pins that behaviour down.
+(cd "$PARENT" && bun "$REPO/tools/create-app/src/cli.ts" "$APP_NAME" --yes --no-install \
+  --template minimal --with theme-toggle --with design-system >/dev/null 2>&1)
 # The CLI scaffolds under $PARENT/$APP_NAME which IS $SCRATCH.
 
 STEP="rewrite deps to point at local tarballs"
@@ -85,7 +91,7 @@ const p = '$SCRATCH/package.json'
 const pkg = JSON.parse(readFileSync(p, 'utf8'))
 const local = {
   '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
-  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.10.4.tgz',
+  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.10.6.tgz',
   '@place-ts/data':       'file:$REPO/systems/data/place-ts-data-0.2.1.tgz',
   '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.3.1.tgz',
   '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.1.tgz',
@@ -157,5 +163,44 @@ if ! grep -q "welcome to $APP_NAME" /tmp/place-smoke-home.html; then
   exit 1
 fi
 echo "      ✓ home page rendered ('welcome to $APP_NAME' found)"
+
+# 0.10.6 — SSR-side blip fix. With a `place-theme=dark` cookie set
+# on the request, the server-side useTheme() reads the active theme
+# from the per-request cap (the same channel cookie() uses), and the
+# ThemeToggle's segmented control SSRs with aria-pressed="true" on
+# Dark — not on System. Pre-0.10.6 it was always System on SSR, and
+# the hydration boundary visibly snapped to Dark — that's the blip.
+STEP="verify SSR toggle pressed-state matches cookie (0.10.6)"
+echo "      $STEP"
+curl -fsS -H 'Cookie: place-theme=dark' \
+  "http://localhost:$ACTUAL_PORT/" -o /tmp/place-smoke-home-darkcookie.html 2>/dev/null
+if [[ ! -s /tmp/place-smoke-home-darkcookie.html ]]; then
+  echo "      ❌ server didn't respond with cookie set"
+  exit 1
+fi
+if ! grep -oE '<a[^>]*aria-label="Dark theme"[^>]*aria-pressed="true"' \
+    /tmp/place-smoke-home-darkcookie.html >/dev/null && \
+   ! grep -oE '<a[^>]*aria-pressed="true"[^>]*aria-label="Dark theme"' \
+    /tmp/place-smoke-home-darkcookie.html >/dev/null && \
+   ! grep -oE '<button[^>]*aria-label="Dark theme"[^>]*aria-pressed="true"' \
+    /tmp/place-smoke-home-darkcookie.html >/dev/null && \
+   ! grep -oE '<button[^>]*aria-pressed="true"[^>]*aria-label="Dark theme"' \
+    /tmp/place-smoke-home-darkcookie.html >/dev/null; then
+  echo "      ❌ Dark button does NOT have aria-pressed=true in SSR HTML"
+  echo "      (the SSR cap fix isn't reaching useTheme — toggle will blip)"
+  grep -oE '<button[^>]*aria-label="[^"]*"[^>]*aria-pressed="[^"]*"' \
+    /tmp/place-smoke-home-darkcookie.html | head -5
+  exit 1
+fi
+echo "      ✓ Dark button is aria-pressed=true on SSR (no hydration blip)"
+
+if grep -oE '<button[^>]*aria-label="System theme"[^>]*aria-pressed="true"' \
+    /tmp/place-smoke-home-darkcookie.html >/dev/null || \
+   grep -oE '<button[^>]*aria-pressed="true"[^>]*aria-label="System theme"' \
+    /tmp/place-smoke-home-darkcookie.html >/dev/null; then
+  echo "      ❌ System button is aria-pressed=true even with place-theme=dark cookie"
+  exit 1
+fi
+echo "      ✓ System button is NOT pressed when cookie=dark"
 
 trap on_success EXIT

@@ -20,3 +20,15 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Active-nav default. `<Link>` automatically sets `aria-current="page"`
+ * when the link points at the current route — both on SSR (via the
+ * server-side RouterCap) and after every SPA-nav swap (the runtime
+ * walks all data-place-link anchors). This rule turns that marker into
+ * a visible cue without per-link bookkeeping. Override per-link with
+ * `<Link activeClass="..." />` or override globally by tweaking this
+ * rule. */
+a[aria-current="page"] {
+  color: var(--color-fg);
+  font-weight: 500;
+}

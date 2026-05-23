@@ -534,6 +534,15 @@ export async function renderPage(
           viewTransitions: options?.spaNavViewTransitions === true,
           ...(options?.spaNavThemeClassMap ? { themeClassMap: options.spaNavThemeClassMap } : {}),
           ...(options?.spaNavPrefetch === false ? { prefetch: false } : {}),
+          ...(typeof options?.spaNavPrefetchHoverDelayMs === 'number'
+            ? { prefetchHoverDelayMs: options.spaNavPrefetchHoverDelayMs }
+            : {}),
+          ...(typeof options?.spaNavPrefetchMax === 'number'
+            ? { prefetchMax: options.spaNavPrefetchMax }
+            : {}),
+          ...(typeof options?.spaNavPrefetchTtlMs === 'number'
+            ? { prefetchTtlMs: options.spaNavPrefetchTtlMs }
+            : {}),
         })}</script>`
       : ''
     // Inline tabs runtime — single delegated click handler shared by

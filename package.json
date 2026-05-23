@@ -20,6 +20,8 @@
     "test:ui": "vitest --ui",
     "docs": "bun --filter '@place-ts/docs' dev",
     "build:docs": "bun --filter '@place-ts/docs' build",
+    "release": "bash scripts/publish-all.sh",
+    "release:dry": "bash scripts/publish-all.sh --dry-run",
     "bench": "vitest bench --run",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

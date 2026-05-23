@@ -46,9 +46,67 @@
 //   serve({ tailwind: { base: tokens.base, content: [...] }, ... })
 //   page({ htmlClass: tokens.htmlClass('dark'), bodyClass: 'bg-bg text-fg', view: () => ... })
 
+import { defineCapability } from '@place-ts/capability'
 import { state } from '@place-ts/reactivity'
 
 import { onCleanup } from './_internal/cleanup.ts'
+
+// ============================================================
+// SSR theme context — closes the toggle-blip in island hydration
+// ============================================================
+//
+// THE PROBLEM. `<ThemeToggle>` is an island. Its body runs during SSR
+// (to fill the marker with initial HTML) and calls `useTheme()`. The
+// pre-fix SSR branch had no way to know the request's resolved theme
+// or the configured mode names, so it returned `current: 'system'` +
+// `modes: []`. Two visible mismatches at hydration:
+//
+//   - Segmented control SSRs with ONE button (system only). Client
+//     re-renders with three (system + light + dark). Width jumps.
+//   - System is SSR-pressed. If the cookie said 'dark', client flips
+//     the highlight from System → Dark.
+//
+// THE PATTERN. The framework already threads request-scoped UI state
+// through capabilities — same channel `cookie()` uses via
+// `_CookieJarCap` (cookies.ts), and `<Link>` uses via `RouterCap`
+// (link.ts). Both are installed per-request in `render-page.ts`
+// alongside the ALS scope `runWithCapabilityScope` opens for every
+// dispatch. `useTheme()` was the one component-facing reader that
+// DIDN'T follow this pattern; adding the cap makes it consistent.
+//
+// PRIVATE. Not exported from the package surface — `serve()` (or any
+// future per-request setup) reaches in via `_installActiveThemeForSsr`,
+// and `useTheme()` reads via the module-local `_readActiveThemeForSsr`.
+// Locking these behind underscore prefixes mirrors the existing
+// `_CookieJarCap` convention.
+
+export interface SsrThemeContext {
+  /** Resolved theme for THIS request — `'system'` if no cookie or
+   *  the cookie said `system`, otherwise the cookie's mode name. */
+  readonly active: string
+  /** Mode names from the configured tokens — the same list that
+   *  ends up in `window.__placeTheme.names` after the early-paint
+   *  script runs. */
+  readonly names: readonly string[]
+}
+
+const ActiveThemeCap = defineCapability<SsrThemeContext>('PlaceActiveTheme')
+
+/** Per-request publisher — `serve()` calls this once it has resolved
+ *  the theme + names. The disposer is returned for symmetry but is
+ *  rarely needed: the surrounding ALS scope releases the cap stack
+ *  when the request unwinds. */
+export function _installActiveThemeForSsr(ctx: SsrThemeContext): () => void {
+  return ActiveThemeCap.install(ctx)
+}
+
+/** Module-local reader for the SSR `useTheme()` branch. Returns the
+ *  installed context, or a safe default (matching the pre-fix
+ *  behaviour) when called outside a request scope — tests, static
+ *  export render passes, app boot. */
+function _readActiveThemeForSsr(): SsrThemeContext {
+  return ActiveThemeCap.tryUse() ?? { active: 'system', names: [] }
+}
 
 /**
  * Per-theme tokens. Keys are CSS custom property names (must start with
@@ -914,14 +972,24 @@ export interface ThemeApi {
 }
 
 export function useTheme(): ThemeApi {
-  // Server-side: frozen no-op handle. Layouts shouldn't call useTheme
-  // (it's an island primitive), but if they do we don't want to throw.
+  // Server-side: frozen handle backed by the SSR-context cap (analogous
+  // to how `cookie()` reads `_CookieJarCap` and `<Link>` reads
+  // `RouterCap`). The cap is installed per-request by `serve()` once
+  // it has resolved the active theme + the configured mode names, so
+  // SSR's `current`/`modes` MATCH what the client will compute from
+  // `window.__placeTheme` post-hydration. No segmented-control width
+  // jump, no pressed-state flip.
+  //
+  // `_readActiveThemeForSsr()` returns `{ active: 'system', names: [] }`
+  // outside any request — tests, static export passes, app boot —
+  // preserving the legacy fallback shape.
   if (typeof document === 'undefined' || typeof window === 'undefined') {
+    const ctx = _readActiveThemeForSsr()
     return Object.freeze({
-      current: () => 'system',
+      current: () => ctx.active,
       set: () => {},
-      modes: [] as readonly string[],
-      isSystem: () => true,
+      modes: ctx.names,
+      isSystem: () => ctx.active === 'system',
     })
   }
 

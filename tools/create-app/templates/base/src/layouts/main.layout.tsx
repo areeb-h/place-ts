@@ -31,9 +31,19 @@ export const mainLayout = layout({
             __APP_NAME__
           </Link>
           <nav class="flex items-center gap-1 text-sm">
+            {/* `activeClass` is applied (additively) when this Link
+                points at the current route — `<Link>` reads RouterCap,
+                sets `aria-current="page"`, and the SPA-nav runtime
+                keeps it in sync across client-side navigations. The
+                base CSS in `styles.css` already styles
+                `[aria-current="page"]`; the extra `bg-card/60` here
+                adds a visible pill behind the active tab. Each
+                scaffold variant (minimal, app) patches in its second
+                nav link with the same shape. */}
             <Link
               to="/"
               class="px-3 py-1.5 rounded-md text-muted hover:text-fg hover:bg-card/60 no-underline transition-colors"
+              activeClass="bg-card/60 text-fg"
             >
               Home
             </Link>

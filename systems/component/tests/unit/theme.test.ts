@@ -698,3 +698,59 @@ describe('themeEarlyScript — writes window.__placeTheme stash (0.10.1)', () =>
     expect(out).toContain('cookieName:"app-theme"')
   })
 })
+
+// =============================================================
+// 0.10.6 — SSR useTheme() reads from a per-request capability so
+// the ThemeToggle island doesn't blip the header on hard refresh.
+// Same channel cookie() uses on SSR (_CookieJarCap) and <Link>
+// uses (RouterCap). See `_installActiveThemeForSsr` in theme.ts.
+// =============================================================
+
+describe('useTheme — SSR reads the request-scoped theme cap (0.10.6 blip fix)', () => {
+  test('without an installed context, falls back to system + empty modes', async () => {
+    const { useTheme } = await import('../../src/theme.ts')
+    const t = useTheme()
+    expect(t.current()).toBe('system')
+    expect(t.modes).toEqual([])
+    expect(t.isSystem()).toBe(true)
+  })
+
+  test('with an installed context, returns that active theme + mode names', async () => {
+    const { useTheme, _installActiveThemeForSsr } = await import('../../src/theme.ts')
+    const dispose = _installActiveThemeForSsr({
+      active: 'dark',
+      names: ['light', 'dark'],
+    })
+    try {
+      const t = useTheme()
+      // SSR's aria-pressed + recipe pressed-class now match what the
+      // client will compute from window.__placeTheme post-hydration.
+      expect(t.current()).toBe('dark')
+      expect(t.modes).toEqual(['light', 'dark'])
+      expect(t.isSystem()).toBe(false)
+    } finally {
+      dispose()
+    }
+  })
+
+  test('disposer removes the installation (fallback restored)', async () => {
+    const { useTheme, _installActiveThemeForSsr } = await import('../../src/theme.ts')
+    const dispose = _installActiveThemeForSsr({ active: 'light', names: ['light', 'dark'] })
+    expect(useTheme().current()).toBe('light')
+    dispose()
+    expect(useTheme().current()).toBe('system')
+    expect(useTheme().modes).toEqual([])
+  })
+
+  test('set() is a no-op on SSR (no document to mutate)', async () => {
+    const { useTheme, _installActiveThemeForSsr } = await import('../../src/theme.ts')
+    const dispose = _installActiveThemeForSsr({ active: 'dark', names: ['light', 'dark'] })
+    try {
+      const t = useTheme()
+      expect(() => t.set('light')).not.toThrow()
+      expect(t.current()).toBe('dark')
+    } finally {
+      dispose()
+    }
+  })
+})

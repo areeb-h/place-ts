@@ -1110,6 +1110,12 @@ export interface RenderPageOptions {
    * threads this from `ServeOptions.prefetch`. Default `true`.
    */
   spaNavPrefetch?: boolean
+  /** Hover-intent delay (ms). Default `65`. */
+  spaNavPrefetchHoverDelayMs?: number
+  /** LRU cap on cached prefetch entries. Default `24`. */
+  spaNavPrefetchMax?: number
+  /** TTL (ms) for a cached prefetch entry. Default `30_000`. */
+  spaNavPrefetchTtlMs?: number
   /**
    * SRI hashes for the emitted scripts (T5-D phase 2 / ADR 0025). The
    * framework computes SHA-384 of each bundle at build time; renderPage

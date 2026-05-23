@@ -65,6 +65,34 @@ export interface PlaceSpaNavOptions {
    * speculation-safe; individual links opt out with `data-no-prefetch`.
    */
   readonly prefetch?: boolean
+  /**
+   * Hover-intent delay (ms) before a `pointerover` fires a prefetch.
+   * Distinguishes "deliberate hover" from "mouse passing over while
+   * scrolling / sweeping to another target." Default `65` (the
+   * Quicklink / Astro / Next.js shared default).
+   *
+   * `pointerdown` / `focusin` prefetches always fire immediately —
+   * those are explicit commitment signals. Set `0` to fire on every
+   * pointerover with no delay.
+   */
+  readonly prefetchHoverDelayMs?: number
+  /**
+   * Soft cap on cached prefetch entries (per session). Default `24`.
+   * When the cache reaches this many entries, the LEAST-RECENTLY-ADDED
+   * entry is evicted to make room — its in-flight fetch is aborted
+   * if still pending. Pre-0.10.5 the cap leaked into a permanent
+   * shutoff after the 24th hover (counter never decremented). Now an
+   * LRU eviction with proper size tracking.
+   */
+  readonly prefetchMax?: number
+  /**
+   * TTL for a cached prefetch entry (ms). Default `30_000`. After
+   * this a click on the corresponding link refetches live so stale
+   * data can't be served as the destination. The cache also sweeps
+   * opportunistically — entries past TTL are dropped on the next
+   * prefetch attempt, not only on navigate().
+   */
+  readonly prefetchTtlMs?: number
 }
 
 /**
@@ -82,10 +110,18 @@ export function placeSpaNav(options: PlaceSpaNavOptions = {}): string {
   const ENABLE_VT = options.viewTransitions === true
   const ENABLE_PREFETCH = options.prefetch !== false
   const themeClassMap = options.themeClassMap ?? {}
+  // Coerce to safe positive integers. Negative / NaN inputs would
+  // otherwise produce permanent shutoff (cap=0) or undefined sleeps.
+  const hoverDelayMs = Math.max(0, Math.floor(options.prefetchHoverDelayMs ?? 65))
+  const prefetchMax = Math.max(1, Math.floor(options.prefetchMax ?? 24))
+  const prefetchTtlMs = Math.max(1000, Math.floor(options.prefetchTtlMs ?? 30000))
   return minifyInline(`(function(){
 if(window.__place_spa)return;window.__place_spa=1;
 var ENABLE_VT=${ENABLE_VT ? 'true' : 'false'};
 var ENABLE_PREFETCH=${ENABLE_PREFETCH ? 'true' : 'false'};
+var HOVER_DELAY_MS=${hoverDelayMs};
+var PREFETCH_MAX=${prefetchMax};
+var PREFETCH_TTL_MS=${prefetchTtlMs};
 var THEME_CLASS_MAP=${JSON.stringify(themeClassMap)};
 function shouldIntercept(e,a){
   if(e.defaultPrevented)return false;
@@ -150,10 +186,24 @@ var navSeq=0;
 //     re-fetches live and follows the redirect properly.
 //   - Per-link data-no-prefetch opts a link out entirely; the whole
 //     mechanism is gated on the ENABLE_PREFETCH app option.
+// LRU-ordered prefetch cache. prefetchCache is the URL-key to entry
+// map; prefetchOrder is the insertion order, used for eviction when
+// the size reaches PREFETCH_MAX. Pre-0.10.5 tracked size via a
+// monotonic counter that never decremented — after 24 hovers in a
+// session the cap turned into a permanent shutoff. Now the actual
+// cache size is the cap check (prefetchOrder.length), and removal
+// sites (evictKey, TTL miss, error .catch) keep both structures
+// consistent.
+//
+// Entry shape:
+//   { at: Number      — Date.now() when the prefetch fired
+//   , p: Promise<string> — resolves to the destination HTML
+//   , ctl: AbortController — so an eviction can cancel the in-flight
+//                            fetch instead of leaking the request to
+//                            completion (wasted bandwidth).
+//   }
 var prefetchCache=Object.create(null);
-var prefetchN=0;
-var PREFETCH_MAX=24;
-var PREFETCH_TTL_MS=30000;
+var prefetchOrder=[];
 // Canonical cache key for a URL — path + search, hash-stripped (a
 // hash anchor targets the same document). Same key from click-href,
 // popstate, and hover so warm hits actually hit.
@@ -190,41 +240,72 @@ function samePath(a,b){
     return pa===pb;
   }catch(_){return false;}
 }
+// Drop a single entry by key. Aborts the in-flight fetch (if any),
+// removes from the order array and the cache map. Idempotent — calling
+// twice on the same key after the first removal is a safe no-op.
+function evictKey(k){
+  var e=prefetchCache[k];
+  if(!e)return;
+  delete prefetchCache[k];
+  for(var i=0;i<prefetchOrder.length;i++){
+    if(prefetchOrder[i]===k){prefetchOrder.splice(i,1);break;}
+  }
+  if(e.ctl){try{e.ctl.abort();}catch(_){}}
+}
+// Opportunistic TTL sweep: scan from oldest end of the order array,
+// dropping entries past TTL. Stops at the first non-stale entry — the
+// array is insertion-ordered, so anything after a fresh entry is also
+// fresh. Runs at the top of every prefetch() call.
+function sweepStale(){
+  var now=Date.now();
+  while(prefetchOrder.length){
+    var k=prefetchOrder[0];
+    var e=prefetchCache[k];
+    if(!e){prefetchOrder.shift();continue;}
+    if(now-e.at<PREFETCH_TTL_MS)break;
+    evictKey(k);
+  }
+}
 // Warm the cache for a likely-next destination. No-ops when already
-// cached, over budget, or the user has Data Saver enabled.
+// cached, on a connection where speculation would be rude (Data Saver
+// or 2g/slow-2g — burning the user's expensive bytes on a page they
+// might never visit is the wrong default), or under heavy memory
+// pressure (deviceMemory < 1 GB). When at cap, evicts the oldest
+// entry to make room (LRU) instead of dropping the new prefetch — a
+// stale hover from 5 minutes ago shouldn't block a fresh one.
 function prefetch(url){
+  sweepStale();
   var k=navKey(url);
-  if(prefetchCache[k]||prefetchN>=PREFETCH_MAX)return;
+  if(prefetchCache[k])return;
   var c=navigator.connection;
-  if(c&&c.saveData)return;
-  prefetchN++;
-  var p=fetch(k,{
+  if(c){
+    if(c.saveData)return;
+    var et=c.effectiveType;
+    if(et==='slow-2g'||et==='2g')return;
+  }
+  if(typeof navigator.deviceMemory==='number'&&navigator.deviceMemory<1)return;
+  if(prefetchOrder.length>=PREFETCH_MAX){
+    evictKey(prefetchOrder[0]);
+  }
+  var ctl;try{ctl=new AbortController();}catch(_){ctl=null;}
+  var fetchOpts={
     headers:{'Accept':'text/html','X-Place-Prefetch':'1'},
     credentials:'same-origin',
     redirect:'follow',
     priority:'low'
-  })
+  };
+  if(ctl)fetchOpts.signal=ctl.signal;
+  var p=fetch(k,fetchOpts)
     .then(function(r){
-      // A prefetch that was redirected to a DIFFERENT logical path
-      // (e.g. session expired -> /login) must NOT be cached as this
-      // destination — drop it so the real click re-fetches live and
-      // the redirect is honoured. Same-path redirects (trailing-slash
-      // normalisers on static hosts like Cloudflare Pages) are benign:
-      // the response IS the requested page, just at a canonical URL.
-      // We cache those and the eventual click swaps without a fetch.
       if(r.redirected && !samePath(k,r.url)){
         throw new Error('prefetch redirected');
       }
       return readHtml(r);
     })
-    .catch(function(err){delete prefetchCache[k];throw err;});
-  // Attach a silent observer so the rejection doesn't surface as
-  // "Uncaught (in promise)" when no click ever consumed this entry.
-  // A real navigate() that adopts this in-flight promise still sees
-  // the rejection via its own .then/.catch chain — that's a DIFFERENT
-  // observer; both attach handlers, both count.
+    .catch(function(err){evictKey(k);throw err;});
   p.catch(function(){});
-  prefetchCache[k]={at:Date.now(),p:p};
+  prefetchCache[k]={at:Date.now(),p:p,ctl:ctl};
+  prefetchOrder.push(k);
 }
 function navigate(url,push){
   if(inflight)inflight.abort();
@@ -240,8 +321,10 @@ function navigate(url,push){
     inflight=null;
   }else{
     // Stale (past TTL) or never prefetched — fetch live so the
-    // content is current. Drop a stale entry so it can't be reused.
-    if(entry)delete prefetchCache[k];
+    // content is current. Drop a stale entry so it can't be reused;
+    // evictKey aborts the in-flight (if still pending) and keeps
+    // the order array consistent with the cache map.
+    if(entry)evictKey(k);
     var ctl=new AbortController();inflight=ctl;
     timer=setTimeout(function(){ctl.abort();},TIMEOUT_MS);
     htmlPromise=fetch(k,{
@@ -417,30 +500,56 @@ document.addEventListener('click',function(e){
   e.preventDefault();
   navigate(t.href,true);
 },true);
-// **Prefetch on intent.** Hovering or focusing a framework link is a
-// strong signal the user is about to navigate there. Warm the cache
-// now so the click resolves instantly. prefetch() de-dupes + caps
-// itself, so the firehose of pointerover events is cheap.
-//
-// Gated on the ENABLE_PREFETCH app option (default on). A link — or
-// any ancestor — carrying data-no-prefetch is skipped entirely:
-// the escape hatch for routes whose GET has effects that even
-// ctx.prefetch can't make safe, or pages that must never be
-// speculatively loaded into client memory.
-function prefetchFromEvent(e){
+// **Prefetch on intent.** Three signals, three latencies:
+//   pointerover  — hover-intent (deferred by HOVER_DELAY_MS).
+//   pointerdown  — explicit commitment (fires immediately).
+//   focusin      — keyboard nav (fires immediately).
+function findLink(el){
+  while(el&&el.nodeType===1&&el.tagName!=='A')el=el.parentNode;
+  if(!el||el.tagName!=='A'||!el.hasAttribute('data-place-link'))return null;
+  if(el.closest&&el.closest('[data-no-prefetch]'))return null;
+  var u;try{u=new URL(el.href);}catch(_){return null;}
+  if(u.origin!==location.origin)return null;
+  if(u.pathname===location.pathname&&u.search===location.search)return null;
+  return el;
+}
+var hoverTimers=(typeof WeakMap!=='undefined')?new WeakMap():null;
+function clearHoverTimer(el){
+  if(!hoverTimers)return;
+  var t=hoverTimers.get(el);
+  if(t!==undefined){clearTimeout(t);hoverTimers.delete(el);}
+}
+function onPointerOver(e){
   if(!ENABLE_PREFETCH)return;
-  var t=e.target;
-  while(t&&t.nodeType===1&&t.tagName!=='A')t=t.parentNode;
-  if(!t||t.tagName!=='A'||!t.hasAttribute('data-place-link'))return;
-  if(t.closest&&t.closest('[data-no-prefetch]'))return;
-  var u;try{u=new URL(t.href);}catch(_){return;}
-  if(u.origin!==location.origin)return;
-  if(u.pathname===location.pathname&&u.search===location.search)return;
-  prefetch(t.href);
+  var a=findLink(e.target);
+  if(!a)return;
+  if(HOVER_DELAY_MS===0){prefetch(a.href);return;}
+  if(!hoverTimers)return;
+  if(hoverTimers.has(a))return;
+  var href=a.href;
+  var t=setTimeout(function(){hoverTimers.delete(a);prefetch(href);},HOVER_DELAY_MS);
+  hoverTimers.set(a,t);
+}
+function onPointerOut(e){
+  if(!ENABLE_PREFETCH||!hoverTimers)return;
+  var a=findLink(e.target);
+  if(!a)return;
+  var rt=e.relatedTarget;
+  if(rt&&rt.nodeType===1&&a.contains(rt))return;
+  clearHoverTimer(a);
+}
+function onPointerDownOrFocus(e){
+  if(!ENABLE_PREFETCH)return;
+  var a=findLink(e.target);
+  if(!a)return;
+  clearHoverTimer(a);
+  prefetch(a.href);
 }
 if(ENABLE_PREFETCH){
-  document.addEventListener('pointerover',prefetchFromEvent,{passive:true});
-  document.addEventListener('focusin',prefetchFromEvent);
+  document.addEventListener('pointerover',onPointerOver,{passive:true});
+  document.addEventListener('pointerout',onPointerOut,{passive:true});
+  document.addEventListener('pointerdown',onPointerDownOrFocus,{passive:true});
+  document.addEventListener('focusin',onPointerDownOrFocus);
 }
 // Browser back/forward — refetch + swap (URL already updated by browser).
 window.addEventListener('popstate',function(){
