@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# Scratch-app smoke test for the STATIC EXPORT surface.
+#
+# Mirrors `smoke-test-publish.sh` but runs `PLACE_BUILD=dist bun
+# src/app.ts` instead of starting a dev server, then asserts the
+# emitted `dist/` is a deployable static site. Catches build-pipeline
+# regressions that the dev smoke can't see:
+#
+#   - Tailwind utility classes used by the design system missing from
+#     the static export's CSS (we just shipped a fix for the analogous
+#     dev-side bug; this locks the build-side down too).
+#   - `_headers` (Cloudflare CSP) missing or malformed.
+#   - Island bundles not emitted (or emitted to the wrong path).
+#   - `<html>` theme class handling wrong on the static SSR.
+#   - The pre-rendered HTML missing reactive markers or theme-toggle
+#     wiring needed for hydration.
+#
+# Run from the repo root: bash scripts/smoke-test-build.sh
+#
+# Exits 0 on success, non-zero with the failing step named.
+
+set -u
+set -o pipefail
+
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
+PARENT="/tmp/place-build-smoke-$(date +%s)"
+APP_NAME="place-build-smoke-app"
+SCRATCH="$PARENT/$APP_NAME"
+
+cleanup() {
+  # Tarballs live under each system dir; remove them from the workspace
+  # so they don't dirty the repo.
+  for d in capability component data design devtools persistence reactivity routing search security; do
+    rm -f "$REPO/systems/$d"/place-*.tgz 2>/dev/null
+  done
+}
+on_failure() {
+  local code=$?
+  echo
+  echo "❌ build smoke FAILED at step: ${STEP:-unknown}"
+  echo "   scratch dir kept at: $SCRATCH (inspect, then rm -rf manually)"
+  cleanup
+  exit "$code"
+}
+on_success() {
+  echo
+  echo "✓ build smoke PASSED — static export surface works end-to-end"
+  cleanup
+  rm -rf "$PARENT"
+}
+trap on_failure ERR
+
+STEP="pack 10 packages"
+echo "[1/5] $STEP"
+for d in capability component data design devtools persistence reactivity routing search security; do
+  (cd "$REPO/systems/$d" && bun pm pack >/dev/null 2>&1)
+  echo "      ✓ $d"
+done
+
+STEP="scaffold app via create-app CLI"
+echo "[2/5] $STEP at $SCRATCH"
+mkdir -p "$PARENT"
+# Use the SCAFFOLD CLI directly with the most-feature-heavy template
+# combo we have: minimal + theme-toggle + design-system. That gives us
+# coverage on:
+#   - design-system Tailwind classes in the static export (the regression
+#     we just fixed for dev)
+#   - theme-toggle island hydration script emission
+#   - design's base.css being inlined into the build output
+(cd "$PARENT" && bun "$REPO/tools/create-app/src/cli.ts" "$APP_NAME" --yes --no-install --no-git \
+  --template minimal --with theme-toggle --with design-system >/dev/null 2>&1)
+
+STEP="rewrite deps to point at local tarballs"
+echo "[3/5] $STEP"
+node --input-type=module -e "
+import { readFileSync, writeFileSync } from 'node:fs'
+const p = '$SCRATCH/package.json'
+const pkg = JSON.parse(readFileSync(p, 'utf8'))
+const local = {
+  '@place-ts/capability': 'file:$REPO/systems/capability/place-ts-capability-0.1.0.tgz',
+  '@place-ts/component':  'file:$REPO/systems/component/place-ts-component-0.10.4.tgz',
+  '@place-ts/data':       'file:$REPO/systems/data/place-ts-data-0.2.1.tgz',
+  '@place-ts/design':     'file:$REPO/systems/design/place-ts-design-0.3.1.tgz',
+  '@place-ts/devtools':   'file:$REPO/systems/devtools/place-ts-devtools-0.1.1.tgz',
+  '@place-ts/persistence':'file:$REPO/systems/persistence/place-ts-persistence-0.1.1.tgz',
+  '@place-ts/reactivity': 'file:$REPO/systems/reactivity/place-ts-reactivity-0.1.0.tgz',
+  '@place-ts/routing':    'file:$REPO/systems/routing/place-ts-routing-0.1.1.tgz',
+  '@place-ts/search':     'file:$REPO/systems/search/place-ts-search-0.2.0.tgz',
+  '@place-ts/security':   'file:$REPO/systems/security/place-ts-security-0.1.1.tgz',
+}
+pkg.dependencies = { ...(pkg.dependencies ?? {}), ...local }
+pkg.overrides = local
+writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n')
+console.log('   rewrote deps + overrides to local tarballs')
+"
+
+(cd "$SCRATCH" && bun install --no-save 2>&1 | tail -3)
+
+STEP="run static export (PLACE_BUILD=dist bun src/app.ts)"
+echo "[4/5] $STEP"
+(cd "$SCRATCH" && PLACE_BUILD=dist NODE_ENV=production bun src/app.ts > /tmp/place-build-smoke.log 2>&1)
+BUILD_EXIT=$?
+if [[ $BUILD_EXIT -ne 0 ]]; then
+  echo "      ❌ build exited $BUILD_EXIT"
+  echo "--- build log ---"
+  cat /tmp/place-build-smoke.log
+  exit $BUILD_EXIT
+fi
+echo "      ✓ build exited 0"
+
+STEP="verify dist/ output"
+echo "[5/5] $STEP"
+
+# Required artifacts
+DIST="$SCRATCH/dist"
+require() {
+  local label="$1" path="$2"
+  if [[ ! -e "$path" ]]; then
+    echo "      ❌ missing $label: $path"
+    return 1
+  fi
+  echo "      ✓ $label: $(basename "$path")"
+}
+require "dist directory" "$DIST"
+require "home page"      "$DIST/index.html"
+require "about page"     "$DIST/about/index.html"
+require "_headers"       "$DIST/_headers"
+
+# At least one island bundle (theme-toggle is required by the feature pack)
+ISLAND_COUNT=$(find "$DIST/islands" -name '*.js' -type f 2>/dev/null | wc -l)
+if [[ $ISLAND_COUNT -lt 1 ]]; then
+  echo "      ❌ no island bundles emitted to dist/islands/"
+  ls -la "$DIST" || true
+  exit 1
+fi
+echo "      ✓ $ISLAND_COUNT island bundle(s) in dist/islands/"
+
+# Cloudflare _headers must contain a CSP directive
+if ! grep -q -i 'content-security-policy' "$DIST/_headers"; then
+  echo "      ❌ _headers missing Content-Security-Policy"
+  cat "$DIST/_headers"
+  exit 1
+fi
+echo "      ✓ _headers contains Content-Security-Policy"
+
+# The pre-rendered HTML should contain the app's home title
+if ! grep -q "welcome to $APP_NAME" "$DIST/index.html"; then
+  echo "      ❌ index.html doesn't contain expected home content"
+  head -c 1500 "$DIST/index.html"
+  exit 1
+fi
+echo "      ✓ index.html renders expected content"
+
+# The inlined CSS must contain design-system utility rules. This is the
+# build-side mirror of the dev-side bug we just fixed (Tailwind v4 not
+# scanning node_modules/@place-ts/design). If the static export ever
+# regresses on this, the visual output is broken — and the dev smoke
+# wouldn't notice.
+if ! grep -q '\.bg-card' "$DIST/index.html"; then
+  echo "      ❌ index.html missing .bg-card rule — design utilities likely not scanned"
+  echo "      (check tailwind content globs include node_modules/@place-ts/design)"
+  exit 1
+fi
+if ! grep -q '\.border-border' "$DIST/index.html"; then
+  echo "      ❌ index.html missing .border-border rule"
+  exit 1
+fi
+echo "      ✓ design-system Tailwind utilities present in inlined CSS"
+
+# The ThemeToggle should emit a fieldset with three buttons (System /
+# Light / Dark) — verifies the theme-toggle feature pack composed
+# correctly into the static export.
+if ! grep -q 'aria-label="System theme"' "$DIST/index.html"; then
+  echo "      ❌ index.html missing System theme button — theme-toggle feature broken?"
+  exit 1
+fi
+echo "      ✓ ThemeToggle rendered into static HTML"
+
+# Verify no theme-* class is on <html> (we changed this in 0.10.1 — SSR
+# ships no theme class so @media drives appearance from first paint).
+# The HTML's opening <html...> tag should NOT contain theme-dark or
+# theme-light because the static export has no cookie context.
+HTML_TAG=$(grep -o '<html[^>]*>' "$DIST/index.html" | head -1)
+if echo "$HTML_TAG" | grep -qE 'class="[^"]*\btheme-(dark|light)\b'; then
+  echo "      ❌ static export ships a theme class on <html> — regression of the 0.10.1 SSR-blip fix"
+  echo "      <html> tag: $HTML_TAG"
+  exit 1
+fi
+echo "      ✓ static <html> ships no theme class (0.10.1 blip fix intact)"
+
+trap on_success EXIT

@@ -2429,13 +2429,19 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
     const { writeStaticSite } = (await _serverDynImport('./build-static.ts')) as {
       writeStaticSite: typeof import('./build-static.ts').writeStaticSite
     }
-    // Default theme class — static renders have no request cookie, so
-    // the document ships the theme's default; the theme-toggle island
-    // flips it on the client at hydrate.
-    const staticHtmlClass =
-      options.theme !== undefined
-        ? options.theme.htmlClass((options.theme as { default: string }).default as never)
-        : ''
+    // Static renders have no request cookie. Per the 0.10.1 SSR-blip
+    // fix (mirrored from `readThemeFromRequest` returning null on no
+    // cookie / 'system'), we ship NO theme class on `<html>` in the
+    // static output — the stylesheet's `@media (prefers-color-scheme)`
+    // bindings drive appearance from first paint, and the framework's
+    // early-paint script applies the persisted theme client-side
+    // (with zero flash) for visitors who have an explicit choice.
+    //
+    // Pre-0.10.1 we shipped `tokens.htmlClass(tokens.default)` here.
+    // That produced a visible flash when the visitor's OS preference
+    // differed from the configured default, even though the early
+    // script then stripped the class. Empty class everywhere now.
+    const staticHtmlClass = ''
     const staticRoutes = compiled
       .filter((r) => r.page !== null && (r.method === 'GET' || r.method === '*'))
       .map((r) => ({ pattern: r.matcher.pattern, page: r.page as AnyPage }))
