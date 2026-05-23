@@ -59,6 +59,12 @@ bun-debug.log*
 **/lighthouse.*
 **/undefined:/
 
+# Local preview test app — `scripts/setup-preview-app.sh` re-scaffolds
+# it under examples/preview-test/ so the Claude Preview tool (which
+# resolves cwd inside the repo) can launch it. Generated; never
+# committed.
+examples/preview-test/
+
 # bun pm pack artefacts — local tarballs from the publish smoke test
 # (`scripts/smoke-test-publish.sh`). They're regenerated on demand
 # and should never enter history.

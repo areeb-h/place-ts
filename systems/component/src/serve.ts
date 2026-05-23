@@ -2765,9 +2765,18 @@ async function runDevSupervisor(): Promise<never> {
   const { resolve: pathResolve, isAbsolute: pathIsAbsolute } =
     require('node:path') as typeof import('node:path')
   const entryPath = pathIsAbsolute(Bun.main) ? Bun.main : pathResolve(supervisorCwd, Bun.main)
+  // Use the SAME bun the supervisor itself was launched with —
+  // `process.execPath` is the absolute path to the running Bun
+  // binary. Previously this was the bare string `'bun'`, which
+  // failed when the user invoked the dev script via an absolute
+  // path (e.g. `/home/areeb/.bun/bin/bun src/app.ts`) or via a
+  // launcher that didn't inherit a PATH containing `bun`. That
+  // produced an ENOENT on every respawn — the most common visible
+  // symptom: the dev server appeared to die after the first save.
+  const bunExe = process.execPath
 
   while (true) {
-    child = Bun.spawn(['bun', entryPath], {
+    child = Bun.spawn([bunExe, entryPath], {
       cwd: supervisorCwd,
       env: { ...process.env, __PLACE_DEV_CHILD: '1' },
       // Inherit stdio so the child's banner/logs/errors flow to the

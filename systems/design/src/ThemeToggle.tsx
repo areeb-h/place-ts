@@ -170,14 +170,28 @@ export const ThemeToggle = (props: ThemeToggleProps): View => {
   }
 
   // Segmented control — one button per option. The pressed VISUAL
-  // style is driven by a CSS rule in `@place-ts/design/base.css` that
-  // reads `<html data-place-theme="X">` (set by the early-paint script
-  // BEFORE first paint) and matches the button with the same
-  // `data-place-theme-mode="X"`. This means the correct button looks
-  // pressed from first paint even on static exports where SSR has no
-  // cookie context. `aria-pressed` stays reactive for screen-reader
-  // correctness — it'll be momentarily wrong on static (until JS
-  // hydrates) but the VISUAL state is right immediately.
+  // style is owned ENTIRELY by a CSS rule in `@place-ts/design/base.css`
+  // that reads `<html data-place-theme="X">` (set by the early-paint
+  // script BEFORE first paint) and matches the button with the same
+  // `data-place-theme-mode="X"`.
+  //
+  // **Why not also drive it from JS-state via `pressed: theme.current()
+  // === mode ? 'true' : 'false'`** — it causes a hidden two-pressed
+  // bug on static deployments. The SSR-time `theme.current()` is the
+  // cap's `active` value, which on static is always `'system'` (no
+  // per-request cookie). So SSR renders the System button with the
+  // pressed-class. Then the early-paint script applies the real
+  // cookie's `data-place-theme="dark"` to `<html>`, the CSS rule
+  // makes the Dark button look pressed, AND the System button still
+  // carries the JS-rendered pressed-class — so TWO buttons appear
+  // highlighted simultaneously until JS hydrates and re-renders
+  // System with the unpressed class.
+  //
+  // Fix: always render with `pressed: 'false'` from JS. The CSS rule
+  // is the single source of truth for the pressed VISUAL state.
+  // `aria-pressed` stays reactive for screen-reader correctness;
+  // there's a brief window on static where it's momentarily wrong,
+  // but the visible state is correct from first paint.
   return (
     <fieldset class={wrapperClass}>
       <legend class="sr-only">{props['aria-label'] ?? 'Theme'}</legend>
@@ -188,13 +202,11 @@ export const ThemeToggle = (props: ThemeToggleProps): View => {
           aria-label={labelFor(mode)}
           aria-pressed={() => (theme.current() === mode ? 'true' : 'false')}
           onClick={() => theme.set(mode)}
-          class={() =>
-            buttonRecipe({
-              variant: 'segmented',
-              pressed: theme.current() === mode ? 'true' : 'false',
-              size,
-            })
-          }
+          class={buttonRecipe({
+            variant: 'segmented',
+            pressed: 'false',
+            size,
+          })}
         >
           <span aria-hidden="true">{iconFor(mode)}</span>
         </button>

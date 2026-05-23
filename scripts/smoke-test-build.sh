@@ -219,6 +219,26 @@ if ! grep -qE 'data-place-theme="(dark|light|system)"' "$DIST/index.html"; then
 fi
 echo "      ✓ CSS-driven pressed-state rule shipped in inlined CSS"
 
+# 0.10.6/0.3.2 — NO JS-determined pressed-class on any segmented
+# button. The pressed visual is OWNED entirely by the [data-place-theme]
+# CSS rule. Pre-fix the toggle's segmented buttons used a recipe
+# compound that added `bg-bg text-fg font-medium shadow-sm` to the
+# JS-determined "active" button on SSR; combined with the CSS rule
+# driven by the early-paint script's data-place-theme attribute, this
+# produced a TWO-PRESSED-AT-ONCE blip on static deployments with a
+# non-system cookie. The fix renders all buttons with the same
+# unpressed class; CSS does the visual.
+if grep -oP '<button[^>]*data-place-theme-mode[^>]*class="[^"]*bg-bg[^"]*"' "$DIST/index.html" >/dev/null; then
+  echo "      ❌ A toggle button has 'bg-bg' as a JS-rendered class — would cause two-pressed blip with non-system cookie"
+  grep -oP '<button[^>]*data-place-theme-mode[^>]*>' "$DIST/index.html" | head -3
+  exit 1
+fi
+if grep -oP '<button[^>]*data-place-theme-mode[^>]*class="[^"]*shadow-sm[^"]*"' "$DIST/index.html" >/dev/null; then
+  echo "      ❌ A toggle button has 'shadow-sm' as a JS-rendered class — same two-pressed risk"
+  exit 1
+fi
+echo "      ✓ no toggle button has JS-rendered pressed-style class (CSS rule is the single source)"
+
 # Verify no theme-* class is on <html> (we changed this in 0.10.1 — SSR
 # ships no theme class so @media drives appearance from first paint).
 # The HTML's opening <html...> tag should NOT contain theme-dark or
