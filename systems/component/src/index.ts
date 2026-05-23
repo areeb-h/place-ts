@@ -56,7 +56,13 @@ export {
   _setHydrated,
   type HydrationDelta,
 } from './_internal/hydration.ts'
-export { type CookieStateOptions, cookie, cookieState, parseCookieHeader } from './cookies.ts'
+export {
+  type CookieStateOptions,
+  cookie,
+  cookieState,
+  parseCookieHeader,
+  setCookie,
+} from './cookies.ts'
 // SSR post-render helpers: heading extraction + island marker patching.
 // The first-paint ToC story uses `extractMainHeadings` to scan h2/h3 in
 // the rendered `<main>`, inject ids, and surface the list — and
@@ -421,8 +427,10 @@ export {
   PLACE_LOAD_SCRIPT_ID,
   PLACE_PAGE_BRAND,
   page,
+  redirect,
   type RenderPageOptions,
   type SlotFills,
+  temporaryRedirect,
   useSearch,
 } from './page.ts'
 
@@ -675,6 +683,10 @@ export {
   type PlaceRoutes,
   type RouteKey,
 } from './link.ts'
+// `useRouter()` — public hook over the routing system's `RouterCap`.
+// Re-exported from `@place-ts/routing` so authors can pull the common
+// reactive APIs from one place (parallel to how `useTheme()` is here).
+export { useRouter } from '@place-ts/routing'
 // Theme tokens — typed CSS-variable-based theming with SSR-safe theme
 // selection. See ./theme.ts for the full story.
 export {

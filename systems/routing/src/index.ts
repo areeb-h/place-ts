@@ -368,6 +368,51 @@ export function searchParams<S extends SearchParamsSchema>(schema: S): SearchPar
 // hard refresh.
 export const RouterCap = defineCapability<Router>('Router')
 
+/**
+ * Read the current Router from the active capability scope.
+ *
+ * The polished public-facing reader, parallel to `useTheme()`. Returns
+ * the installed `Router` so islands / page bodies / layouts can read
+ * the path, query, and call navigate / replace without reaching
+ * directly into `RouterCap.tryUse()`.
+ *
+ * Where the cap gets installed:
+ *   - SSR: `renderPage` installs a server-side router from the request
+ *     URL. Reads (path, segments, query, param) work; navigate /
+ *     replace throw with a helpful "use a redirect() instead" message.
+ *   - Client: `app({ router: pathRouter | hashRouter })` installs the
+ *     active client router at boot. All methods work.
+ *   - Tests: install your own via `RouterCap.provide(memoryRouter(), …)`.
+ *
+ * If no Router is installed, this throws with an actionable message
+ * pointing at the most common fix (configure `router:` on `app({...})`).
+ * Use `RouterCap.tryUse()` directly if you want the nullable form for
+ * a code path that may legitimately run without a router.
+ *
+ * ```ts
+ * const Counter = island(() => {
+ *   const router = useRouter()
+ *   return (
+ *     <button onClick={() => router.navigate('/other')}>
+ *       Currently on {router.path()} — go elsewhere
+ *     </button>
+ *   )
+ * })
+ * ```
+ */
+export function useRouter(): Router {
+  const r = RouterCap.tryUse()
+  if (r === null) {
+    throw new Error(
+      "useRouter(): no Router is installed in this scope. Configure one via " +
+        "app({ router: pathRouter }) (or hashRouter), or wrap the calling code in " +
+        "RouterCap.provide(router, () => …). Use RouterCap.tryUse() directly if " +
+        "you want a nullable fallback for a code path that may run without a router.",
+    )
+  }
+  return r
+}
+
 function readHash(): string {
   const hash = globalThis.location?.hash ?? ''
   return hash.startsWith('#') ? hash.slice(1) : hash

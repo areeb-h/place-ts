@@ -644,6 +644,21 @@ export interface ServeOptions {
   /** TTL (ms) for a cached prefetch entry. Default `30_000`. */
   prefetchTtlMs?: number
   /**
+   * Hard timeout for a single per-request page render (ms). After this,
+   * the render's inflight cache entry is rejected with
+   * `Error('renderPage timed out for <cacheKey> after <ms>ms')` and
+   * removed from the inflight map so subsequent requests get a fresh
+   * attempt instead of waiting on a dead promise.
+   *
+   * Without this safeguard, a single hung `load()` (infinite loop,
+   * blocking DB query without its own timeout, slow upstream API) pins
+   * the inflight entry forever; concurrent requests for the same cache
+   * key all queue behind it and the server becomes unresponsive on
+   * that route. Default: `30_000` (30 seconds). Set `0` or a negative
+   * number to disable the timeout (pre-0.10.7 behaviour).
+   */
+  renderTimeoutMs?: number
+  /**
    * Trailing-slash policy for internal `<Link>` hrefs.
    *
    *   - `'preserve'` (default): emit hrefs verbatim, whatever the
@@ -992,11 +1007,24 @@ function _serverDynImport(specifier: string): Promise<unknown> {
 // stringify, Bun.serve, Bun.build, fs/promises, tailwindcss) from the
 // client bundle. See `export const serve = …` near the bottom of this
 // file for the gating pattern.
-// Tracks cache keys whose ISR background revalidation has already
-// logged a failure, so a persistently broken route emits ONE warn
-// instead of one per stale-request that triggers a revalidate. Per-
-// process; reset on restart.
-const _swrLoggedKeys = new Set<string>()
+// Tracks per-cacheKey background-revalidation failure state. We log
+// the first failure at WARN and stay quiet for subsequent failures of
+// the same key — but once a key fails 5 times in a row without any
+// successful revalidation in between, we ESCALATE to a structured
+// ERROR log with the failure count + last error. That's the signal a
+// log shipper / alerting pipeline picks up: a persistently broken
+// route stops getting served correctly, the user sees stale content
+// forever, and the team gets paged. Pre-0.10.7 the warn was logged
+// once and that was the end of it — no path from "stale forever" to
+// "someone notices."
+interface SwrFailureState {
+  count: number
+  warnLogged: boolean
+  errorLogged: boolean
+  lastErrMsg: string
+}
+const _swrFailures = new Map<string, SwrFailureState>()
+const SWR_ERROR_ESCALATE_AT = 5
 
 async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   // **Dev-mode self-supervisor.** In dev, `serve()` runs as a long-
@@ -1818,6 +1846,12 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
   ): Promise<CacheEntry> => {
     const existing = inflight.get(cacheKey)
     if (existing) return existing
+    // Hard timeout — defends against hung renders pinning the inflight
+    // map forever. A single broken load() (infinite loop, blocking I/O,
+    // slow upstream without its own timeout) would otherwise queue
+    // every concurrent request for that route on a dead promise.
+    // Default 30s; opt out with renderTimeoutMs <= 0.
+    const renderTimeoutMs = options.renderTimeoutMs ?? 30_000
     const promise = (async (): Promise<CacheEntry> => {
       // Per-route bootstrap (T5-B-1): the route's own split bundle URL
       // if `clientEntries` was set, else the splitter's shared default
@@ -1885,9 +1919,43 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
       if (cache !== null) await cache.set(cacheKey, entry)
       return entry
     })()
-    inflight.set(cacheKey, promise)
-    promise.finally(() => inflight.delete(cacheKey))
-    return promise
+    // Race the render against the timeout. The timeout-arm only fires
+    // if renderTimeoutMs is a positive number; setting it to 0 / -1
+    // disables the safety net (pre-0.10.7 behaviour, useful for
+    // diagnostic builds where you want hangs to be visible).
+    const raced: Promise<CacheEntry> =
+      renderTimeoutMs > 0
+        ? new Promise<CacheEntry>((resolve, reject) => {
+            let settled = false
+            const timer = setTimeout(() => {
+              if (settled) return
+              settled = true
+              reject(
+                new Error(
+                  `renderPage timed out for '${cacheKey}' after ${renderTimeoutMs}ms — ` +
+                    `check load() for hung awaits / missing upstream timeouts`,
+                ),
+              )
+            }, renderTimeoutMs)
+            promise.then(
+              (v) => {
+                if (settled) return
+                settled = true
+                clearTimeout(timer)
+                resolve(v)
+              },
+              (e) => {
+                if (settled) return
+                settled = true
+                clearTimeout(timer)
+                reject(e)
+              },
+            )
+          })
+        : promise
+    inflight.set(cacheKey, raced)
+    raced.finally(() => inflight.delete(cacheKey))
+    return raced
   }
 
   const responseFromEntry = (entry: CacheEntry): Response =>
@@ -2105,23 +2173,50 @@ async function _serveImpl(options: ServeOptions): Promise<Bun.Server<unknown>> {
             // The promise is intentionally floating — we don't await it,
             // and we don't return a rejected promise to the request.
             //
-            // Failures are LOGGED (0.5.1) instead of silently swallowed.
-            // Without this, a fatal render bug (template throws, infinite
-            // loop, OOM) leaves users seeing stale content forever with
-            // no signal anywhere — silent broken-state. The log is
-            // dev-loud / prod-rate-limited (one warn per cacheKey
-            // tracked in `_swrLoggedKeys` below) so a persistently
-            // failing route doesn't spam stderr.
-            void renderAndCache(r.page, req, params, cacheKey, rev, nonce, htmlClassPrefix).catch(
+            // Failure ladder (0.10.7):
+            //   - First failure: WARN (visible in dev; logged once)
+            //   - Failures 2–4: silent (avoid spam)
+            //   - 5th consecutive failure: ERROR (structured fields
+            //     so log shippers can alert)
+            //   - Any success in between: state resets to clean
+            //
+            // Without this, a persistent render bug leaves users
+            // seeing stale content forever with no signal anywhere.
+            void renderAndCache(r.page, req, params, cacheKey, rev, nonce, htmlClassPrefix).then(
+              () => {
+                // Successful revalidation — clear failure state if any.
+                if (_swrFailures.has(cacheKey)) _swrFailures.delete(cacheKey)
+              },
               (err: unknown) => {
-                if (_swrLoggedKeys.has(cacheKey)) return
-                _swrLoggedKeys.add(cacheKey)
-                log
-                  .scope('isr')
-                  .warn(
-                    `background revalidation failed for '${cacheKey}' — serving stale; logged once per key`,
-                    err,
-                  )
+                const errMsg = err instanceof Error ? err.message : String(err)
+                const prev = _swrFailures.get(cacheKey)
+                const next: SwrFailureState = {
+                  count: (prev?.count ?? 0) + 1,
+                  warnLogged: prev?.warnLogged ?? false,
+                  errorLogged: prev?.errorLogged ?? false,
+                  lastErrMsg: errMsg,
+                }
+                _swrFailures.set(cacheKey, next)
+                if (!next.warnLogged) {
+                  next.warnLogged = true
+                  log
+                    .scope('isr')
+                    .warn(
+                      `background revalidation failed for '${cacheKey}' — serving stale (1st failure; alert at ${SWR_ERROR_ESCALATE_AT} consecutive)`,
+                      err,
+                    )
+                } else if (
+                  next.count >= SWR_ERROR_ESCALATE_AT &&
+                  !next.errorLogged
+                ) {
+                  next.errorLogged = true
+                  log
+                    .scope('isr')
+                    .error(
+                      `background revalidation persistently failing for '${cacheKey}' — ${next.count} consecutive failures, last error: ${errMsg}`,
+                      err,
+                    )
+                }
               },
             )
             return mergeHeaders(

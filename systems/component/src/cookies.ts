@@ -85,6 +85,43 @@ export interface CookieStateOptions {
 }
 
 /**
+ * Imperative cookie writer (client-only). Pairs with the isomorphic
+ * `cookie()` reader and the reactive `cookieState()`. Use for the
+ * "set this once, no subscription" case — accepting tracking consent,
+ * dismissing a banner, recording the last-visited tab — where you
+ * don't want a `State<T>` cell carrying the value around.
+ *
+ *   // when the user accepts cookies
+ *   setCookie('cookies-consent', 'accepted')
+ *
+ *   // dismissing the welcome banner
+ *   setCookie('welcome-dismissed', '1', { maxAgeSeconds: 60 * 60 * 24 * 30 })
+ *
+ * Defaults: `Path=/`, `Max-Age=31536000` (1 year), `SameSite=Lax`, no
+ * `Secure`. Override any of those via `options`. The value is
+ * percent-encoded so values with `;` or `=` round-trip through `cookie()`.
+ *
+ * Server-side this is a no-op — there's no `document` to mutate, and
+ * a Set-Cookie header must come back on the Response. If you need to
+ * set a cookie from a server handler, return a `Response` with a
+ * `Set-Cookie` header (or use `themeCookieHeader()` for the theme case).
+ * The no-op-on-server lets the same call site work in code shared
+ * between island handlers and SSR utilities without branching.
+ */
+export function setCookie(
+  name: string,
+  value: string,
+  options?: CookieStateOptions,
+): void {
+  if (typeof document === 'undefined') return
+  const maxAge = options?.maxAgeSeconds ?? 60 * 60 * 24 * 365
+  const path = options?.path ?? '/'
+  const secure = options?.secure ? '; Secure' : ''
+  // biome-ignore lint/suspicious/noDocumentCookie: synchronous cookie write.
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=${path}; Max-Age=${maxAge}; SameSite=Lax${secure}`
+}
+
+/**
  * `State<T>` whose value is mirrored to a cookie. The initial value
  * comes from the cookie if set (on both SSR and the client — see
  * `cookie()` for the isomorphic read), otherwise from `defaultValue`.

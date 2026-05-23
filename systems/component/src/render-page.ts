@@ -42,7 +42,9 @@ import {
   type AnyLayout,
   type AnyPage,
   escapeForJsonScript,
+  getRedirectPayload,
   isNotFoundError,
+  isRedirectError,
   type LoadCtx,
   makeSlots,
   PLACE_LOAD_SCRIPT_ID,
@@ -107,12 +109,28 @@ export async function renderPage(
     params,
     prefetch: req.headers.get('x-place-prefetch') === '1',
   }
+  // Helper: turn a redirect branded error into a Response with the
+  // right Location header + status. Both layout-load and page-load
+  // catch blocks delegate here so the behaviour is uniform regardless
+  // of where in the chain `throw redirect(...)` came from.
+  const redirectResponse = (e: unknown): Response | null => {
+    const payload = getRedirectPayload(e)
+    if (payload === null) return null
+    return new Response(null, {
+      status: payload.status,
+      headers: { Location: payload.url },
+    })
+  }
   for (const l of layouts) {
     if (l.load) {
       try {
         const data = (await l.load(ctx)) ?? {}
         Object.assign(loadData, data)
       } catch (e) {
+        // `redirect()` / `temporaryRedirect()` from a layout's load
+        // short-circuits to a 30x response (same as inside the page).
+        const r = redirectResponse(e)
+        if (r !== null) return r
         return renderRouteError(e, req, 'load')
       }
     }
@@ -122,14 +140,24 @@ export async function renderPage(
       const data = (await p.load(ctx)) ?? {}
       Object.assign(loadData, data)
     } catch (e) {
+      // `redirect()` / `temporaryRedirect()` is a typed signal; emit
+      // a 30x response with Location header. Same shape `notFound()`
+      // uses below — branded error caught at the right boundary so
+      // authors can `throw redirect('/login')` from any load() and
+      // get a real HTTP redirect instead of a render error.
+      if (isRedirectError(e)) {
+        const r = redirectResponse(e)
+        if (r !== null) return r
+      }
       // Round 5 (5.7): `notFound()` is a typed signal; render the
       // page's onNotFound view as a 404 (or fall through to the global
       // handler).
       if (isNotFoundError(e) && p.onNotFound) {
         return await renderPageWithCustomView(p, p.onNotFound(ctx), ctx, layouts, options, 404)
       }
-      // Per-page onError, if declared. The error is passed in.
-      if (!isNotFoundError(e) && p.onError) {
+      // Per-page onError, if declared. The error is passed in. Skip
+      // for redirect + notFound (those are typed signals, not errors).
+      if (!isNotFoundError(e) && !isRedirectError(e) && p.onError) {
         const err = e instanceof Error ? e : new Error(String(e))
         return await renderPageWithCustomView(p, p.onError(err, ctx), ctx, layouts, options, 500)
       }
@@ -226,8 +254,18 @@ export async function renderPage(
         name: 'csrf-token',
         content: csrfFromLoad,
       }
+      // Dedupe: if the page's meta.extra already declares a
+      // `csrf-token` meta, REPLACE it (the load()-minted token is the
+      // canonical one for this request). Pre-fix this unconditionally
+      // appended, leaving two `<meta name="csrf-token">` tags in the
+      // head; browsers use the first match, silently winning the page-
+      // declared (stale) token over the load()-issued one. Real CSRF
+      // defense quietly degrades to a no-op — a P0 security footgun.
       const existingExtra = meta?.extra ?? []
-      meta = { ...(meta ?? {}), extra: [...existingExtra, csrfEntry] }
+      const filtered = existingExtra.filter(
+        (h) => !(h.tag === 'meta' && h.name === 'csrf-token'),
+      )
+      meta = { ...(meta ?? {}), extra: [...filtered, csrfEntry] }
     }
     // Concatenate styles: layouts' styles emit BEFORE the page's so the
     // page can override the layout. Layouts in chain order, then page.

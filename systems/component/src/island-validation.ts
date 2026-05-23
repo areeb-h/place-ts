@@ -23,21 +23,39 @@
  *   2. `<Island>` render time (defense-in-depth)
  *   3. Island-bundler build time (defense-in-depth)
  */
+const RESERVED_ISLAND_NAMES = ['__proto__', 'constructor', 'prototype'] as const
+
 export function validateIslandName(name: string): void {
   if (typeof name !== 'string' || name.length === 0) {
-    throw new Error(`island: name must be a non-empty string (got ${typeof name})`)
-  }
-  if (name.length > 64) {
-    throw new Error(`island: name exceeds 64 chars (got ${name.length})`)
-  }
-  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
     throw new Error(
-      `island: name '${name}' contains invalid characters. Use only ` +
-        `letters, digits, '_', '-'.`,
+      `island: name must be a non-empty string (got ${typeof name}). ` +
+        `The name is derived from the filename — e.g. './islands/theme-toggle.tsx' ` +
+        `produces 'theme-toggle'. Did the source path end with an empty basename?`,
     )
   }
-  if (name === '__proto__' || name === 'constructor' || name === 'prototype') {
-    throw new Error(`island: name '${name}' is reserved.`)
+  if (name.length > 64) {
+    throw new Error(
+      `island: name '${name.slice(0, 32)}…' exceeds 64 chars (got ${name.length}). ` +
+        `Rename the source file to something shorter — island names are derived ` +
+        `from the filename and end up in HTML attributes, CSS selectors, and ` +
+        `bundle URLs, where long names are noise.`,
+    )
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+    const offending = [...name].filter((c) => !/[a-zA-Z0-9_-]/.test(c))
+    throw new Error(
+      `island: name '${name}' contains invalid character(s) ` +
+        `(${[...new Set(offending)].map((c) => `'${c}'`).join(', ')}). ` +
+        `Use only letters, digits, '_', '-'. Example valid names: ` +
+        `'theme-toggle', 'searchPalette', 'user_avatar'.`,
+    )
+  }
+  if ((RESERVED_ISLAND_NAMES as readonly string[]).includes(name)) {
+    throw new Error(
+      `island: name '${name}' is reserved (cannot be one of: ` +
+        `${RESERVED_ISLAND_NAMES.join(', ')}). These names collide with ` +
+        `JavaScript object prototype lookups. Rename your source file.`,
+    )
   }
 }
 

@@ -519,6 +519,97 @@ export function isNotFoundError(e: unknown): boolean {
   )
 }
 
+// ===== redirect — branded error caught by renderPage → Response =====
+//
+// Parallel shape to `notFound()`. Throw `redirect(url)` from `load()`
+// (or any code that runs in the render pipeline) to short-circuit
+// rendering and emit a `Response` with a `Location` header.
+//
+// Pre-0.10.7 authors had to construct a `new Response(null, { status:
+// 302, headers: { Location: url } })` and either throw it (works only
+// inside route handlers) or branch out of `load()` into a custom
+// dispatch path. Neither option is consistent with the `notFound()`
+// pattern.
+
+const REDIRECT_MARKER: unique symbol = Symbol.for('@place-ts/component:redirect')
+
+/** Internal: payload attached to a redirect error so renderPage can
+ *  build the Response without re-parsing the message. */
+interface RedirectPayload {
+  readonly url: string
+  readonly status: 301 | 302 | 303 | 307 | 308
+}
+
+/**
+ * Throw `redirect(url)` from `load()` (or anywhere in the render
+ * pipeline) to emit a 302 redirect response. The framework catches the
+ * branded error and returns a `Response` with `Location: <url>` and the
+ * supplied status (default 302).
+ *
+ * ```ts
+ * page('/admin', {
+ *   load: ({ req }) => {
+ *     const session = readSession(req)
+ *     if (!session) throw redirect('/login')
+ *     return { admin: session.user }
+ *   },
+ *   view: ({ admin }) => <h1>Hi {admin.name}</h1>,
+ * })
+ * ```
+ *
+ * Use 302 (default) for typical "moved temporarily" cases like
+ * auth-gated routes. For permanent moves prefer `temporaryRedirect`'s
+ * `status: 308` (preserves method + body for non-GET). Returns `never`
+ * so TypeScript narrows correctly at the call site.
+ */
+export function redirect(url: string): never {
+  const e = new Error(`redirect: ${url}`)
+  ;(e as Error & { [REDIRECT_MARKER]?: RedirectPayload })[REDIRECT_MARKER] = {
+    url,
+    status: 302,
+  }
+  throw e
+}
+
+/**
+ * Like `redirect(url)` but with an explicit HTTP status. Valid statuses:
+ *
+ *   - `301` Moved Permanently   — cacheable; UA may rewrite POST→GET
+ *   - `302` Found               — default for `redirect()`
+ *   - `303` See Other           — always switches POST→GET
+ *   - `307` Temporary Redirect  — preserves method + body
+ *   - `308` Permanent Redirect  — cacheable; preserves method + body
+ *
+ * Most apps want 302 (use `redirect()`) or 307 (use this with `307`).
+ * Permanent (`301` / `308`) only when the resource has truly moved
+ * forever and you want the redirect cached.
+ */
+export function temporaryRedirect(
+  url: string,
+  status: 301 | 302 | 303 | 307 | 308 = 307,
+): never {
+  const e = new Error(`redirect: ${url} (${status})`)
+  ;(e as Error & { [REDIRECT_MARKER]?: RedirectPayload })[REDIRECT_MARKER] = {
+    url,
+    status,
+  }
+  throw e
+}
+
+/** Internal: detect a redirect-marked error. */
+export function isRedirectError(e: unknown): boolean {
+  return (
+    typeof e === 'object' && e !== null && (e as Record<symbol, unknown>)[REDIRECT_MARKER] !== undefined
+  )
+}
+
+/** Internal: extract the redirect payload (url + status). */
+export function getRedirectPayload(e: unknown): RedirectPayload | null {
+  if (typeof e !== 'object' || e === null) return null
+  const p = (e as Record<symbol, unknown>)[REDIRECT_MARKER]
+  return (p as RedirectPayload | undefined) ?? null
+}
+
 // ===== layout — composable wrappers around pages =====
 //
 // Closes the gap with Next/Remix/SvelteKit: nested layouts that share
