@@ -210,7 +210,7 @@ fi
 
 printf "${C_BOLD}Summary:${C_RESET} %d to publish, %d already up-to-date.\n" "$TO_PUBLISH" "$TO_SKIP"
 
-# ===== 2. Pre-flight: npm whoami =====
+# ===== 2. Pre-flight: npm whoami + full CI =====
 echo
 printf "${C_BOLD}▶ Pre-flight${C_RESET}\n"
 if [[ $DRY_RUN -ne 1 ]]; then
@@ -223,6 +223,31 @@ if [[ $DRY_RUN -ne 1 ]]; then
   printf "  ${C_GREEN}✓${C_RESET} logged in as ${C_CYAN}%s${C_RESET}\n" "$WHOAMI"
 else
   printf "  ${C_DIM}skipping whoami check (--dry-run)${C_RESET}\n"
+fi
+
+# Run the full CI sweep before any publish lands. Pre-0.10.12 the
+# publish flow leaned on each package's `prepublishOnly` for its own
+# typecheck + tests — but prepublishOnly fires AFTER the workspace:*
+# rewrite + AFTER npm has started uploading. A failure there leaves
+# the working tree in the prep-publish'd state (caught by the revert
+# trap, but messy) and may have partially uploaded. Running the
+# repo-wide CI first turns a publish-time failure into a pre-flight
+# failure — same signal, but no half-shipped state.
+#
+# Skipped on --dry-run because dry-run is for "show me the plan" and
+# shouldn't gate on a slow CI sweep.
+if [[ $DRY_RUN -ne 1 ]]; then
+  printf "  ${C_DIM}running pre-publish CI (lint + typecheck + tests + smoke)...${C_RESET}\n"
+  if ! (cd "$REPO" && bun run ci > /tmp/place-publish-ci.log 2>&1); then
+    printf "  ${C_RED}✗${C_RESET} pre-publish CI failed. Last 30 lines:\n"
+    sed 's/^/      /' /tmp/place-publish-ci.log | tail -30
+    printf "  ${C_DIM}Full log: /tmp/place-publish-ci.log${C_RESET}\n"
+    trap - EXIT INT TERM
+    exit 1
+  fi
+  printf "  ${C_GREEN}✓${C_RESET} CI clean\n"
+else
+  printf "  ${C_DIM}skipping CI sweep (--dry-run)${C_RESET}\n"
 fi
 
 # ===== 3. Confirm =====
