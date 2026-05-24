@@ -1,6 +1,6 @@
 {
   "name": "@place-ts/routing",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Client-side routing for @place-ts/reactivity. v0.1 ships a hash-based router and a memoryRouter for tests, exposed as the Router capability so consumers can swap implementations without touching call sites.",
   "keywords": [

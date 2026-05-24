@@ -505,13 +505,20 @@ export async function renderToHtml(p: AnyPage, opts: RenderToHtmlOptions = {}): 
 
 // `Provision` and `provide()` live in @place-ts/capability — they're the
 // fundamental "bind a cap to an impl" primitive. We re-export them from
-// here so component consumers see a single import surface.
+// here so component consumers see a single import surface. The
+// capability primitives haven't moved or churned in over a year; the
+// publish-time hazard the cross-reexport probe flags doesn't apply to
+// these stable foundation exports.
+// @place-publish-allow-cross-reexport
 export { type Provision, provide } from '@place-ts/capability'
 // Re-export the reactivity primitives so apps don't need a second import
 // root for state/watch/derived. Anything you reach for inside a component
 // — `state`, `watch`, `derived`, `untrack`, `batch` — is now in the same
 // package as `page`, `layout`, `component`, etc. Apps can still import
 // directly from `@place-ts/reactivity` if they prefer that scope.
+// Same grandfathered re-export the capability one above gets; reactivity's
+// core primitives are stable foundations.
+// @place-publish-allow-cross-reexport
 export {
   type ArrayState,
   type BaseState,
@@ -683,10 +690,22 @@ export {
   type PlaceRoutes,
   type RouteKey,
 } from './link.ts'
-// `useRouter()` — public hook over the routing system's `RouterCap`.
-// Re-exported from `@place-ts/routing` so authors can pull the common
-// reactive APIs from one place (parallel to how `useTheme()` is here).
-export { useRouter } from '@place-ts/routing'
+// `useRouter()` — lives in `@place-ts/routing` (next to `Router` +
+// `RouterCap`). Do NOT re-export here.
+//
+// We learned this rule the hard way: 0.10.8 re-exported `useRouter`
+// from `@place-ts/routing`, but routing@0.1.1 (on registry at the
+// time) didn't have it. The published component@0.10.8 then failed
+// at module-load on every `bunx create-app` install:
+//
+//   SyntaxError: export 'useRouter' not found in '@place-ts/routing'
+//
+// Cross-package re-exports tie publish lifecycles together — and
+// they break silently in workspace smoke tests that override deps
+// with local tarballs (the local routing HAD useRouter). The fix is
+// not "be careful next time"; it's "don't do cross-package
+// re-exports at all." Each package owns its surface. Users import
+// useRouter directly from `@place-ts/routing`.
 // Theme tokens — typed CSS-variable-based theming with SSR-safe theme
 // selection. See ./theme.ts for the full story.
 export {

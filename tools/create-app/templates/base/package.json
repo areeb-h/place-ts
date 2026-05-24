@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@place-ts/component": "^0.10.8",
-    "@place-ts/routing": "^0.1.1",
+    "@place-ts/component": "^0.10.9",
+    "@place-ts/routing": "^0.1.2",
     "@tailwindcss/node": "^4.2.4",
     "@tailwindcss/oxide": "^4.2.4",
     "tailwindcss": "^4.2.4"

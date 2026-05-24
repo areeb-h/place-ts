@@ -6,6 +6,12 @@
 // to import from two places. The library is the design system; the
 // framework primitives are its building blocks.
 
+// Grandfathered re-export — `cls`, `recipe`, and `themeTokens` are
+// stable framework primitives, present in every shipped component
+// version. The publish-time hazard the cross-reexport probe flags
+// (a new name added locally but not on the pinned dep's registry
+// version) doesn't apply to these foundation exports.
+// @place-publish-allow-cross-reexport
 export { cls, recipe, themeTokens } from '@place-ts/component'
 
 // ===== Library stylesheet =====
