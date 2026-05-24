@@ -11,6 +11,7 @@
 // public surface (`el`, the heading-collection helpers, `SsrHeading`),
 // so existing call sites and the package's public API are unchanged.
 
+import { defineCapability } from '@place-ts/capability'
 // Reactive primitives + the View / Child / props types.
 import { batch, type Disposer, type State, untrack, watch } from '@place-ts/reactivity'
 // Cleanup-scope + hydration-audit + slot internals.
@@ -154,46 +155,73 @@ export interface SsrHeading {
   readonly level: 2 | 3
 }
 
-let currentHeadingCollector: SsrHeading[] | null = null
-let currentHeadingIds: Set<string> | null = null
-let currentMainDepth = 0
 /**
- * Side-channel: text of the first `<h1>` encountered inside `<main>`
- * during a render. Captured separately from `SsrHeading[]` because h1
- * is the article *title* (consumed for auto `<title>`), while h2/h3
- * are TOC navigation entries (consumed by the toc island's `ssrProps`).
- * Mixing them in one array would force every consumer to filter by
- * level — a leakier contract than two single-purpose channels.
+ * Per-render heading-collection scope. Pre-0.10.10 this was four
+ * module-level `let`s; under `renderToString` (synchronous) that
+ * worked, but the same caveat as the inline-style collector applies
+ * — async ssrProps / transformBody would corrupt it across requests.
+ * The cap-backed scope (below) is rigorously per-request via
+ * `@place-ts/capability`'s AsyncLocalStorage backing.
+ *
+ * `mainDepth` and `firstH1Text` are boxed in `{ value: T }` objects
+ * because callers (the `el()` factory) mutate them in place. A bare
+ * `number` / `string` field would be read-by-value and lose the
+ * mutation.
  */
-let currentFirstH1Text: string | null = null
+interface HeadingScope {
+  collector: SsrHeading[]
+  ids: Set<string>
+  mainDepth: { value: number }
+  firstH1Text: { value: string | null }
+}
+
+const HeadingScopeCap = defineCapability<HeadingScope>('PlaceHeadingScope')
+
+// Stack of disposers, one per active begin scope (always at most 1 in
+// the current renderPage flow — defensive trampoline for future
+// callers that might nest).
+const _headingDisposers: Array<() => void> = []
+
+// Module-level reference to the most recently begun scope. Kept so
+// `_getFirstH1Text()` can read the value AFTER `_endHeadingCollection()`
+// has unwound the cap — a contract the framework's render-page.ts
+// relies on. Set on begin; not cleared on end. Always corresponds to
+// the LAST render in this process; since begin → render → end →
+// _getFirstH1Text is sync inside one renderPage call, no concurrent
+// request can land between end and _getFirstH1Text.
+let _lastHeadingScope: HeadingScope | null = null
+
+/** Internal: read the active heading scope. Returns `null` outside
+ *  any begin/end pair. */
+function currentHeading(): HeadingScope | null {
+  return HeadingScopeCap.tryUse()
+}
 
 /**
  * Begin collecting h2/h3 headings inside `<main>` during the next
  * render. The framework calls this immediately before
  * `renderToString(view)` in `renderPage`; islands declaring
  * `ssrProps` receive the populated list via `ctx.headings`.
- *
- * Pure synchronous helper — the collector is module-scoped and the
- * render between begin/end is synchronous, so no concurrent
- * interleaving is possible.
  */
 export function _beginHeadingCollection(): SsrHeading[] {
-  const arr: SsrHeading[] = []
-  currentHeadingCollector = arr
-  currentHeadingIds = new Set()
-  currentMainDepth = 0
-  currentFirstH1Text = null
-  return arr
+  const scope: HeadingScope = {
+    collector: [],
+    ids: new Set(),
+    mainDepth: { value: 0 },
+    firstH1Text: { value: null },
+  }
+  const dispose = HeadingScopeCap.install(scope)
+  _headingDisposers.push(dispose)
+  _lastHeadingScope = scope
+  return scope.collector
 }
 
 /** End the heading collection scope. */
 export function _endHeadingCollection(): void {
-  currentHeadingCollector = null
-  currentHeadingIds = null
-  currentMainDepth = 0
-  // currentFirstH1Text deliberately NOT cleared here — `renderPage`
-  // reads it via `_getFirstH1Text()` AFTER `_endHeadingCollection()`.
-  // It's reset on the next `_beginHeadingCollection()`.
+  const d = _headingDisposers.pop()
+  if (d !== undefined) d()
+  // _lastHeadingScope intentionally kept — `_getFirstH1Text()` reads
+  // it AFTER end. It's overwritten on the next `_beginHeadingCollection()`.
 }
 
 /**
@@ -202,7 +230,7 @@ export function _endHeadingCollection(): void {
  * inside `<main>`. Used by `renderPage` for auto-title derivation.
  */
 export function _getFirstH1Text(): string | null {
-  return currentFirstH1Text
+  return _lastHeadingScope?.firstH1Text.value ?? null
 }
 
 /**
@@ -282,7 +310,8 @@ function elementToHtml(tag: string, props: ElementProps): string {
   // `try/finally` shape — kept implicit via a guard at the bottom
   // since `elementToHtml` has multiple return points.
   const enteringMain = tag === 'main'
-  if (enteringMain) currentMainDepth++
+  const _headingScope = currentHeading()
+  if (enteringMain && _headingScope !== null) _headingScope.mainDepth.value++
   let childrenHtml = ''
   // Directive props fold into the base `class` / `style` attributes on
   // SSR so the rendered HTML matches what the client would compute on
@@ -383,7 +412,8 @@ function elementToHtml(tag: string, props: ElementProps): string {
     // `'unsafe-hashes'`). The browser hashes the *attribute value* —
     // pre-escape — so we collect the raw `styleMerged`, not the HTML-
     // attr-escaped form.
-    if (currentInlineStyleSet !== null) currentInlineStyleSet.add(styleMerged)
+    const _styleSet = currentInlineStyleSet()
+    if (_styleSet !== null) _styleSet.add(styleMerged)
   }
   // **Heading auto-id (h2/h3 inside main) + auto-title (first h1
   // inside main).** Inject `id="…"` BEFORE children are rendered,
@@ -392,23 +422,25 @@ function elementToHtml(tag: string, props: ElementProps): string {
   // from the user's props), so author intent wins. Outside main, or
   // with no active collector, this is a no-op.
   const isCollectableHeading =
-    currentHeadingCollector !== null && currentMainDepth > 0 && (tag === 'h2' || tag === 'h3')
+    _headingScope !== null &&
+    _headingScope.mainDepth.value > 0 &&
+    (tag === 'h2' || tag === 'h3')
   const isCollectableH1 =
-    currentHeadingCollector !== null &&
-    currentMainDepth > 0 &&
+    _headingScope !== null &&
+    _headingScope.mainDepth.value > 0 &&
     tag === 'h1' &&
-    currentFirstH1Text === null
+    _headingScope.firstH1Text.value === null
   // Render children first to know the heading text. Headings should
   // be small (a single line of text + optional inline code), so the
   // double-walk (text + html) is O(N) on tiny strings.
   if (props.children !== undefined) {
     childrenHtml = childToHtml(props.children as Child)
   }
-  if (isCollectableH1) {
+  if (isCollectableH1 && _headingScope !== null) {
     const text = childToText(props.children as Child).trim()
-    if (text) currentFirstH1Text = text
+    if (text) _headingScope.firstH1Text.value = text
   }
-  if (isCollectableHeading) {
+  if (isCollectableHeading && _headingScope !== null) {
     const existingIdMatch = attrs.match(/\sid="([^"]+)"/)
     const text = childToText(props.children as Child).trim()
     if (text) {
@@ -416,13 +448,13 @@ function elementToHtml(tag: string, props: ElementProps): string {
       if (base) {
         let finalId = base
         let n = 2
-        const seen = currentHeadingIds as Set<string>
+        const seen = _headingScope.ids
         while (seen.has(finalId)) {
           finalId = `${base}-${n}`
           n++
         }
         seen.add(finalId)
-        ;(currentHeadingCollector as SsrHeading[]).push({
+        _headingScope.collector.push({
           id: finalId,
           text,
           level: tag === 'h2' ? 2 : 3,
@@ -438,7 +470,7 @@ function elementToHtml(tag: string, props: ElementProps): string {
   // Decrement main-depth on exit. Since `elementToHtml` has multiple
   // return points (void elements vs. paired tags), this needs to fire
   // before either branch returns.
-  if (enteringMain) currentMainDepth--
+  if (enteringMain && _headingScope !== null) _headingScope.mainDepth.value--
   if (VOID_ELEMENTS.has(tag)) {
     return `<${tag}${attrs}>`
   }

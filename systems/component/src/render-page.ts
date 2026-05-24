@@ -21,6 +21,7 @@ import { placeHmr } from './__hmr.ts'
 import { placeSpaNav } from './__spa_nav.ts'
 import { placeTabs } from './__tabs.ts'
 import { placeViewport } from './__viewport-runtime.ts'
+import { _beginHydrationSeq } from './_internal/hydrationSeq.ts'
 import { _beginInlineStyleCollection, _endInlineStyleCollection } from './_internal/inline-style.ts'
 import { _CookieJarCap, parseCookieHeader } from './cookies.ts'
 import { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text } from './element.ts'
@@ -183,7 +184,14 @@ export async function renderPage(
   //    runtimes — zero hydration flip.
   const _routerDispose = RouterCap.install(createServerRouter(req))
   const _cookieJarDispose = _CookieJarCap.install(parseCookieHeader(req.headers.get('cookie')))
+  // Per-render hydration-id counter scope (0.10.10). Each renderPage
+  // call gets its own counter box, so concurrent streaming renders
+  // can't produce duplicate data-h ids by clobbering a shared module-
+  // level counter. Disposed alongside the other request-scoped caps
+  // in the catch/finally below.
+  const _hydrationSeqDispose = _beginHydrationSeq()
   let _disposeServerCaps = (): void => {
+    _hydrationSeqDispose()
     _cookieJarDispose()
     _routerDispose()
   }

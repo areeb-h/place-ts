@@ -10,27 +10,61 @@
 // `setProperty` at runtime) while letting the SSR pass keep emitting
 // first-paint inline styles that the CSP authoritatively whitelists.
 //
-// Why a per-request collector, not a build-time list: the values are
-// reactive — `style={() => …}` resolves per-render. The hash set is
-// per-response.
+// **Per-render isolation via a capability (0.10.10).**
 //
-// Lives in `_internal/` so the SSR emitter (`element.ts`) and the
-// renderPage / dispatch path (`index.ts`) share one live binding
-// without importing through the index barrel.
+// Pre-0.10.10: a module-level `currentInlineStyleSet` `let` was
+// reassigned on `_beginInlineStyleCollection()` and nulled on
+// `_endInlineStyleCollection()`. Under `renderToString` (synchronous)
+// this works — no other request can interleave between begin and
+// end. But the begin/end window in `render-page.ts` spans a few
+// post-render hooks (`ssrProps`, `transformBody`) which are
+// contractually sync but a future async violation of the contract
+// would silently corrupt one request's collector with another's
+// hashes. The CSP misalignment that followed would block legit
+// inline styles in the user's browser with no server-side warning.
+//
+// The capability shape replaces the `let` with a per-request stack
+// installed inside `@place-ts/capability`'s `runWithCapabilityScope`
+// (which `serve()` opens around every dispatch). Concurrent requests
+// get isolated stacks via AsyncLocalStorage; the legacy public API
+// (`_beginInlineStyleCollection` / `_endInlineStyleCollection`) keeps
+// the same return shape and side-effect semantics for callers.
 
-// The SSR emitter collects style hashes into this set. A live binding —
-// `_begin/_endInlineStyleCollection` reassign it; `element.ts` only
-// reads + `.add()`s, never reassigns.
-export let currentInlineStyleSet: Set<string> | null = null
+import { defineCapability } from '@place-ts/capability'
 
-/** Internal: start a fresh inline-style-attr collection scope. */
+/** Internal: the per-render inline-style hash collector. Installed
+ *  by `_beginInlineStyleCollection`, disposed by `_endInlineStyleCollection`.
+ *  Read by `element.ts` via `currentInlineStyleSet()`. */
+const InlineStyleSetCap = defineCapability<Set<string>>('PlaceInlineStyleSet')
+
+// Stack of disposers, one per active begin scope. The renderPage flow
+// only ever has ONE collector active per render — these are stored
+// per-request so the disposer ALSO lives per-request. But ALS scopes
+// don't survive disposer calls across await boundaries cleanly when
+// the caller stores them outside the scope; we keep a per-cap stack
+// here as a defensive trampoline. (In practice render-page begins +
+// ends in the same async tick, so the stack is always at most 1 deep.)
+const _disposers: Array<() => void> = []
+
+/** Internal: read the current inline-style collector. Returns `null`
+ *  when no collection scope is active (matches pre-0.10.10 shape).
+ *  Callers expect to `.add()` directly when non-null. */
+export function currentInlineStyleSet(): Set<string> | null {
+  return InlineStyleSetCap.tryUse()
+}
+
+/** Internal: start a fresh inline-style-attr collection scope.
+ *  Returns the underlying Set so the caller (renderPage) can read
+ *  its contents at end time. */
 export function _beginInlineStyleCollection(): Set<string> {
   const set = new Set<string>()
-  currentInlineStyleSet = set
+  const dispose = InlineStyleSetCap.install(set)
+  _disposers.push(dispose)
   return set
 }
 
 /** Internal: end the inline-style-attr collection scope. */
 export function _endInlineStyleCollection(): void {
-  currentInlineStyleSet = null
+  const d = _disposers.pop()
+  if (d !== undefined) d()
 }

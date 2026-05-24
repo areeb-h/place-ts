@@ -11,7 +11,7 @@
 // functions, so the islands ⇄ index cycle stays benign — same shape
 // as element.ts / mount.ts / ssr.ts.
 
-import { ClientOnlyAbort } from '@place-ts/capability'
+import { ClientOnlyAbort, defineCapability } from '@place-ts/capability'
 import type { SsrHeading } from './element.ts'
 // `isBrowserGlobalRef` still lives in index.ts; touched only inside
 // runtime functions, so the islands ⇄ index cycle stays benign.
@@ -184,30 +184,44 @@ export interface IslandRegistration {
  * cleanly: the bundle gets eager fetch iff ANY instance needs it
  * eagerly.
  */
-let currentIslandSet: Map<string, Set<ClientStrategy>> | null = null
+/**
+ * Per-render island-collection scope (0.10.10). Pre-fix this was a
+ * module-level `let currentIslandSet = null`; under synchronous
+ * `renderToString` no concurrent request could interleave between
+ * begin and end. The cap-backed version (below) guarantees per-request
+ * isolation via `@place-ts/capability`'s AsyncLocalStorage scope.
+ */
+const IslandSetCap = defineCapability<Map<string, Set<ClientStrategy>>>('PlaceIslandSet')
+
+// Stack of disposers — same trampoline shape the inline-style + heading
+// collectors use; renderPage always has at most 1 active scope.
+const _islandDisposers: Array<() => void> = []
 
 /** Internal: start a fresh island-collection scope. Returns the map. */
 export function _beginIslandCollection(): Map<string, Set<ClientStrategy>> {
   const map = new Map<string, Set<ClientStrategy>>()
-  currentIslandSet = map
+  const dispose = IslandSetCap.install(map)
+  _islandDisposers.push(dispose)
   return map
 }
 
 /** Internal: end the island-collection scope. */
 export function _endIslandCollection(): void {
-  currentIslandSet = null
+  const d = _islandDisposers.pop()
+  if (d !== undefined) d()
 }
 
 /** Internal: record an island instance's strategy. Idempotent per
  *  (name, strategy) pair — calling twice with the same args is a
  *  no-op, so the multi-instance case works. */
 function _addIslandWithStrategy(name: string, strategy: ClientStrategy): void {
-  if (!currentIslandSet) return
-  const existing = currentIslandSet.get(name)
+  const set = IslandSetCap.tryUse()
+  if (!set) return
+  const existing = set.get(name)
   if (existing) {
     existing.add(strategy)
   } else {
-    currentIslandSet.set(name, new Set([strategy]))
+    set.set(name, new Set([strategy]))
   }
 }
 
