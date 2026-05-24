@@ -30,7 +30,7 @@ const SHELL = `<!DOCTYPE html><html><head></head><body>
 // readHtml will accept. `r.text()` returns the body; `r.headers.get`
 // must return a Content-Type starting with `text/html`. `r.url` is
 // the resolved URL (history pushState semantics).
-function htmlResponse(url: string, body: string): Response {
+function htmlResponse(body: string): Response {
   return new Response(body, {
     status: 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -59,20 +59,22 @@ beforeEach(() => {
     <main id="m"><h1>home</h1></main>
   `
   // Mock fetch fresh per test.
-  _fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
-    const url = typeof input === 'string' ? input : input.toString()
+  _fetchSpy = vi.fn(async (_input: RequestInfo | URL) => {
     const body = `<!DOCTYPE html><html><head><title>About</title></head><body><main id="m"><h1>about</h1><p>about body</p></main></body></html>`
-    return htmlResponse(url, body)
+    return htmlResponse(body)
   })
   ;(globalThis as { fetch?: unknown }).fetch = _fetchSpy
 
-  // Spy on pushState.
-  _pushStateSpy = vi.fn(
-    (..._args: [unknown, string, string | URL | null]) => undefined,
+  // Spy on pushState. We declare the mock as a plain function reference
+  // so TS narrows the call signature; vi.fn() without the explicit
+  // `Procedure` cast confuses the strict typecheck.
+  const spy = vi.fn(
+    (_s: unknown, _t: string, _u: string | URL | null | undefined): void => undefined,
   )
+  _pushStateSpy = spy
   const orig = window.history.pushState.bind(window.history)
   vi.spyOn(window.history, 'pushState').mockImplementation((s, t, u) => {
-    _pushStateSpy?.(s, t, u)
+    spy(s, t, u)
     return orig(s, t, u as never)
   })
 })
