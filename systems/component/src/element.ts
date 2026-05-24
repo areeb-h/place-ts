@@ -25,7 +25,7 @@ import { nextHydrationId } from './_internal/hydrationSeq.ts'
 // `currentInlineStyleSet` — the live per-request inline-style-attr
 // hash collector. The SSR emitter `.add()`s every emitted `style="…"`
 // value into it so the dispatcher can whitelist them in the CSP.
-import { currentInlineStyleSet } from './_internal/inline-style.ts'
+import { addInlineStyle } from './_internal/inline-style.ts'
 import { makeSlot } from './_internal/slot.ts'
 // `mountChildren` (the reactive-children DOM mounter) lives in
 // ./mount.ts. element.ts ⇄ mount.ts is a function-level cycle —
@@ -412,8 +412,9 @@ function elementToHtml(tag: string, props: ElementProps): string {
     // `'unsafe-hashes'`). The browser hashes the *attribute value* —
     // pre-escape — so we collect the raw `styleMerged`, not the HTML-
     // attr-escaped form.
-    const _styleSet = currentInlineStyleSet()
-    if (_styleSet !== null) _styleSet.add(styleMerged)
+    // `addInlineStyle` hashes synchronously on insert (0.10.10 P2) —
+    // no render-end Promise.all to await; the Map dedupes by value.
+    addInlineStyle(styleMerged)
   }
   // **Heading auto-id (h2/h3 inside main) + auto-title (first h1
   // inside main).** Inject `id="…"` BEFORE children are rendered,

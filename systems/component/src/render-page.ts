@@ -52,7 +52,9 @@ import {
   type RenderPageOptions,
   renderPageWithCustomView,
 } from './page.ts'
-import { sha256Base64 } from './security-headers.ts'
+// sha256Base64 import removed (0.10.10 P2) — render-page no longer
+// hashes at render-end. The inline-style collector hashes synchronously
+// on insert via node:crypto's createHash (see _internal/inline-style.ts).
 import { renderToStream, renderToString } from './ssr.ts'
 import { rerenderIsland } from './ssr-toc.ts'
 import type { View } from './types.ts'
@@ -623,16 +625,29 @@ export async function renderPage(
     //
     // Patch each deferred island's markers in the rendered body to
     // carry `data-place-deferred-url="<url>"` — that's what the inline
-    // runtime walks. Island names are validated against
-    // `[a-zA-Z0-9_-]+` by `validateIslandName`, so the name is safe to
-    // embed in the regex without escaping.
+    // runtime walks.
+    //
+    // 0.10.10 P2: single-pass patch instead of N regex sweeps over
+    // the body. Pre-fix: for each deferred island we re-scanned the
+    // full body looking for one specific marker (O(n_islands * |body|)).
+    // On a 100 KB body with 5 deferred islands that's ~500 KB of
+    // re-scanning. Now: one combined regex captures EVERY island
+    // marker in a single pass, the replacer looks up the URL via Map.
+    // Island names are validated against `[a-zA-Z0-9_-]+` by
+    // `validateIslandName`, so they're safe to embed in the regex
+    // alternation without escaping.
     let deferredBody = body
-    for (const { name, url } of deferredIslands) {
-      const markerRe = new RegExp(`<div data-view="island" data-view-id="${name}"`, 'g')
-      deferredBody = deferredBody.replace(
-        markerRe,
-        `<div data-view="island" data-view-id="${name}" data-place-deferred-url="${url}"`,
+    if (deferredIslands.length > 0) {
+      const urlByName = new Map(deferredIslands.map((d) => [d.name, d.url]))
+      const namesAlt = deferredIslands.map((d) => d.name).join('|')
+      const combinedRe = new RegExp(
+        `<div data-view="island" data-view-id="(${namesAlt})"`,
+        'g',
       )
+      deferredBody = body.replace(combinedRe, (_match, name: string) => {
+        const url = urlByName.get(name) ?? ''
+        return `<div data-view="island" data-view-id="${name}" data-place-deferred-url="${url}"`
+      })
     }
     const deferredScript =
       options?.enableSpaNav && deferredIslands.length > 0
@@ -720,8 +735,11 @@ export async function renderPage(
     // leaves the framework boundary. Comma-separated for compactness;
     // base64 strings don't contain `,` so the separator is unambiguous.
     // See INLINE_STYLE_HASHES_HEADER below for the constant.
-    const inlineStyleHashList =
-      inlineStyles.size > 0 ? await Promise.all([...inlineStyles].map(sha256Base64)) : []
+    // 0.10.10 P2: hashes are pre-computed at INSERT time by
+    // `addInlineStyle` (the collector is a Map<style, hash>), so the
+    // render-end work is just reading the Map's values — no
+    // `Promise.all(N × sha256Base64)` to await on the critical path.
+    const inlineStyleHashList = inlineStyles.size > 0 ? [...inlineStyles.values()] : []
     // Normalize `p.headers` (`HeadersInit`: `Headers | string[][] |
     // Record<string,string>`) into a plain object so the private
     // `X-Place-Inline-Style-Hashes` header can be appended uniformly.

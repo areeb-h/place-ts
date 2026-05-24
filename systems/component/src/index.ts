@@ -47,12 +47,19 @@ declare const __PLACE_DEV__: boolean | undefined
 
 // Hydration internals + flag state, re-exported from `_internal/hydration.ts`.
 // Underscore-prefixed names mark them as internal-but-test-accessible.
+// All marked `@internal` so consumers see the warning in IDE tooltips.
 export {
+  /** @internal — used by the framework's hydration auditor; not for app use. */
   _auditHydrationFrame,
+  /** @internal — drains the per-render hydration-delta queue. */
   _drainHydrationDeltas,
+  /** @internal — flushes pending hydration deltas before write. */
   _flushHydrationDeltas,
+  /** @internal — reads the hydrated-flag signal (true after first paint). */
   _readHydrated,
+  /** @internal — read-only access to the current hydration-delta queue. */
   _readHydrationDeltas,
+  /** @internal — flips the hydrated-flag signal during boot. */
   _setHydrated,
   type HydrationDelta,
 } from './_internal/hydration.ts'
@@ -257,7 +264,16 @@ export { onCleanup } from './_internal/cleanup.ts'
 export type { SsrHeading } from './element.ts'
 // Re-export the public element surface so `@place-ts/component` and every
 // in-package importer keep seeing these names on the barrel.
-export { _beginHeadingCollection, _endHeadingCollection, _getFirstH1Text, el } from './element.ts'
+export {
+  /** @internal — opens the per-render h2/h3 heading collector. */
+  _beginHeadingCollection,
+  /** @internal — closes the per-render heading collector. */
+  _endHeadingCollection,
+  /** @internal — reads the first `<h1>` text harvested during the
+   *  last render. `renderPage` uses this for auto-title derivation. */
+  _getFirstH1Text,
+  el,
+} from './element.ts'
 
 // Dev error overlay — `renderRouteError` is used by `renderPage`'s
 // per-route catch. (Terminal logging moved to ./serve.ts.)
@@ -334,15 +350,31 @@ export { type RouteHandler, type ServerRouter, serverRouter } from './server-rou
 // re-exports the public surface (`island`, `Island`) and the
 // `_`-prefixed registry hooks the build modules + test-internal
 // barrel need.
+//
+// **All `_`-prefixed exports below are framework-internal.** They're
+// re-exported here only because the build / island-bundler / dispatch
+// internals live in sibling modules and can't reach into private
+// barrels cleanly. Apps that import any `_*` from this package are
+// holding the framework wrong — patch bumps may break those imports
+// without notice (per the `// @internal` JSDoc contract).
 export {
+  /** @internal — used by `renderPage` to open the per-render island scope. */
   _beginIslandCollection,
+  /** @internal — used by `renderPage` to drain idle-island registrations. */
   _drainPendingIslands,
+  /** @internal — used by `renderPage` to close the per-render island scope. */
   _endIslandCollection,
+  /** @internal — used by the island bundler / per-page SRI emitter. */
   _getIslandBundleUrl,
+  /** @internal — used by `renderPage` + the island bundler. */
   _getIslandRegistry,
+  /** @internal — used by `renderPage` to emit shared chunk preloads. */
   _getSharedChunkUrls,
+  /** @internal — populated by `serve()` after the island bundler runs. */
   _setIslandBundleUrls,
+  /** @internal — populated by `serve()` from `options.islands`. */
   _setIslandRegistry,
+  /** @internal — populated by `serve()` from the splitter output. */
   _setSharedChunkUrls,
   type ClientStrategy,
   ISLAND_BRAND,
@@ -365,9 +397,11 @@ export { view, type ViewLevel, type ViewOptions } from './view.ts'
 // T6-B inline-style-attr hash collector — extracted to
 // `./_internal/inline-style.ts` (cut 5b). The dispatch path uses the
 // begin/end helpers + re-exports them for the test-internal barrel;
-// `element.ts` reads the live `currentInlineStyleSet` binding directly.
+// `element.ts` reads via the `addInlineStyle()` helper internally.
 import { _beginInlineStyleCollection, _endInlineStyleCollection } from './_internal/inline-style.ts'
 
+/** @internal — `renderPage` calls these around `renderToString` to
+ *  scope the inline-style hash collection per request. Not for app use. */
 export { _beginInlineStyleCollection, _endInlineStyleCollection }
 
 /**

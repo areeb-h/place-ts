@@ -39,17 +39,20 @@ import {
   nextHydrationId,
   resetHydrationSeq,
 } from '../../src/_internal/hydrationSeq.ts'
-import { currentInlineStyleSet } from '../../src/_internal/inline-style.ts'
+import { addInlineStyle, currentInlineStyleSet } from '../../src/_internal/inline-style.ts'
 
 describe('SSR state isolation — inline-style collector (0.10.10)', () => {
-  test('per-scope: set installed inside scope is the one read', async () => {
+  test('per-scope: map installed inside scope is the one read', async () => {
     await runWithCapabilityScope(async () => {
-      const set = _beginInlineStyleCollection()
+      const map = _beginInlineStyleCollection()
       try {
         const seen = currentInlineStyleSet()
-        expect(seen).toBe(set)
-        seen?.add('color: red')
-        expect([...(seen ?? [])]).toEqual(['color: red'])
+        expect(seen).toBe(map)
+        addInlineStyle('color: red')
+        // The collector is now a Map<style, hash>; assert the key
+        // landed AND the value is a non-empty hash string.
+        expect([...(seen?.keys() ?? [])]).toEqual(['color: red'])
+        expect(seen?.get('color: red')).toMatch(/^[A-Za-z0-9+/=]+$/) // base64
       } finally {
         _endInlineStyleCollection()
       }
@@ -61,17 +64,17 @@ describe('SSR state isolation — inline-style collector (0.10.10)', () => {
   test('concurrent ALS scopes get isolated collectors', async () => {
     // Two async scopes started near-simultaneously. Each begins its
     // own collector, awaits a microtask, writes, then asserts the
-    // OWN set is exactly { its-style }, not the other's.
+    // OWN map is exactly { its-style → its-hash }, not the other's.
     //
     // Pre-0.10.10 (module-level let), B's begin would clobber A's
-    // currentInlineStyleSet — A's write would land in B's set.
+    // currentInlineStyleSet — A's write would land in B's collector.
     const results = await Promise.all([
       runWithCapabilityScope(async () => {
         const own = _beginInlineStyleCollection()
         await new Promise<void>((r) => setTimeout(r, 0))
         try {
-          currentInlineStyleSet()?.add('A-only')
-          return [...own]
+          addInlineStyle('A-only')
+          return [...own.keys()]
         } finally {
           _endInlineStyleCollection()
         }
@@ -80,8 +83,8 @@ describe('SSR state isolation — inline-style collector (0.10.10)', () => {
         const own = _beginInlineStyleCollection()
         await new Promise<void>((r) => setTimeout(r, 0))
         try {
-          currentInlineStyleSet()?.add('B-only')
-          return [...own]
+          addInlineStyle('B-only')
+          return [...own.keys()]
         } finally {
           _endInlineStyleCollection()
         }
@@ -89,6 +92,25 @@ describe('SSR state isolation — inline-style collector (0.10.10)', () => {
     ])
     expect(results[0]).toEqual(['A-only'])
     expect(results[1]).toEqual(['B-only'])
+  })
+
+  test('addInlineStyle dedupes by value (same style added twice → one entry)', async () => {
+    await runWithCapabilityScope(async () => {
+      const map = _beginInlineStyleCollection()
+      try {
+        addInlineStyle('background: red')
+        addInlineStyle('background: red')
+        addInlineStyle('background: red')
+        expect(map.size).toBe(1)
+      } finally {
+        _endInlineStyleCollection()
+      }
+    })
+  })
+
+  test('addInlineStyle outside any scope is a no-op (returns false)', () => {
+    // No `runWithCapabilityScope` wrap → cap is not installed → cannot record.
+    expect(addInlineStyle('outside-scope')).toBe(false)
   })
 })
 
